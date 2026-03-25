@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS "meetings_outlook_event_id_unique" ON "meetings" ("outlook_event_id") WHERE "outlook_event_id" IS NOT NULL;

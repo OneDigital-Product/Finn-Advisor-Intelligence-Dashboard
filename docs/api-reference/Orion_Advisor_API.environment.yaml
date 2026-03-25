@@ -1,0 +1,29 @@
+name: Orion Advisor API
+values:
+  - key: baseUrl
+    value: 'https://api.cloud.orionadvisor.com'
+    enabled: true
+  - key: username
+    value: 'nitin.mahajan@onedigital.com'
+    enabled: true
+    secret: true
+  - key: password
+    value: 'Q>'';kJXO21'
+    enabled: true
+    secret: true
+  - key: authToken
+    value: 'eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTUxMiIsInR5cCI6IkpXVCJ9.eyJVQ1AiOiJGYWxzZSIsIkFfQyI6IjE1ODkiLCJBX1VEIjoiMTI0MTk5ODQiLCJBX0VEIjoiMyIsIkNJRCI6IjkwZDA5NTYzLTNlMWQtNDgyOC1iMTI1LTg3Nzk3YWFiMWM0NiIsIk1OIjoiaXAtMTAtNDAtOTQtMTA5IiwibmJmIjoxNzczNjExNTc2LCJleHAiOjE3NzM2NDc2MzYsImlzcyI6Im9yaW9uIiwiYXVkIjoiaHR0cDovL3Nlc3Npb24ub3Jpb24ifQ.pIgWj6smMwH-ftFINUO-AHDbk6geWU1PNo1xCTJ3zf18aBPnvU4PEIvp9pInML_jHzqnZiIJYHD2OPvBGgNLSw'
+    enabled: true
+    secret: true
+  - key: clientId
+    value: '39798'
+    enabled: true
+  - key: searchTerm
+    value: 'Demo'
+    enabled: true
+  - key: userId
+    value: ''
+    enabled: true
+  - key: accountCount
+    value: ''
+    enabled: true

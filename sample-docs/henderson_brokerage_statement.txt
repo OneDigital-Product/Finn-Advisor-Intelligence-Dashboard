@@ -1,0 +1,60 @@
+FIDELITY INVESTMENTS
+ACCOUNT STATEMENT - PERIOD ENDING FEBRUARY 28, 2026
+
+Account Holder: Robert A. Henderson
+Account Number: Z42-881247
+Account Type: Individual Brokerage (Taxable)
+Custodian: Fidelity Investments
+Tax Status: Taxable
+
+ACCOUNT SUMMARY
+----------------
+Beginning Balance (01/31/2026): $2,145,600.00
+Deposits/Contributions: $0.00
+Withdrawals: $0.00
+Change in Market Value: +$42,380.00
+Dividends Received: $4,350.00
+Interest Earned: $680.00
+Ending Balance (02/28/2026): $2,193,010.00
+
+CURRENT HOLDINGS
+-----------------
+Ticker    Name                          Shares      Price      Market Value    Cost Basis     Unrealized G/L   Sector
+------    ----                          ------      -----      ------------    ----------     ---------------  ------
+AAPL      Apple Inc.                    1,200       $242.50    $291,000.00     $145,200.00    +$145,800.00     Technology
+MSFT      Microsoft Corp.              800         $428.30    $342,640.00     $198,400.00    +$144,240.00     Technology
+VTI       Vanguard Total Stock Market   2,500       $268.40    $671,000.00     $512,500.00    +$158,500.00     Broad Market
+VXUS      Vanguard Intl Stock           1,800       $62.15     $111,870.00     $99,000.00     +$12,870.00      International
+BND       Vanguard Total Bond Market    3,000       $72.80     $218,400.00     $225,000.00    -$6,600.00       Fixed Income
+VNQ       Vanguard Real Estate ETF      1,500       $85.20     $127,800.00     $112,500.00    +$15,300.00      Real Estate
+JNJ       Johnson & Johnson             600         $158.90    $95,340.00      $72,000.00     +$23,340.00      Healthcare
+PG        Procter & Gamble              500         $172.40    $86,200.00      $65,000.00     +$21,200.00      Consumer Staples
+SCHD      Schwab US Dividend Equity     2,000       $82.30     $164,600.00     $140,000.00    +$24,600.00      Dividend
+CASH      Money Market (SPAXX)          ---         ---        $84,160.00      $84,160.00     $0.00            Cash
+
+TOTAL PORTFOLIO VALUE: $2,193,010.00
+
+ASSET ALLOCATION
+-----------------
+US Equities:       54.2%
+International:      5.1%
+Fixed Income:      10.0%
+Real Estate:        5.8%
+Dividend:           7.5%
+Cash:               3.8%
+
+INCOME SUMMARY (YTD)
+---------------------
+Dividends: $8,700.00
+Interest: $1,360.00
+Total Income: $10,060.00
+
+IMPORTANT NOTICES
+-----------------
+Cost basis method: Specific Identification
+Dividend reinvestment: OFF (cash distribution)
+Advisory fee: 0.75% annually, billed quarterly
+
+Next statement date: March 31, 2026
+Questions? Contact your advisor: Sarah Mitchell, CFP
+Phone: (404) 555-0142

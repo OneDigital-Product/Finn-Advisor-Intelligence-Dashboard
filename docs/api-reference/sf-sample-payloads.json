@@ -1,0 +1,354 @@
+{
+  "_meta": {
+    "title": "Salesforce Experience Layer API — Mock Payloads",
+    "sourceDocument": "Wealth_Advisor_Dashboard_Mapping.xlsx",
+    "objectsToSync": [
+      "Account WHERE RecordType.DeveloperName = 'IndustriesHousehold'",
+      "Account WHERE RecordType.DeveloperName = 'PersonAccount'",
+      "Household Person Account Relation",
+      "User",
+      "Opportunity"
+    ],
+    "totalSFSourcedElements": 33,
+    "openQuestions": [
+      "R8: Create a Mock Payload for Mulesoft — THIS FILE IS THAT PAYLOAD",
+      "R7: Create an SF API to be consumed by Mulesoft",
+      "R10: Segmentation of Clients at AI layer?",
+      "R11: Mulesoft Integration User permissions"
+    ],
+    "referenceAdvisor": "Sarah Mitchell (005Dn00000SaMitchell)",
+    "referenceHouseholds": ["Chen Household", "Henderson Household", "Patel Household", "Vaughn Household", "Nakamura Household"]
+  },
+
+
+  "objectPayloads": {
+
+
+    "Account_Household": {
+      "_object": "Account",
+      "_filter": "WHERE RecordType.DeveloperName = 'IndustriesHousehold' AND OwnerId = :currentUserId",
+      "_objectsToSync_row": "R2",
+      "_servesSpreadsheetRows": [42, 52, 75, 84, 86, 87, 88, 89, 91, 92],
+      "_servesElements": [
+        "R42: Client Count Summary — Pull households by account owner",
+        "R52: Client Record Row — Household Account",
+        "R56: Client Status Indicator — Household Status",
+        "R75: Total Clients KPI — Total Households by Account Owner",
+        "R84-89: Engagement/Compliance health metrics",
+        "R91-92: Advisor Capacity Progress/Ratio"
+      ],
+      "totalSize": 5,
+      "records": [
+        {
+          "Id": "001Dn00000HhChenHH",
+          "Name": "Chen Household",
+          "RecordType": { "DeveloperName": "IndustriesHousehold" },
+          "OwnerId": "005Dn00000SaMitchell",
+          "FinServ__Status__c": "Active",
+          "FinServ__ReviewFrequency__c": "Quarterly",
+          "FinServ__ServiceModel__c": "Advanced",
+          "FinServ__TotalAUMPrimary__c": 4250000.00,
+          "FinServ__LastReview__c": "2025-12-15",
+          "FinServ__NextReview__c": "2026-03-15",
+          "FinServ__TotalNonFinancialAssets__c": 1850000.00,
+          "FinServ__TotalFinancialAccounts__c": 10,
+          "FinServ__InvestmentObjectives__c": "Growth with Income",
+          "CreatedDate": "2019-04-15T10:00:00.000Z"
+        },
+        {
+          "Id": "001Dn00000HhHendersonHH",
+          "Name": "Henderson Household",
+          "RecordType": { "DeveloperName": "IndustriesHousehold" },
+          "OwnerId": "005Dn00000SaMitchell",
+          "FinServ__Status__c": "Active",
+          "FinServ__ReviewFrequency__c": "Quarterly",
+          "FinServ__ServiceModel__c": "Comprehensive",
+          "FinServ__TotalAUMPrimary__c": 4800000.00,
+          "FinServ__LastReview__c": "2026-03-10",
+          "FinServ__NextReview__c": "2026-06-10",
+          "FinServ__TotalNonFinancialAssets__c": 2200000.00,
+          "FinServ__TotalFinancialAccounts__c": 8,
+          "FinServ__InvestmentObjectives__c": "Balanced Growth",
+          "CreatedDate": "2018-09-20T10:00:00.000Z"
+        },
+        {
+          "Id": "001Dn00000HhPatelHH",
+          "Name": "Patel Household",
+          "RecordType": { "DeveloperName": "IndustriesHousehold" },
+          "OwnerId": "005Dn00000SaMitchell",
+          "FinServ__Status__c": "Active",
+          "FinServ__ReviewFrequency__c": "Semi-Annual",
+          "FinServ__ServiceModel__c": "Core",
+          "FinServ__TotalAUMPrimary__c": 890000.00,
+          "FinServ__LastReview__c": "2026-01-22",
+          "FinServ__NextReview__c": "2026-07-22",
+          "FinServ__TotalNonFinancialAssets__c": 450000.00,
+          "FinServ__TotalFinancialAccounts__c": 4,
+          "FinServ__InvestmentObjectives__c": "Growth",
+          "CreatedDate": "2022-03-15T10:00:00.000Z"
+        },
+        {
+          "Id": "001Dn00000HhVaughnHH",
+          "Name": "Vaughn Household",
+          "RecordType": { "DeveloperName": "IndustriesHousehold" },
+          "OwnerId": "005Dn00000SaMitchell",
+          "FinServ__Status__c": "Active",
+          "FinServ__ReviewFrequency__c": "Quarterly",
+          "FinServ__ServiceModel__c": "Advanced",
+          "FinServ__TotalAUMPrimary__c": 3100000.00,
+          "FinServ__LastReview__c": "2025-11-18",
+          "FinServ__NextReview__c": "2026-02-18",
+          "FinServ__TotalNonFinancialAssets__c": 1600000.00,
+          "FinServ__TotalFinancialAccounts__c": 6,
+          "FinServ__InvestmentObjectives__c": "Income with Growth",
+          "CreatedDate": "2020-06-10T10:00:00.000Z"
+        },
+        {
+          "Id": "001Dn00000HhNakamuraHH",
+          "Name": "Nakamura Household",
+          "RecordType": { "DeveloperName": "IndustriesHousehold" },
+          "OwnerId": "005Dn00000SaMitchell",
+          "FinServ__Status__c": "Active",
+          "FinServ__ReviewFrequency__c": "Semi-Annual",
+          "FinServ__ServiceModel__c": "Core",
+          "FinServ__TotalAUMPrimary__c": 870000.00,
+          "FinServ__LastReview__c": "2026-02-05",
+          "FinServ__NextReview__c": "2026-08-05",
+          "FinServ__TotalNonFinancialAssets__c": 380000.00,
+          "FinServ__TotalFinancialAccounts__c": 5,
+          "FinServ__InvestmentObjectives__c": "Growth",
+          "CreatedDate": "2021-11-01T10:00:00.000Z"
+        }
+      ]
+    },
+
+
+    "Account_PersonAccount": {
+      "_object": "Account",
+      "_filter": "WHERE RecordType.DeveloperName = 'PersonAccount' AND OwnerId = :currentUserId",
+      "_objectsToSync_row": "R3",
+      "_servesSpreadsheetRows": [2, 6, 54, 58, 59],
+      "_servesElements": [
+        "R2: Dashboard Greeting — advisor name from User, client names from Person Account",
+        "R54: Client Name — Person Accounts tied to Household",
+        "R58: Client Occupation — Person Account",
+        "R59: Client Email — Person Account"
+      ],
+      "totalSize": 7,
+      "records": [
+        { "Id": "001Dn00000PaMargChen", "FirstName": "Margaret", "LastName": "Chen", "PersonEmail": "margaret.chen@email.com", "Phone": "(415) 555-0187", "PersonBirthdate": "1971-03-14", "PersonMailingCity": "San Francisco", "PersonMailingState": "CA", "FinServ__RiskTolerance__c": "Moderately Aggressive", "FinServ__Occupation__c": "VP of Engineering", "FinServ__EmployerName__c": "Meridian Technologies", "ParentId": "001Dn00000HhChenHH" },
+        { "Id": "001Dn00000PaDavidChen", "FirstName": "David", "LastName": "Chen", "PersonEmail": "david.chen@email.com", "Phone": "(415) 555-0192", "PersonBirthdate": "1969-08-22", "PersonMailingCity": "San Francisco", "PersonMailingState": "CA", "FinServ__RiskTolerance__c": "Moderate", "FinServ__Occupation__c": "Senior Product Manager", "FinServ__EmployerName__c": "Lumen Digital", "ParentId": "001Dn00000HhChenHH" },
+        { "Id": "001Dn00000PaRobHenderson", "FirstName": "Robert", "LastName": "Henderson", "PersonEmail": "r.henderson@email.com", "Phone": "(404) 555-0231", "PersonBirthdate": "1958-06-18", "PersonMailingCity": "Atlanta", "PersonMailingState": "GA", "FinServ__RiskTolerance__c": "Moderate", "FinServ__Occupation__c": "Retired Physician", "FinServ__EmployerName__c": null, "ParentId": "001Dn00000HhHendersonHH" },
+        { "Id": "001Dn00000PaMargHenderson", "FirstName": "Margaret", "LastName": "Henderson", "PersonEmail": "m.henderson@email.com", "Phone": "(404) 555-0232", "PersonBirthdate": "1960-11-03", "PersonMailingCity": "Atlanta", "PersonMailingState": "GA", "FinServ__RiskTolerance__c": "Conservative", "FinServ__Occupation__c": "Retired Educator", "FinServ__EmployerName__c": null, "ParentId": "001Dn00000HhHendersonHH" },
+        { "Id": "001Dn00000PaPriyaPatel", "FirstName": "Priya", "LastName": "Patel", "PersonEmail": "priya.patel@email.com", "Phone": "(512) 555-0198", "PersonBirthdate": "1982-04-12", "PersonMailingCity": "Austin", "PersonMailingState": "TX", "FinServ__RiskTolerance__c": "Moderately Aggressive", "FinServ__Occupation__c": "Dentist / Practice Owner", "FinServ__EmployerName__c": "Patel Family Dentistry", "ParentId": "001Dn00000HhPatelHH" },
+        { "Id": "001Dn00000PaSandraVaughn", "FirstName": "Sandra", "LastName": "Vaughn", "PersonEmail": "sandra.vaughn@email.com", "Phone": "(415) 555-0264", "PersonBirthdate": "1964-09-28", "PersonMailingCity": "San Francisco", "PersonMailingState": "CA", "FinServ__RiskTolerance__c": "Moderate", "FinServ__Occupation__c": "Attorney (Partner)", "FinServ__EmployerName__c": "Vaughn & Associates LLP", "ParentId": "001Dn00000HhVaughnHH" },
+        { "Id": "001Dn00000PaLisaNakamura", "FirstName": "Lisa", "LastName": "Nakamura", "PersonEmail": "lisa.nakamura@email.com", "Phone": "(510) 555-0177", "PersonBirthdate": "1978-01-20", "PersonMailingCity": "Oakland", "PersonMailingState": "CA", "FinServ__RiskTolerance__c": "Moderately Aggressive", "FinServ__Occupation__c": "Software Engineering Manager", "FinServ__EmployerName__c": "TechVista Inc.", "ParentId": "001Dn00000HhNakamuraHH" }
+      ]
+    },
+
+
+    "User": {
+      "_object": "User",
+      "_objectsToSync_row": "R5",
+      "_servesSpreadsheetRows": [2, 6],
+      "_servesElements": [
+        "R2: Dashboard Greeting — 'Good morning, Sarah'",
+        "R6: Advisor Profile Display — 'Sarah Mitchell – Advisor'"
+      ],
+      "totalSize": 1,
+      "records": [
+        {
+          "Id": "005Dn00000SaMitchell",
+          "Name": "Sarah Mitchell",
+          "FirstName": "Sarah",
+          "LastName": "Mitchell",
+          "Email": "sarah.mitchell@onedigital.com",
+          "Phone": "(404) 555-0142",
+          "Title": "Senior Wealth Advisor, CFP",
+          "SmallPhotoUrl": "/profilephoto/005/T",
+          "IsActive": true,
+          "Profile": { "Name": "Wealth Advisor" }
+        }
+      ]
+    },
+
+
+    "Event": {
+      "_object": "Event",
+      "_servesSpreadsheetRows": [4, 23, 24, 38, 39],
+      "_servesElements": [
+        "R4: Meetings Today Indicator — '0 meetings today'",
+        "R23: Today's Schedule Widget",
+        "R24: Today's Schedule Status — 'No meetings scheduled for today'",
+        "R38: Upcoming Meetings Widget",
+        "R39: Insurance Review (Patel) — 'Mar 15 11:00 AM'"
+      ],
+      "totalSize": 6,
+      "records": [
+        { "Id": "00UDn00000Ev001", "Subject": "Chen Annual Review — Q1 2026", "StartDateTime": "2026-03-16T09:00:00.000Z", "EndDateTime": "2026-03-16T10:00:00.000Z", "Type": "Annual Review", "WhatId": "001Dn00000HhChenHH", "What": { "Name": "Chen Household" }, "WhoId": "001Dn00000PaMargChen", "Who": { "Name": "Margaret Chen" }, "Location": "In-Office" },
+        { "Id": "00UDn00000Ev002", "Subject": "Chen Tax Planning Session", "StartDateTime": "2026-03-17T10:00:00.000Z", "EndDateTime": "2026-03-17T11:00:00.000Z", "Type": "Tax Planning", "WhatId": "001Dn00000HhChenHH", "What": { "Name": "Chen Household" }, "WhoId": "001Dn00000PaMargChen", "Who": { "Name": "Margaret Chen" }, "Location": "Virtual" },
+        { "Id": "00UDn00000Ev003", "Subject": "Patel Insurance Review", "StartDateTime": "2026-03-15T11:00:00.000Z", "EndDateTime": "2026-03-15T11:45:00.000Z", "Type": "Insurance Review", "WhatId": "001Dn00000HhPatelHH", "What": { "Name": "Patel Household" }, "WhoId": "001Dn00000PaPriyaPatel", "Who": { "Name": "Priya Patel" }, "Location": "Virtual" },
+        { "Id": "00UDn00000Ev004", "Subject": "Henderson Estate Plan Review", "StartDateTime": "2026-03-16T14:00:00.000Z", "EndDateTime": "2026-03-16T15:00:00.000Z", "Type": "Estate Review", "WhatId": "001Dn00000HhHendersonHH", "What": { "Name": "Henderson Household" }, "WhoId": "001Dn00000PaRobHenderson", "Who": { "Name": "Robert Henderson" }, "Location": "In-Office" },
+        { "Id": "00UDn00000Ev005", "Subject": "Vaughn Charitable Giving Strategy", "StartDateTime": "2026-03-19T13:00:00.000Z", "EndDateTime": "2026-03-19T14:00:00.000Z", "Type": "Ad Hoc", "WhatId": "001Dn00000HhVaughnHH", "What": { "Name": "Vaughn Household" }, "WhoId": "001Dn00000PaSandraVaughn", "Who": { "Name": "Sandra Vaughn" }, "Location": "In-Office" },
+        { "Id": "00UDn00000Ev006", "Subject": "Nakamura Portfolio Check-In", "StartDateTime": "2026-03-20T14:00:00.000Z", "EndDateTime": "2026-03-20T14:45:00.000Z", "Type": "Portfolio Check-In", "WhatId": "001Dn00000HhNakamuraHH", "What": { "Name": "Nakamura Household" }, "WhoId": "001Dn00000PaLisaNakamura", "Who": { "Name": "Lisa Nakamura" }, "Location": "Virtual" }
+      ]
+    },
+
+
+    "Task": {
+      "_object": "Task",
+      "_servesSpreadsheetRows": [31, 32, 33, 34, 35, 36],
+      "_servesElements": [
+        "R31: Action Queue Widget — '10 pending' — Source: Task and Cases",
+        "R32: Prepare Quarterly Client Newsletter — due 4/4/2026, priority medium",
+        "R33: Complete CE Credits - Ethics Module — due 6/29/2026",
+        "R34: Request Updated Henderson Trust Documents — linked to Robert Henderson",
+        "R35: Evaluate Practice Buy-In for Patel — linked to Priya Patel",
+        "R36: Patel Life Insurance Application — due 3/19/2026"
+      ],
+      "_openQuestion": "R32-36: Is it possible to pull all cases and tasks and have AI surface the types of tasks, or does that need to be predefined by record type/field?",
+      "totalSize": 10,
+      "records": [
+        { "Id": "00TDn00000Tk001", "Subject": "Prepare Quarterly Client Newsletter", "Status": "Not Started", "Priority": "Normal", "ActivityDate": "2026-04-04", "Type": "Other", "WhatId": null, "What": null, "WhoId": null, "Who": null, "OwnerId": "005Dn00000SaMitchell", "Description": "Q2 newsletter — market commentary, firm updates, educational content" },
+        { "Id": "00TDn00000Tk002", "Subject": "Complete CE Credits - Ethics Module", "Status": "Not Started", "Priority": "Low", "ActivityDate": "2026-06-29", "Type": "Other", "WhatId": null, "What": null, "WhoId": null, "Who": null, "OwnerId": "005Dn00000SaMitchell", "Description": "Annual continuing education requirement — ethics module due by Q2 end" },
+        { "Id": "00TDn00000Tk003", "Subject": "Request Updated Henderson Trust Documents", "Status": "Not Started", "Priority": "Normal", "ActivityDate": "2026-03-28", "Type": "Other", "WhatId": "001Dn00000HhHendersonHH", "What": { "Name": "Henderson Household" }, "WhoId": "001Dn00000PaRobHenderson", "Who": { "Name": "Robert Henderson" }, "OwnerId": "005Dn00000SaMitchell", "Description": "Follow up with estate attorney David Kim for updated trust documents after Henderson meeting" },
+        { "Id": "00TDn00000Tk004", "Subject": "Evaluate Practice Buy-In for Patel", "Status": "In Progress", "Priority": "Normal", "ActivityDate": "2026-04-15", "Type": "Other", "WhatId": "001Dn00000HhPatelHH", "What": { "Name": "Patel Household" }, "WhoId": "001Dn00000PaPriyaPatel", "Who": { "Name": "Priya Patel" }, "OwnerId": "005Dn00000SaMitchell", "Description": "Priya considering buying into dental practice partnership — needs cash flow analysis and financing review" },
+        { "Id": "00TDn00000Tk005", "Subject": "Patel Life Insurance Application", "Status": "Not Started", "Priority": "High", "ActivityDate": "2026-03-19", "Type": "Other", "WhatId": "001Dn00000HhPatelHH", "What": { "Name": "Patel Household" }, "WhoId": "001Dn00000PaPriyaPatel", "Who": { "Name": "Priya Patel" }, "OwnerId": "005Dn00000SaMitchell", "Description": "Submit life insurance application — underwriting follow-up needed" },
+        { "Id": "00TDn00000Tk006", "Subject": "Rebalance Chen Joint Brokerage", "Status": "Not Started", "Priority": "High", "ActivityDate": "2026-03-25", "Type": "Other", "WhatId": "001Dn00000HhChenHH", "What": { "Name": "Chen Household" }, "WhoId": null, "Who": null, "OwnerId": "005Dn00000SaMitchell", "Description": "Portfolio drift exceeds 13% threshold. Reduce U.S. Large Cap, add Fixed Income and International." },
+        { "Id": "00TDn00000Tk007", "Subject": "Vaughn ADV Part 2 Delivery Confirmation", "Status": "Not Started", "Priority": "Normal", "ActivityDate": "2026-03-22", "Type": "Email", "WhatId": "001Dn00000HhVaughnHH", "What": { "Name": "Vaughn Household" }, "WhoId": "001Dn00000PaSandraVaughn", "Who": { "Name": "Sandra Vaughn" }, "OwnerId": "005Dn00000SaMitchell", "Description": "Annual ADV Part 2 update sent 3/1. Delivery confirmation not yet received. Follow-up required within 14 days." },
+        { "Id": "00TDn00000Tk008", "Subject": "Send IPS Renewal — Chen Household", "Status": "Not Started", "Priority": "Normal", "ActivityDate": "2026-06-01", "Type": "Email", "WhatId": "001Dn00000HhChenHH", "What": { "Name": "Chen Household" }, "WhoId": "001Dn00000PaMargChen", "Who": { "Name": "Margaret Chen" }, "OwnerId": "005Dn00000SaMitchell", "Description": "IPS expires June 2026. Send updated version for e-signature." },
+        { "Id": "00TDn00000Tk009", "Subject": "Review Nakamura Backdoor Roth Eligibility", "Status": "Not Started", "Priority": "Normal", "ActivityDate": "2026-04-01", "Type": "Other", "WhatId": "001Dn00000HhNakamuraHH", "What": { "Name": "Nakamura Household" }, "WhoId": "001Dn00000PaLisaNakamura", "Who": { "Name": "Lisa Nakamura" }, "OwnerId": "005Dn00000SaMitchell", "Description": "Lisa's MAGI projected under threshold for 2026. Review backdoor Roth conversion eligibility." },
+        { "Id": "00TDn00000Tk010", "Subject": "Schedule Henderson Q2 Review", "Status": "Not Started", "Priority": "Low", "ActivityDate": "2026-04-10", "Type": "Call", "WhatId": "001Dn00000HhHendersonHH", "What": { "Name": "Henderson Household" }, "WhoId": "001Dn00000PaRobHenderson", "Who": { "Name": "Robert Henderson" }, "OwnerId": "005Dn00000SaMitchell", "Description": "Schedule Q2 quarterly review meeting with Robert and Margaret Henderson." }
+      ]
+    },
+
+
+    "Case": {
+      "_object": "Case",
+      "_servesSpreadsheetRows": [28, 31],
+      "_servesElements": [
+        "R28: Follow-Up Needed (Patel) — 'Info alert regarding insurance underwriting follow up'",
+        "R31: Action Queue Widget (Cases contribute to pending count)"
+      ],
+      "_openQuestion": "R28: We need to identify the tracking for this first — SF opportunity or LINC Cases?",
+      "totalSize": 3,
+      "records": [
+        { "Id": "500Dn00000Ca001", "Subject": "Patel Life Insurance — Underwriting Follow-Up", "Status": "Open", "Priority": "High", "Type": "Service Request", "CreatedDate": "2026-03-10T09:00:00.000Z", "ClosedDate": null, "AccountId": "001Dn00000HhPatelHH", "Account": { "Name": "Patel Household" }, "ContactId": "001Dn00000PaPriyaPatel", "Description": "Insurance application submitted. Underwriter requested additional medical records. Follow up with Priya.", "OwnerId": "005Dn00000SaMitchell" },
+        { "Id": "500Dn00000Ca002", "Subject": "Chen Joint Brokerage — Beneficiary Designation Incomplete", "Status": "Open", "Priority": "High", "Type": "Beneficiary Update", "CreatedDate": "2026-03-09T14:00:00.000Z", "ClosedDate": null, "AccountId": "001Dn00000HhChenHH", "Account": { "Name": "Chen Household" }, "ContactId": null, "Description": "Joint brokerage account missing primary and contingent beneficiary designations.", "OwnerId": "005Dn00000SaMitchell" },
+        { "Id": "500Dn00000Ca003", "Subject": "Vaughn — ADV Part 2 Delivery Confirmation Pending", "Status": "Open", "Priority": "Medium", "Type": "Compliance Review", "CreatedDate": "2026-03-08T10:00:00.000Z", "ClosedDate": null, "AccountId": "001Dn00000HhVaughnHH", "Account": { "Name": "Vaughn Household" }, "ContactId": "001Dn00000PaSandraVaughn", "Description": "Annual ADV Part 2 update sent 3/1. Delivery confirmation not yet received.", "OwnerId": "005Dn00000SaMitchell" }
+      ]
+    },
+
+
+    "Opportunity": {
+      "_object": "Opportunity",
+      "_objectsToSync_row": "R6",
+      "_servesSpreadsheetRows": [35],
+      "_servesElements": [
+        "R35: Evaluate Practice Buy-In for Patel (Opportunity pipeline)"
+      ],
+      "totalSize": 3,
+      "records": [
+        { "Id": "006Dn00000Op001", "Name": "Chen — DAF Charitable Giving Setup", "StageName": "Proposal", "Amount": 50000.00, "CloseDate": "2026-04-15", "Probability": 75, "AccountId": "001Dn00000HhChenHH", "Account": { "Name": "Chen Household" }, "Type": "Cross-Sell", "LastActivityDate": "2026-03-10", "Description": "Donor-advised fund — $50K initial contribution before Q2 estimated tax deadline." },
+        { "Id": "006Dn00000Op002", "Name": "Patel — Practice Buy-In Financial Planning", "StageName": "Discovery", "Amount": 250000.00, "CloseDate": "2026-06-30", "Probability": 50, "AccountId": "001Dn00000HhPatelHH", "Account": { "Name": "Patel Household" }, "Type": "New Business", "LastActivityDate": "2026-03-12", "Description": "Priya evaluating dental practice partnership buy-in. Needs cash flow, financing, and insurance analysis." },
+        { "Id": "006Dn00000Op003", "Name": "Vaughn — Charitable Remainder Trust", "StageName": "Proposal", "Amount": 500000.00, "CloseDate": "2026-09-30", "Probability": 60, "AccountId": "001Dn00000HhVaughnHH", "Account": { "Name": "Vaughn Household" }, "Type": "Cross-Sell", "LastActivityDate": "2026-02-28", "Description": "Sandra interested in CRT for tax-efficient charitable giving. Estate attorney consultation scheduled." }
+      ]
+    },
+
+
+    "Dashboard_SalesGoals": {
+      "_object": "Report/Dashboard (Salesforce Analytics)",
+      "_servesSpreadsheetRows": [19, 20],
+      "_servesElements": [
+        "R19: YTD Recurring Sales Goal — Source: SF Dashboard 01Z4z0000011THJEA2",
+        "R20: YTD Non-Recurring Sales Goal — Source: SF Dashboard 01Z4z0000011THJEA2"
+      ],
+      "_sourceUrl": "https://onedigitalrw.lightning.force.com/lightning/r/Dashboard/01Z4z0000011THJEA2/view?queryScope=userFolders",
+      "totalSize": 2,
+      "records": [
+        {
+          "goalType": "recurring",
+          "label": "YTD Recurring Sales Goal",
+          "targetAmount": 350000.00,
+          "currentAmount": 285000.00,
+          "progressPct": 0.814,
+          "period": "YTD"
+        },
+        {
+          "goalType": "non-recurring",
+          "label": "YTD Non-Recurring Sales Goal",
+          "targetAmount": 120000.00,
+          "currentAmount": 47500.00,
+          "progressPct": 0.396,
+          "period": "YTD"
+        }
+      ]
+    },
+
+
+    "Compliance_Items": {
+      "_object": "Custom — derived from Task + Case + ContentDocumentLink",
+      "_servesSpreadsheetRows": [84, 85, 86, 87, 88, 89, 98, 100, 101, 102, 103, 105, 107, 108, 109, 110, 112, 113, 114, 115, 117, 120, 121, 123, 124, 125, 126, 127, 128, 129, 133],
+      "_servesElements": [
+        "R84-89: Engagement/Compliance Health metrics (current, expiring, overdue, pending counts)",
+        "R98: Compliance Health Score (59%)",
+        "R100-103: Compliance metric cards",
+        "R107-110: Compliance filter tabs (All, Overdue, Expiring, Audit Trail)",
+        "R112-121: Compliance item rows with title, description, client, status, dates",
+        "R123-129: 7 compliance categories",
+        "R133: Audit trail records"
+      ],
+      "_note": "Compliance items are assembled from Tasks, Cases, and Documents. The 7 categories from R123-129 map to review types.",
+      "totalSize": 8,
+      "records": [
+        { "id": "comp-001", "category": "risk_profile_review", "title": "Risk Profile Review", "description": "Annual risk tolerance assessment", "clientName": "Margaret Chen", "householdId": "001Dn00000HhChenHH", "status": "current", "dueDate": "2026-06-01", "lastCompleted": "2025-06-01", "assignedTo": "Sarah Mitchell", "sfTaskId": null, "sfCaseId": null, "sfDocumentId": "069Dn00000CD003" },
+        { "id": "comp-002", "category": "ips_review", "title": "IPS Review", "description": "Investment Policy Statement review", "clientName": "Margaret Chen", "householdId": "001Dn00000HhChenHH", "status": "expiring_soon", "dueDate": "2026-06-01", "lastCompleted": "2025-06-01", "assignedTo": "Sarah Mitchell", "sfTaskId": "00TDn00000Tk008", "sfCaseId": null, "sfDocumentId": "069Dn00000CD002" },
+        { "id": "comp-003", "category": "beneficiary_update", "title": "Beneficiary Update", "description": "Beneficiary designation review", "clientName": "Chen Household", "householdId": "001Dn00000HhChenHH", "status": "overdue", "dueDate": "2026-03-01", "lastCompleted": null, "assignedTo": "Sarah Mitchell", "sfTaskId": null, "sfCaseId": "500Dn00000Ca002", "sfDocumentId": null },
+        { "id": "comp-004", "category": "estate_plan_review", "title": "Estate Plan Review", "description": "Estate planning document review", "clientName": "Robert Henderson", "householdId": "001Dn00000HhHendersonHH", "status": "current", "dueDate": "2026-09-10", "lastCompleted": "2025-09-10", "assignedTo": "Sarah Mitchell", "sfTaskId": "00TDn00000Tk003", "sfCaseId": null, "sfDocumentId": null },
+        { "id": "comp-005", "category": "insurance_review", "title": "Insurance Review", "description": "Life insurance adequacy review", "clientName": "Priya Patel", "householdId": "001Dn00000HhPatelHH", "status": "pending", "dueDate": "2026-03-19", "lastCompleted": null, "assignedTo": "Sarah Mitchell", "sfTaskId": "00TDn00000Tk005", "sfCaseId": "500Dn00000Ca001", "sfDocumentId": null },
+        { "id": "comp-006", "category": "suitability_review", "title": "Suitability Review", "description": "Investment strategy suitability assessment", "clientName": "Sandra Vaughn", "householdId": "001Dn00000HhVaughnHH", "status": "overdue", "dueDate": "2026-02-18", "lastCompleted": "2025-02-18", "assignedTo": "Sarah Mitchell", "sfTaskId": null, "sfCaseId": null, "sfDocumentId": null },
+        { "id": "comp-007", "category": "risk_profile_review", "title": "Risk Profile Review", "description": "Annual risk tolerance assessment", "clientName": "Lisa Nakamura", "householdId": "001Dn00000HhNakamuraHH", "status": "current", "dueDate": "2026-08-05", "lastCompleted": "2026-02-05", "assignedTo": "Sarah Mitchell", "sfTaskId": null, "sfCaseId": null, "sfDocumentId": null },
+        { "id": "comp-008", "category": "concentrated_position", "title": "Concentrated Position Documentation", "description": "Documentation for high portfolio concentration", "clientName": "Margaret Chen", "householdId": "001Dn00000HhChenHH", "status": "pending", "dueDate": "2026-03-25", "lastCompleted": null, "assignedTo": "Sarah Mitchell", "sfTaskId": "00TDn00000Tk006", "sfCaseId": null, "sfDocumentId": null }
+      ]
+    }
+  },
+
+
+  "derivedMetrics": {
+    "_description": "Pre-computed values the front end needs that are derived from the raw SF object payloads above",
+    
+    "R42_clientCountSummary": {
+      "_spreadsheetRow": 42,
+      "_element": "Client Count Summary — Pull households by account owner",
+      "totalHouseholds": 5,
+      "segmentation": { "A": 2, "B": 0, "C": 2, "D": 0 },
+      "_note": "Segment derived from FinServ__ServiceModel__c or custom field. Open question R46: 'Need to define tier list functionality'"
+    },
+
+    "R4_meetingsTodayCount": {
+      "_spreadsheetRow": 4,
+      "_element": "Meetings Today Indicator",
+      "count": 2,
+      "meetings": ["Chen Annual Review — Q1 2026 (9:00 AM)", "Henderson Estate Plan Review (2:00 PM)"]
+    },
+
+    "R31_actionQueueSummary": {
+      "_spreadsheetRow": 31,
+      "_element": "Action Queue Widget — '10 pending'",
+      "totalPending": 10,
+      "breakdown": { "tasks_not_started": 7, "tasks_in_progress": 1, "cases_open": 3 },
+      "_note": "Tasks with Status != Completed + Cases with IsClosed = false. Includes duplicates where a Task and Case both exist for same item."
+    },
+
+    "R84_complianceHealth": {
+      "_spreadsheetRow": 84,
+      "_element": "Engagement Overview Header / Compliance Health",
+      "overallHealthPct": 59,
+      "current": 3,
+      "expiringSoon": 1,
+      "overdue": 2,
+      "pending": 2,
+      "_note": "Derived from Compliance_Items records. R98 shows '59%' as the health score."
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "eval_id": 1,
+  "eval_name": "dashboard-load-performance",
+  "prompt": "holy shit why does the dashboard take like 10 seconds to load, I literally just opened the app and I'm staring at a blank screen, this is embarrassing if a client sees this",
+  "assertions": [
+    {"text": "Response contains all 7 sections from the skill format", "type": "structural"},
+    {"text": "References real file paths from the codebase (e.g., app/api/dashboard/route.ts)", "type": "evidence"},
+    {"text": "Proposes exactly 3 fixes ordered by effort level", "type": "structural"},
+    {"text": "Section 6 makes a clear recommendation rather than staying neutral", "type": "quality"},
+    {"text": "Section 7 names specific implementation changes (files, query keys, etc.)", "type": "quality"},
+    {"text": "Section 1 preserves the user's frustrated tone without sanitizing", "type": "tone"}
+  ]
+}

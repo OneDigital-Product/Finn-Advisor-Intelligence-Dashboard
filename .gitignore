@@ -1,0 +1,15 @@
+node_modules
+dist
+.DS_Store
+server/public
+vite.config.ts.*
+*.tar.gz
+
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.*.local
+.next/
+# Playwright MCP logs
+.playwright-mcp/
+.claude/plans/

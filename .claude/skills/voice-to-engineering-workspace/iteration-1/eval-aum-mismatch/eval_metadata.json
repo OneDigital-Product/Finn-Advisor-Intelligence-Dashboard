@@ -1,0 +1,13 @@
+{
+  "eval_id": 3,
+  "eval_name": "aum-header-portfolio-mismatch",
+  "prompt": "the portfolio section shows different numbers than what I see in the header, like the AUM in the header says 24M but the accounts below add up to something totally different, what the hell is going on with these numbers",
+  "assertions": [
+    {"text": "Response contains all 7 sections from the skill format", "type": "structural"},
+    {"text": "References real file paths from the codebase (summary/route.ts, portfolio/route.ts, use-client-data.ts)", "type": "evidence"},
+    {"text": "Proposes exactly 3 fixes ordered by effort level", "type": "structural"},
+    {"text": "Section 6 makes a clear recommendation rather than staying neutral", "type": "quality"},
+    {"text": "Section 7 names specific implementation changes", "type": "quality"},
+    {"text": "Section 1 preserves the user's frustrated tone without sanitizing", "type": "tone"}
+  ]
+}

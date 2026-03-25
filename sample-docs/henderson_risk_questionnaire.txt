@@ -1,0 +1,103 @@
+ONEDIGITAL INVESTMENT ADVISORY
+CLIENT RISK TOLERANCE QUESTIONNAIRE
+
+Date Completed: June 1, 2025
+Client: Robert A. Henderson
+DOB: 03/15/1958
+Advisor: Sarah Mitchell, CFP
+
+SECTION 1: INVESTMENT EXPERIENCE
+----------------------------------
+1. How many years of investing experience do you have?
+   [X] More than 20 years
+
+2. Which investments have you owned? (Select all that apply)
+   [X] Stocks / Individual equities
+   [X] Bonds / Fixed income
+   [X] Mutual funds
+   [X] ETFs
+   [X] Real estate (investment properties)
+   [X] Alternative investments
+   [ ] Cryptocurrency
+   [X] Options (covered calls only)
+
+3. How would you describe your investment knowledge?
+   [X] Extensive - I understand most investment concepts and strategies
+
+SECTION 2: RISK TOLERANCE
+----------------------------
+4. If your portfolio dropped 20% in a month, what would you do?
+   [X] Buy more - market declines create opportunities
+
+5. Which portfolio scenario do you prefer?
+   [X] B: Average return of 8-10% with potential for -15% to +25% in any year
+
+6. What is your primary investment objective?
+   [X] Growth with income - Moderate growth while generating regular income
+
+7. How much of a decline in your total portfolio value could you tolerate before you would consider making changes?
+   [X] 20-30% decline
+
+SECTION 3: TIME HORIZON & GOALS
+---------------------------------
+8. When do you expect to need significant withdrawals from your investments?
+   [X] Currently withdrawing (retirement distributions)
+
+9. What percentage of your total income do your investment withdrawals represent?
+   [X] 25-50% of total income
+
+10. Do you have adequate emergency reserves outside your investment portfolio?
+    [X] Yes - 12+ months of expenses in liquid savings
+
+SECTION 4: FINANCIAL SITUATION
+-------------------------------
+11. Approximate total net worth (excluding primary residence):
+    [X] $5,000,000 - $10,000,000
+
+12. Current annual household income:
+    [X] $200,000 - $500,000
+
+13. Do you expect your income to increase, decrease, or stay the same?
+    [X] Stay relatively the same (stable retirement income)
+
+14. What is your current tax bracket?
+    [X] 24-32%
+
+SECTION 5: SPECIAL CONSIDERATIONS
+-----------------------------------
+15. Are there any specific investments you want to avoid?
+    Answer: Prefer to avoid tobacco and firearms companies. Interested in ESG considerations but not as primary screening criteria.
+
+16. Do you have any concentrated stock positions?
+    Answer: Yes - legacy Apple (AAPL) and Microsoft (MSFT) positions from early career. Gradually diversifying.
+
+17. Are there any upcoming major expenses or life changes?
+    Answer: No major expenses planned. Considering charitable remainder trust for tax-efficient giving. Potential gifting to children/grandchildren.
+
+RISK SCORE CALCULATION
+------------------------
+Section 1 (Experience): 15/15
+Section 2 (Tolerance): 12/20
+Section 3 (Time Horizon): 8/15
+Section 4 (Financial): 18/20
+
+TOTAL SCORE: 53/70
+
+RISK CLASSIFICATION: MODERATE-AGGRESSIVE
+Recommended Asset Allocation:
+  US Equities: 45-55%
+  International Equities: 15-25%
+  Fixed Income: 15-25%
+  Real Estate/Alternatives: 5-10%
+  Cash: 3-5%
+
+CLIENT ACKNOWLEDGMENT
+-----------------------
+I have answered all questions honestly and to the best of my ability.
+I understand that this questionnaire helps determine an appropriate investment strategy.
+
+Signature: Robert A. Henderson
+Date: June 1, 2025
+
+Advisor Signature: Sarah Mitchell, CFP
+Date: June 1, 2025

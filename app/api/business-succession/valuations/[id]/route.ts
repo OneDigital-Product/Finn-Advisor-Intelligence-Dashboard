@@ -1,0 +1,65 @@
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { requireAuth, getSessionAdvisor } from "@lib/auth-helpers";
+import { storage } from "@server/storage";
+import { logger } from "@server/lib/logger";
+
+const updateValuationSchema = z.object({
+  businessName: z.string().optional(), industry: z.string().optional(), entityType: z.string().optional(),
+  revenue: z.string().optional(), ebitda: z.string().optional(), netIncome: z.string().optional(),
+  valuationMethod: z.string().optional(), multiple: z.string().optional(), discountRate: z.string().optional(),
+  growthRate: z.string().optional(), projectedCashFlows: z.any().optional(),
+  estimatedValue: z.string().optional(), valuationDate: z.string().optional(), notes: z.string().optional(),
+  tangibleAssets: z.string().optional(), intangibleAssets: z.string().optional(),
+  totalLiabilities: z.string().optional(), goodwill: z.string().optional(),
+});
+
+async function verifyClientAccess(session: any, clientId: string): Promise<boolean> {
+  const advisor = await getSessionAdvisor(session);
+  if (!advisor) return false;
+  const client = await storage.getClient(clientId);
+  if (!client) return false;
+  return client.advisorId === advisor.id;
+}
+
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const auth = await requireAuth();
+    if (auth.error) return auth.error;
+    const { id } = await params;
+    const body = updateValuationSchema.parse(await request.json());
+    const existing = await storage.getBusinessValuation(id);
+    if (!existing) return NextResponse.json({ message: "Valuation not found" }, { status: 404 });
+    const entity = await storage.getBusinessEntity(existing.businessEntityId);
+    if (entity) {
+      const hasAccess = await verifyClientAccess(auth.session, entity.clientId);
+      if (!hasAccess) return NextResponse.json({ message: "Access denied" }, { status: 403 });
+    }
+    const result = await storage.updateBusinessValuation(id, body as any);
+    return NextResponse.json(result);
+  } catch (error: any) {
+    if (error instanceof z.ZodError) return NextResponse.json({ message: error.errors[0].message }, { status: 400 });
+    logger.error({ err: error }, "API error:");
+    return NextResponse.json({ message: "An error occurred. Please try again later." }, { status: 500 });
+  }
+}
+
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const auth = await requireAuth();
+    if (auth.error) return auth.error;
+    const { id } = await params;
+    const existing = await storage.getBusinessValuation(id);
+    if (!existing) return NextResponse.json({ message: "Valuation not found" }, { status: 404 });
+    const entity = await storage.getBusinessEntity(existing.businessEntityId);
+    if (entity) {
+      const hasAccess = await verifyClientAccess(auth.session, entity.clientId);
+      if (!hasAccess) return NextResponse.json({ message: "Access denied" }, { status: 403 });
+    }
+    await storage.deleteBusinessValuation(id);
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    logger.error({ err: error }, "API error:");
+    return NextResponse.json({ message: "An error occurred. Please try again later." }, { status: 500 });
+  }
+}

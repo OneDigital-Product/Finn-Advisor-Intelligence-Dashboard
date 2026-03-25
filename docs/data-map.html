@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advisor Intelligence Suite — Complete Data Map</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sf: #2563eb; --sf-bg: #dbeafe; --sf-border: #93c5fd;
+    --orion: #059669; --orion-bg: #d1fae5; --orion-border: #6ee7b7;
+    --internal: #7c3aed; --internal-bg: #ede9fe; --internal-border: #c4b5fd;
+    --computed: #64748b; --computed-bg: #f1f5f9; --computed-border: #cbd5e1;
+    --yahoo: #ea580c; --yahoo-bg: #ffedd5; --yahoo-border: #fdba74;
+    --ai: #db2777; --ai-bg: #fce7f3; --ai-border: #f9a8d4;
+    --fake: #dc2626; --fake-bg: #fee2e2; --fake-border: #fca5a5;
+    --bg: #0a0c10; --surface: #12151c; --surface2: #1a1e28;
+    --border: #252a36; --border2: #333a4a;
+    --text: #e2e8f0; --text2: #94a3b8; --text3: #64748b;
+    --accent: #38bdf8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text);
+    line-height: 1.6; min-height: 100vh;
+  }
+  ::selection { background: var(--accent); color: var(--bg); }
+
+  /* Header */
+  .header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,12,16,0.85); backdrop-filter: blur(20px) saturate(1.5);
+    border-bottom: 1px solid var(--border); padding: 16px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header h1 { font-family: 'Instrument Serif', serif; font-size: 22px; font-weight: 400; letter-spacing: -0.3px; }
+  .header h1 span { color: var(--accent); }
+  .header-meta { display: flex; gap: 16px; align-items: center; }
+  .header-stat {
+    font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text3);
+    padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px;
+  }
+  .header-stat b { color: var(--accent); }
+
+  /* Search */
+  .search-bar {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 14px; font-size: 13px; color: var(--text); width: 280px;
+    font-family: 'DM Mono', monospace; outline: none; transition: border-color 0.2s;
+  }
+  .search-bar:focus { border-color: var(--accent); }
+  .search-bar::placeholder { color: var(--text3); }
+
+  /* Layout */
+  .container { max-width: 1440px; margin: 0 auto; padding: 24px 32px 80px; }
+
+  /* Legend */
+  .legend {
+    display: flex; gap: 12px; flex-wrap: wrap; padding: 16px 0 24px;
+    border-bottom: 1px solid var(--border); margin-bottom: 32px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text2);
+  }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+  /* Diagram Section */
+  .arch-diagram {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 32px; margin-bottom: 32px; position: relative; overflow-x: auto;
+  }
+  .arch-diagram h2 {
+    font-family: 'Instrument Serif', serif; font-size: 28px; font-weight: 400;
+    margin-bottom: 24px; letter-spacing: -0.5px;
+  }
+  .flow-grid {
+    display: grid; grid-template-columns: 200px 40px 220px 40px 260px 40px 220px;
+    gap: 8px; align-items: start; min-width: 900px;
+  }
+  .flow-col { display: flex; flex-direction: column; gap: 6px; }
+  .flow-arrow {
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text3); font-size: 20px; padding-top: 40px;
+  }
+  .flow-label {
+    font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text3);
+    text-transform: uppercase; letter-spacing: 1.5px; padding: 4px 0 8px;
+    border-bottom: 1px solid var(--border); margin-bottom: 8px;
+  }
+  .flow-box {
+    padding: 8px 12px; border-radius: 4px; font-size: 11px;
+    font-family: 'DM Mono', monospace; border: 1px solid;
+  }
+  .flow-box.sf { background: var(--sf-bg); border-color: var(--sf-border); color: var(--sf); }
+  .flow-box.orion { background: var(--orion-bg); border-color: var(--orion-border); color: var(--orion); }
+  .flow-box.internal { background: var(--internal-bg); border-color: var(--internal-border); color: var(--internal); }
+  .flow-box.yahoo { background: var(--yahoo-bg); border-color: var(--yahoo-border); color: var(--yahoo); }
+  .flow-box.ai { background: var(--ai-bg); border-color: var(--ai-border); color: var(--ai); }
+
+  /* Stats bar */
+  .stats-bar {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px; margin-bottom: 32px;
+  }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    padding: 16px; text-align: center;
+  }
+  .stat-card .num {
+    font-family: 'DM Mono', monospace; font-size: 28px; font-weight: 500;
+    color: var(--accent); line-height: 1.1;
+  }
+  .stat-card .label { font-size: 11px; color: var(--text3); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* Page Sections */
+  .page-section {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    margin-bottom: 16px; overflow: hidden; transition: border-color 0.2s;
+  }
+  .page-section:hover { border-color: var(--border2); }
+  .page-section.hidden { display: none; }
+  .page-header {
+    padding: 16px 20px; cursor: pointer; display: flex; align-items: center;
+    justify-content: space-between; user-select: none;
+  }
+  .page-header:hover { background: var(--surface2); }
+  .page-title {
+    font-family: 'Instrument Serif', serif; font-size: 20px; font-weight: 400;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .page-route {
+    font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text3);
+    background: var(--surface2); padding: 2px 8px; border-radius: 3px;
+  }
+  .page-badges { display: flex; gap: 6px; align-items: center; }
+  .field-count {
+    font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text3);
+    background: var(--surface2); padding: 2px 8px; border-radius: 3px;
+  }
+  .chevron {
+    width: 20px; height: 20px; color: var(--text3); transition: transform 0.25s ease;
+  }
+  .page-section.open .chevron { transform: rotate(180deg); }
+
+  .page-body { display: none; padding: 0 20px 20px; }
+  .page-section.open .page-body { display: block; }
+
+  /* Component blocks */
+  .component {
+    border: 1px solid var(--border); border-radius: 6px; margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .component-header {
+    padding: 10px 14px; background: var(--surface2);
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .component-header .api {
+    font-size: 10px; color: var(--accent); background: rgba(56,189,248,0.1);
+    padding: 2px 8px; border-radius: 3px;
+  }
+  .field-grid {
+    display: grid; grid-template-columns: 1fr; gap: 0;
+  }
+  .field-row {
+    display: grid; grid-template-columns: 200px 1fr 100px;
+    padding: 6px 14px; font-size: 12px; border-bottom: 1px solid rgba(37,42,54,0.5);
+    align-items: center;
+  }
+  .field-row:last-child { border-bottom: none; }
+  .field-row:hover { background: rgba(56,189,248,0.03); }
+  .field-name { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text); }
+  .field-desc { color: var(--text2); font-size: 11px; }
+  .source-tag {
+    font-family: 'DM Mono', monospace; font-size: 9px; padding: 1px 6px;
+    border-radius: 2px; text-align: center; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .source-tag.sf { background: var(--sf-bg); color: var(--sf); }
+  .source-tag.orion { background: var(--orion-bg); color: var(--orion); }
+  .source-tag.internal { background: var(--internal-bg); color: var(--internal); }
+  .source-tag.computed { background: var(--computed-bg); color: var(--computed); }
+  .source-tag.yahoo { background: var(--yahoo-bg); color: var(--yahoo); }
+  .source-tag.ai { background: var(--ai-bg); color: var(--ai); }
+  .source-tag.fake { background: var(--fake-bg); color: var(--fake); }
+
+  /* Section dividers */
+  .section-title {
+    font-family: 'Instrument Serif', serif; font-size: 24px; font-weight: 400;
+    padding: 32px 0 12px; border-bottom: 1px solid var(--border);
+    margin-bottom: 16px; letter-spacing: -0.3px;
+  }
+  .section-title span { color: var(--text3); font-family: 'DM Mono', monospace; font-size: 12px; margin-left: 12px; }
+
+  /* Notes */
+  .note {
+    font-size: 11px; color: var(--text3); font-style: italic;
+    padding: 8px 14px; background: var(--surface2); border-radius: 4px;
+    margin-bottom: 12px; font-family: 'DM Mono', monospace;
+    border-left: 3px solid var(--accent);
+  }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .field-row { grid-template-columns: 160px 1fr 80px; }
+    .flow-grid { grid-template-columns: 1fr; }
+    .flow-arrow { transform: rotate(90deg); padding: 8px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>OneDigital</span> Advisor Intelligence Suite &mdash; Data Map</h1>
+  <div class="header-meta">
+    <div class="header-stat"><b>47</b> API functions</div>
+    <div class="header-stat"><b>25/25</b> SF live</div>
+    <div class="header-stat"><b>40+</b> pages</div>
+    <div class="header-stat"><b>500+</b> fields</div>
+    <input type="text" class="search-bar" id="search" placeholder="Search fields, pages, APIs..." oninput="filterSections(this.value)">
+  </div>
+</div>
+
+<div class="container">
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--sf)"></div>Salesforce FSC</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--orion)"></div>Orion (via MuleSoft)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--yahoo)"></div>Yahoo Finance</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--internal)"></div>Internal DB</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--ai)"></div>AI Generated</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--computed)"></div>Computed</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--fake)"></div>Estimated/Fake</div>
+</div>
+
+<!-- Stats -->
+<div class="stats-bar">
+  <div class="stat-card"><div class="num">25</div><div class="label">SF Functions Live</div></div>
+  <div class="stat-card"><div class="num">22</div><div class="label">MuleSoft Endpoints</div></div>
+  <div class="stat-card"><div class="num">80+</div><div class="label">API Routes</div></div>
+  <div class="stat-card"><div class="num">40+</div><div class="label">Pages</div></div>
+  <div class="stat-card"><div class="num">500+</div><div class="label">Data Fields</div></div>
+  <div class="stat-card"><div class="num">100%</div><div class="label">SF Utilization</div></div>
+</div>
+
+<!-- Architecture Diagram -->
+<div class="arch-diagram">
+  <h2>Data Flow Architecture</h2>
+  <div class="flow-grid">
+    <div class="flow-col">
+      <div class="flow-label">External Sources</div>
+      <div class="flow-box sf">Salesforce FSC<br><small>Accounts, Tasks, Events,<br>Cases, Opportunities,<br>Holdings, Goals, Docs</small></div>
+      <div class="flow-box orion">Orion Advisor<br><small>Portfolios, AUM, Assets,<br>Performance, Billing,<br>Compliance, Trading</small></div>
+      <div class="flow-box yahoo">Yahoo Finance<br><small>Live Quotes, Day Change,<br>Volume, News</small></div>
+      <div class="flow-box ai">OpenAI / Cassidy<br><small>Insights, Summaries,<br>Behavioral Analysis,<br>Meeting Prep</small></div>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-col">
+      <div class="flow-label">Integration Layer</div>
+      <div class="flow-box sf">MuleSoft EAPI<br><small>OAuth2 proxy<br>/api/v1/household<br>Batch endpoint</small></div>
+      <div class="flow-box orion">MuleSoft EAPI<br><small>OAuth2 proxy<br>/api/v1/portfolio<br>/api/v1/reporting/scope<br>/api/v1/billing<br>/api/v1/compliance<br>/api/v1/trading</small></div>
+      <div class="flow-box sf">Direct SF SOQL<br><small>25 query functions<br>Fallback when<br>MuleSoft is down</small></div>
+      <div class="flow-box internal">Local PostgreSQL<br><small>Advisors, Clients,<br>Meetings, Tasks,<br>Goals, Alerts</small></div>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-col">
+      <div class="flow-label">API Routes (Next.js)</div>
+      <div class="flow-box sf">/api/clients<br>/api/clients/stats<br>/api/clients/[id]<br>/api/clients/[id]/summary<br>/api/clients/[id]/activity</div>
+      <div class="flow-box orion">/api/clients/[id]/portfolio<br>/api/clients/[id]/members<br>/api/clients/[id]/market-data<br>/api/clients/[id]/balance-sheet<br>/api/clients/[id]/model-drift</div>
+      <div class="flow-box internal">/api/meetings<br>/api/tasks<br>/api/alerts<br>/api/goals<br>/api/insights</div>
+      <div class="flow-box ai">/api/ai/query<br>/api/cassidy/signals<br>/api/engagement/actions<br>/api/calculators/*</div>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-col">
+      <div class="flow-label">Frontend Pages</div>
+      <div class="flow-box sf">Dashboard<br><small>Hero, Cards, Alerts,<br>Opportunities, Schedule</small></div>
+      <div class="flow-box orion">Client Detail<br><small>Overview, Portfolio,<br>20+ tabs</small></div>
+      <div class="flow-box internal">Meetings, Calendar,<br>Workflows, Compliance,<br>Reports, Admin</div>
+      <div class="flow-box ai">Copilot, Insights,<br>Behavioral, Analytics,<br>9 Calculators</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 1: DASHBOARD -->
+<!-- ============================================================ -->
+<div class="section-title">Dashboard & Core Pages <span>4 pages</span></div>
+
+<div class="page-section" data-search="dashboard wallstreet hero book snapshot portfolio monitor alerts opportunities insights goals calculator schedule action queue">
+  <div class="page-header" onclick="toggle(this)">
+    <div class="page-title">Dashboard <span class="page-route">/</span></div>
+    <div class="page-badges">
+      <span class="field-count">~95 fields</span>
+      <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="note">Dashboard uses /api/clients/stats (2min refresh), /api/meetings (5min), /api/alerts (5min), /api/insights/dashboard, /api/engagement/actions, /api/goals/dashboard, /api/calculators/runs, /api/clients?limit=10&sort=aum (2min), /api/data-sources (1min)</div>
+
+    <!-- WallStreet Hero -->
+    <div class="component">
+      <div class="component-header">WallStreetHero.tsx <span class="api">Props from /api/clients/stats</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">greeting</span><span class="field-desc">Time-based: Good morning/afternoon/evening</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">firstName</span><span class="field-desc">Advisor first name</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">lastName</span><span class="field-desc">Advisor last name</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">division</span><span class="field-desc">Advisor division</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">totalAum</span><span class="field-desc">Total assets under management</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">totalClients</span><span class="field-desc">Total client count (SF totalSize)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">activeClients</span><span class="field-desc">Active client count (extrapolated from sample)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">revenueYTD</span><span class="field-desc">Revenue year-to-date (billing or 85bps est.)</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">revenueSource</span><span class="field-desc">"orion-billing" or "estimated"</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">meetingCount</span><span class="field-desc">Today's meetings count</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">taskCount</span><span class="field-desc">Open tasks (SF Task WHERE Status != Completed)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">caseCount</span><span class="field-desc">Open cases count</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">staleOppCount</span><span class="field-desc">Stale opportunities (no activity 14+ days)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">alertCount</span><span class="field-desc">Unread alerts count</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">isLiveData</span><span class="field-desc">Pulsing "LIVE" indicator</span><span class="source-tag computed">Computed</span></div>
+      </div>
+    </div>
+
+    <!-- Book Snapshot -->
+    <div class="component">
+      <div class="component-header">BookSnapshotCards.tsx <span class="api">GET /api/clients/stats</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">totalAum</span><span class="field-desc">Total AUM card with sparkline</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">clientCount</span><span class="field-desc">Total clients card</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">activeClientCount</span><span class="field-desc">Active clients sub-stat</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">netFlowsYTD</span><span class="field-desc">Net flows card (or Open Tasks fallback)</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">netFlowsSource</span><span class="field-desc">"actual", "sampled", or "estimated"</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">openTasks</span><span class="field-desc">Open task count (fallback card)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">openCases</span><span class="field-desc">Open cases count (fallback card)</span><span class="source-tag sf">SF</span></div>
+      </div>
+    </div>
+
+    <!-- Schedule Tab -->
+    <div class="component">
+      <div class="component-header">TodaySchedule.tsx &amp; UpcomingMeetings.tsx <span class="api">GET /api/meetings</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">title / subject</span><span class="field-desc">Meeting/event title</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">startDateTime</span><span class="field-desc">Start date+time</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">endDateTime</span><span class="field-desc">End date+time</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">location</span><span class="field-desc">Event location</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">type</span><span class="field-desc">Event type (Meeting, Call, etc.)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">whoName</span><span class="field-desc">Contact/attendee name</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">whatName</span><span class="field-desc">Related object name</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">isAllDayEvent</span><span class="field-desc">All-day event flag</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">client.totalAum</span><span class="field-desc">Client AUM (in local meetings)</span><span class="source-tag internal">Internal</span></div>
+      </div>
+    </div>
+
+    <!-- Action Queue Tab -->
+    <div class="component">
+      <div class="component-header">ActionQueue.tsx <span class="api">GET /api/tasks</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">title / subject</span><span class="field-desc">Task subject</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">status</span><span class="field-desc">Task status (Open, In Progress)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">priority</span><span class="field-desc">Priority (High, Medium, Low)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">clientName</span><span class="field-desc">Related client name</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">dueDate</span><span class="field-desc">Due date / ActivityDate</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">category</span><span class="field-desc">"salesforce" or task type</span><span class="source-tag computed">Computed</span></div>
+      </div>
+    </div>
+
+    <!-- Portfolio Monitor Tab -->
+    <div class="component">
+      <div class="component-header">LivePortfolioMonitor.tsx <span class="api">GET /api/clients?limit=10&sort=aum</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">name</span><span class="field-desc">Client name (firstName + lastName)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">id</span><span class="field-desc">SF Account ID (truncated)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">totalAum</span><span class="field-desc">Total AUM</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">returnPct</span><span class="field-desc">YTD return percentage</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">riskTolerance</span><span class="field-desc">Risk tolerance level</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">allocation</span><span class="field-desc">EQ/FI/ALT/CA bar</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">status</span><span class="field-desc">On Track / Review / Inactive</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">sparkline</span><span class="field-desc">AUM history mini chart</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">email, phone</span><span class="field-desc">Contact info (expanded row)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">occupation</span><span class="field-desc">Client occupation (expanded)</span><span class="source-tag sf">SF</span></div>
+      </div>
+    </div>
+
+    <!-- Alerts Tab -->
+    <div class="component">
+      <div class="component-header">AlertsPanel.tsx <span class="api">GET /api/alerts + clientStats</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">title</span><span class="field-desc">Alert title</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">message</span><span class="field-desc">Alert message body</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">alertType</span><span class="field-desc">rmd, birthday, transaction, compliance...</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">severity</span><span class="field-desc">critical, warning, info</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">openCasesList[]</span><span class="field-desc">SF cases as compliance alerts</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">staleOppsList[]</span><span class="field-desc">SF stale opps as cadence alerts</span><span class="source-tag sf">SF</span></div>
+      </div>
+    </div>
+
+    <!-- Opportunities Tab -->
+    <div class="component">
+      <div class="component-header">OpenOpportunitiesPipeline.tsx <span class="api">clientStats.openOpportunitiesList</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">name</span><span class="field-desc">Opportunity name</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">stageName</span><span class="field-desc">Sales stage</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">amount</span><span class="field-desc">Deal amount ($)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">probability</span><span class="field-desc">Win probability (%)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">closeDate</span><span class="field-desc">Expected close date</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">type</span><span class="field-desc">Opportunity type</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">accountName</span><span class="field-desc">Related account</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">lastActivityDate</span><span class="field-desc">Last activity date</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">pipelineTotal</span><span class="field-desc">Sum of all amounts</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">pipelineWeighted</span><span class="field-desc">Sum(amount * probability)</span><span class="source-tag computed">Computed</span></div>
+      </div>
+    </div>
+
+    <!-- Other Tabs -->
+    <div class="component">
+      <div class="component-header">Other Dashboard Tabs (Insights, Next Best Actions, Goals, Fin AI, Calculator Runs)</div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">insights.title</span><span class="field-desc">AI-generated insight title</span><span class="source-tag ai">AI</span></div>
+        <div class="field-row"><span class="field-name">insights.severity</span><span class="field-desc">high, medium, low</span><span class="source-tag ai">AI</span></div>
+        <div class="field-row"><span class="field-name">actions.title</span><span class="field-desc">Next best action title</span><span class="source-tag ai">AI</span></div>
+        <div class="field-row"><span class="field-name">actions.actionType</span><span class="field-desc">email, call, meeting</span><span class="source-tag ai">AI</span></div>
+        <div class="field-row"><span class="field-name">goals.totalGoals</span><span class="field-desc">Total goals count</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">goals.fundedRatio</span><span class="field-desc">Aggregate funded ratio</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">calculatorRuns[]</span><span class="field-desc">Recent calculator runs</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">dataSourceStatus</span><span class="field-desc">SF/Orion/MuleSoft connection status</span><span class="source-tag computed">Computed</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 2: CLIENTS LIST -->
+<div class="page-section" data-search="clients list table roster aum tier segment allocation search filter pagination">
+  <div class="page-header" onclick="toggle(this)">
+    <div class="page-title">Clients List <span class="page-route">/clients</span></div>
+    <div class="page-badges">
+      <span class="field-count">~35 fields</span>
+      <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="note">GET /api/clients?page=&limit=50&sort=aum&dir=-1&search=&segment=&status=&entityType= | Expanded rows prefetch /api/clients/[id]/summary, /portfolio, /members</div>
+
+    <div class="component">
+      <div class="component-header">Client Table — 8 Columns <span class="api">GET /api/clients</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">firstName + lastName</span><span class="field-desc">Client name (with initials avatar)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">id</span><span class="field-desc">SF Account ID (truncated 10 chars)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">entityType</span><span class="field-desc">Individual or Business (detected from name/type)</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">totalAum</span><span class="field-desc">Max of SF AUM + Orion AUM (fuzzy matched)</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">segment</span><span class="field-desc">Tier A/B/C badge (FinServ__ClientCategory__c)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">allocation</span><span class="field-desc">EQ/FI/ALT/CA bar (Orion assets by class)</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">status</span><span class="field-desc">On Track / Review / Inactive</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">createdDate</span><span class="field-desc">Account creation date</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">nextReview</span><span class="field-desc">Next review date (red if overdue)</span><span class="source-tag sf">SF</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Expanded Row Preview <span class="api">GET /api/clients/[id]/preview</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">email</span><span class="field-desc">Client email</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">phone</span><span class="field-desc">Client phone</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">memberCount</span><span class="field-desc">Household members count</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">holdingsCount</span><span class="field-desc">Number of positions</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">topHolding</span><span class="field-desc">Largest position ticker + value</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">cashPosition</span><span class="field-desc">Cash value + percentage</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">occupation</span><span class="field-desc">Client occupation</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">riskTolerance</span><span class="field-desc">Risk tolerance level</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">reviewFrequency</span><span class="field-desc">Review frequency</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">serviceModel</span><span class="field-desc">Service model tier</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">AI Snapshot</span><span class="field-desc">Generated summary of allocation, accounts, concentration</span><span class="source-tag ai">AI</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Footer &amp; Metadata</div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">total</span><span class="field-desc">Total clients in filtered result</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">bookAum</span><span class="field-desc">Sum of all visible client AUM</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">estRevenue</span><span class="field-desc">Book AUM * 85bps (footer label)</span><span class="source-tag fake">Estimated</span></div>
+        <div class="field-row"><span class="field-name">syncTime</span><span class="field-desc">"synced Xm ago" (from React Query)</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">_dataSources</span><span class="field-desc">orion: live|error, salesforce: live|error</span><span class="source-tag computed">Computed</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 3: CLIENT DETAIL -->
+<div class="section-title">Client Detail <span>/clients/:id &mdash; 20+ tabs</span></div>
+
+<div class="page-section" data-search="client detail hero header overview net worth contact profile accounts custodian allocation performance benchmark household members events opportunities holdings revenue assets liabilities goals balance sheet">
+  <div class="page-header" onclick="toggle(this)">
+    <div class="page-title">Client Detail &mdash; Hero + Overview <span class="page-route">/clients/:id</span></div>
+    <div class="page-badges">
+      <span class="field-count">~85 fields</span>
+      <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="note">Tiered loading: Tier 1 (/summary, &lt;1s) &rarr; Tier 2 (/portfolio, /members, /market-data, /team, 1-3s) &rarr; Tier 3 (monolithic /clients/[id], deferred)</div>
+
+    <div class="component">
+      <div class="component-header">Hero Header</div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">firstName + lastName</span><span class="field-desc">Client full name (large)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">email</span><span class="field-desc">Email (clickable mailto:)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">city + state</span><span class="field-desc">Location</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">sfHouseholdId</span><span class="field-desc">SF ID (last 6 chars)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">segment</span><span class="field-desc">Tier A/B/C badge</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">status</span><span class="field-desc">Active/Inactive/Prospect badge</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">entityType</span><span class="field-desc">Business Entity badge</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">totalAum</span><span class="field-desc">Total AUM (large number)</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">returnPct</span><span class="field-desc">YTD return % (green/red)</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">healthScore</span><span class="field-desc">Health score 0-100 dial</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">sparklineData</span><span class="field-desc">Mini AUM chart</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">accountCount</span><span class="field-desc">Number of accounts</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">riskTolerance</span><span class="field-desc">Risk tolerance level</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">annualIncome</span><span class="field-desc">Estimated annual income</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">allocationBar</span><span class="field-desc">EQ/FI/ALT/CA visual bar</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">tasks.length</span><span class="field-desc">Open tasks count</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">staleOpps.length</span><span class="field-desc">Stale opportunities count</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">dateOfBirth</span><span class="field-desc">Date of birth</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">householdMembers.length</span><span class="field-desc">Household member count</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">"Salesforce Live"</span><span class="field-desc">Live data badge (pulsing green)</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">"Orion Live"</span><span class="field-desc">Live data badge (pulsing green)</span><span class="source-tag computed">Computed</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Overview Tab &mdash; Left Column <span class="api">Monolithic /api/clients/[id]</span></div>
+      <div class="field-grid">
+        <div class="field-row" style="background:var(--surface2)"><span class="field-name" style="color:var(--accent)">BALANCE SHEET CARD</span><span class="field-desc">GET /api/clients/[id]/balance-sheet</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">netWorth</span><span class="field-desc">Total net worth (Orion or SF fallback)</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">totalAssets</span><span class="field-desc">Total assets by category</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">totalLiabilities</span><span class="field-desc">Total liabilities by category</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">nonFinancialAssets</span><span class="field-desc">Non-financial assets value</span><span class="source-tag sf">SF</span></div>
+
+        <div class="field-row" style="background:var(--surface2)"><span class="field-name" style="color:var(--accent)">CONTACT CARD</span><span class="field-desc">SF SourcePill</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">email</span><span class="field-desc">PersonEmail</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">phone</span><span class="field-desc">Phone number</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">address/city/state/zip</span><span class="field-desc">PersonMailing* fields</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">dateOfBirth</span><span class="field-desc">PersonBirthdate</span><span class="source-tag sf">SF</span></div>
+
+        <div class="field-row" style="background:var(--surface2)"><span class="field-name" style="color:var(--accent)">CLIENT PROFILE CARD</span><span class="field-desc">SF SourcePill</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">riskTolerance</span><span class="field-desc">InvestmentObjectives</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">reviewFrequency</span><span class="field-desc">FinServ__ReviewFrequency__c</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">lastReview</span><span class="field-desc">FinServ__LastReview__c</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">nextReview</span><span class="field-desc">FinServ__NextReview__c</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">serviceModel</span><span class="field-desc">FinServ__ServiceModel__c</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">createdDate</span><span class="field-desc">Client since date</span><span class="source-tag sf">SF</span></div>
+
+        <div class="field-row" style="background:var(--surface2)"><span class="field-name" style="color:var(--accent)">ACCOUNTS LIST</span><span class="field-desc">Orion SourcePill</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">account.name</span><span class="field-desc">Account name</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">account.accountType</span><span class="field-desc">IRA, Brokerage, 401k, etc.</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">account.balance</span><span class="field-desc">Account balance ($)</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">account.custodian</span><span class="field-desc">Custodian name</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">account.managementStyle</span><span class="field-desc">Management style</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">account.registrationType</span><span class="field-desc">Registration/tax status badge</span><span class="source-tag orion">Orion</span></div>
+
+        <div class="field-row" style="background:var(--surface2)"><span class="field-name" style="color:var(--accent)">BREAKDOWN GRIDS</span><span class="field-desc">By Custodian / Account Type / Managed vs Held-Away</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">custodian.name/value</span><span class="field-desc">Custodian breakdown</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">type.name/count/value</span><span class="field-desc">Account type distribution</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">managed/heldAway</span><span class="field-desc">Managed vs Held-Away counts+values</span><span class="source-tag orion">Orion</span></div>
+
+        <div class="field-row" style="background:var(--surface2)"><span class="field-name" style="color:var(--accent)">PERFORMANCE vs BENCHMARK</span><span class="field-desc">Horizontal bar chart</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">portfolio%</span><span class="field-desc">Portfolio return per period</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">benchmark%</span><span class="field-desc">Benchmark return per period</span><span class="source-tag orion">Orion</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Overview Tab &mdash; Right Column (Sidebar)</div>
+      <div class="field-grid">
+        <div class="field-row" style="background:var(--surface2)"><span class="field-name" style="color:var(--accent)">HOUSEHOLD MEMBERS</span><span class="field-desc">GET /api/clients/[id]/members</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">member.firstName/lastName</span><span class="field-desc">Member name (linked)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">member.relationship</span><span class="field-desc">Spouse, Child, etc.</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">member.email/phone</span><span class="field-desc">Contact info</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">member.birthdate</span><span class="field-desc">Date of birth</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">member.occupation</span><span class="field-desc">Occupation + employer</span><span class="source-tag sf">SF</span></div>
+
+        <div class="field-row" style="background:var(--surface2)"><span class="field-name" style="color:var(--accent)">UPCOMING EVENTS</span><span class="field-desc">From monolithic endpoint</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">event.subject</span><span class="field-desc">Event subject</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">event.start/endDateTime</span><span class="field-desc">Date/time range</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">event.location/type</span><span class="field-desc">Location and type badge</span><span class="source-tag sf">SF</span></div>
+
+        <div class="field-row" style="background:var(--surface2)"><span class="field-name" style="color:var(--accent)">STALE OPPORTUNITIES</span><span class="field-desc">From monolithic endpoint</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">opp.name/stage/amount</span><span class="field-desc">Opportunity details</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">opp.lastActivityDate</span><span class="field-desc">Last activity date</span><span class="source-tag sf">SF</span></div>
+
+        <div class="field-row" style="background:var(--surface2)"><span class="field-name" style="color:var(--accent)">SF TOP HOLDINGS</span><span class="field-desc">householdDetails.topHoldings</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">holding.name/ticker</span><span class="field-desc">Security name + ticker</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">holding.marketValue</span><span class="field-desc">Market value</span><span class="source-tag sf">SF</span></div>
+
+        <div class="field-row" style="background:var(--surface2)"><span class="field-name" style="color:var(--accent)">REVENUE / A&L / GOALS</span><span class="field-desc">householdDetails.*</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">revenue.name/amount/type</span><span class="field-desc">Revenue records</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">al.name/amount/type</span><span class="field-desc">Assets &amp; Liabilities</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">goal.name/target/actual</span><span class="field-desc">Financial goals + progress</span><span class="source-tag sf">SF</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Portfolio Tab -->
+<div class="page-section" data-search="portfolio holdings allocation performance risk sharpe alpha cost basis sector ticker price yahoo shares model drift stress test transactions alternative assets cash flow">
+  <div class="page-header" onclick="toggle(this)">
+    <div class="page-title">Client Detail &mdash; Portfolio Tab <span class="page-route">/clients/:id#portfolio</span></div>
+    <div class="page-badges">
+      <span class="field-count">~60 fields</span>
+      <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="note">GET /api/clients/[id]/portfolio → accounts, holdings, allocation, performance, contributions, costBasis | Also: /model-drift, /stress-test, /transactions (on demand), /market-data (60s auto-refresh)</div>
+
+    <div class="component">
+      <div class="component-header">Holdings Table &mdash; 10 Columns <span class="api">GET /api/clients/[id]/portfolio + /market-data</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">ticker</span><span class="field-desc">Security ticker + Managed/Cash badges</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">fundFamily</span><span class="field-desc">Fund family (sub-text under ticker)</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">name</span><span class="field-desc">Security name</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">sector</span><span class="field-desc">Sector (sub-text under name)</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">productType</span><span class="field-desc">ETF/Mutual Fund/Stock badge</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">riskCategory</span><span class="field-desc">Risk category badge</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">accountName</span><span class="field-desc">Account name (mapped from accountId)</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">shares</span><span class="field-desc">Current shares held</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">currentPrice</span><span class="field-desc">Orion price (column: "Orion")</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">quote.price</span><span class="field-desc">Yahoo Finance live price (column: "Yahoo")</span><span class="source-tag yahoo">Yahoo</span></div>
+        <div class="field-row"><span class="field-name">quote.change</span><span class="field-desc">Day change $ (green/red)</span><span class="source-tag yahoo">Yahoo</span></div>
+        <div class="field-row"><span class="field-name">quote.changePercent</span><span class="field-desc">Day change % (green/red)</span><span class="source-tag yahoo">Yahoo</span></div>
+        <div class="field-row"><span class="field-name">liveValue</span><span class="field-desc">Yahoo price * shares (or Orion fallback)</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">costBasis</span><span class="field-desc">Cost basis per position</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">unrealizedGainLoss</span><span class="field-desc">Unrealized G/L (sub-line)</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">weight</span><span class="field-desc">Weight % of portfolio</span><span class="source-tag computed">Computed</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Performance &amp; Risk Metrics</div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">returnPct</span><span class="field-desc">Net return %</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">benchmarkPct</span><span class="field-desc">Benchmark return %</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">alpha</span><span class="field-desc">returnPct - benchmarkPct</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">sharpeRatio</span><span class="field-desc">Risk-adjusted return</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">maxDrawdown</span><span class="field-desc">Maximum drawdown %</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">contributions</span><span class="field-desc">Contributions YTD</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">withdrawals</span><span class="field-desc">Withdrawals YTD</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">netFlow</span><span class="field-desc">Net flow (contributions - withdrawals)</span><span class="source-tag computed">Computed</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Model Drift Card <span class="api">GET /api/clients/[id]/model-drift</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">modelName</span><span class="field-desc">Target model name</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">allocations[].targetPct</span><span class="field-desc">Target allocation %</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">allocations[].currentPct</span><span class="field-desc">Actual allocation %</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">allocations[].driftPct</span><span class="field-desc">Drift from target</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">inTolerance</span><span class="field-desc">Overall in-tolerance flag</span><span class="source-tag orion">Orion</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Stress Test Card <span class="api">GET /api/clients/[id]/stress-test</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">scenario.scenarioName</span><span class="field-desc">Bear Market, Rate Shock, etc.</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">scenario.portfolioImpact%</span><span class="field-desc">Expected impact on portfolio</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">riskProfile.riskScore</span><span class="field-desc">0-100 risk score</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">riskProfile.volatility</span><span class="field-desc">Annual volatility %</span><span class="source-tag orion">Orion</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Transactions (on demand) <span class="api">GET /api/clients/[id]/transactions</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">date</span><span class="field-desc">Transaction date</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">type</span><span class="field-desc">BUY, SELL, DIVIDEND, TRANSFER, FEE</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">ticker</span><span class="field-desc">Security ticker</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">shares</span><span class="field-desc">Quantity executed</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">price</span><span class="field-desc">Execution price</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">amount</span><span class="field-desc">Net amount (green=in, red=out)</span><span class="source-tag orion">Orion</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Other Client Tabs -->
+<div class="page-section" data-search="goals meetings documents insurance estate philanthropy tax direct indexing retirement withdrawal behavioral insights social diagnostics beneficiary onboarding planning succession">
+  <div class="page-header" onclick="toggle(this)">
+    <div class="page-title">Client Detail &mdash; All Other Tabs <span class="page-route">20+ tabs</span></div>
+    <div class="page-badges">
+      <span class="field-count">~300 fields</span>
+      <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="component">
+      <div class="component-header">Goals Tab <span class="api">/api/clients/[id]/goals + /bucket-analysis</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">name, targetAmount, currentAmount</span><span class="field-desc">Goal name + amounts</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">timeHorizon, priority</span><span class="field-desc">Time horizon + priority</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">bucketAssignment (1/2/3)</span><span class="field-desc">Bucket strategy allocation</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">fundedRatio</span><span class="field-desc">Aggregate funded ratio %</span><span class="source-tag computed">Computed</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Meetings Tab <span class="api">/api/meetings + /api/meetings/[id]/prep,summarize,tasks</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">title, startTime, endTime</span><span class="field-desc">Meeting schedule</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">prepBrief</span><span class="field-desc">AI-generated meeting prep</span><span class="source-tag ai">AI</span></div>
+        <div class="field-row"><span class="field-name">transcript, summary</span><span class="field-desc">Transcript + AI summary</span><span class="source-tag ai">AI</span></div>
+        <div class="field-row"><span class="field-name">sfSyncStatus</span><span class="field-desc">SF InteractionSummary sync status</span><span class="source-tag sf">SF</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Documents Tab <span class="api">/api/clients/[id]/documents + parse-document</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">name, type, status</span><span class="field-desc">Document metadata</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">sfDocuments</span><span class="field-desc">SF ContentDocumentLink records</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">parsedFields</span><span class="field-desc">AI-extracted fields from uploaded docs</span><span class="source-tag ai">AI</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Insurance Tab <span class="api">/api/clients/[id]/insurance-diagnostic</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">coverageDomains</span><span class="field-desc">Homeowners, Auto, Umbrella, Valuable Articles</span><span class="source-tag ai">AI</span></div>
+        <div class="field-row"><span class="field-name">domainScores (0-10)</span><span class="field-desc">Scores per coverage domain</span><span class="source-tag ai">AI</span></div>
+        <div class="field-row"><span class="field-name">riskFlags</span><span class="field-desc">Critical/High/Medium/Low risk flags</span><span class="source-tag ai">AI</span></div>
+        <div class="field-row"><span class="field-name">recommendations</span><span class="field-desc">Prioritized recommendations</span><span class="source-tag ai">AI</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Estate Planning Tab <span class="api">/api/clients/[id]/estate-planning</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">trusts[].name/type/value</span><span class="field-desc">GRAT, SLAT, ILIT, CRT, etc.</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">gifts[].amount/date</span><span class="field-desc">Gift tracking</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">exemptionRemaining</span><span class="field-desc">Lifetime exemption remaining</span><span class="source-tag computed">Computed</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Philanthropy Tab <span class="api">/api/clients/[id]/philanthropy + crt-projections</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">accounts[].type/balance</span><span class="field-desc">DAF, CRT, Foundation, etc.</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">givingGoals[].target</span><span class="field-desc">Annual giving targets</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">crtProjections</span><span class="field-desc">CRT payout + remainder projections</span><span class="source-tag computed">Computed</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Direct Indexing Tab <span class="api">/api/clients/[id]/tax-lots, harvestable-lots, wash-sale-*</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">taxLots[].costBasis/gain</span><span class="field-desc">Tax lot detail (Orion fallback to internal)</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">harvestable[].loss/savings</span><span class="field-desc">Harvestable loss opportunities</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">washSales[].status</span><span class="field-desc">Wash sale tracking</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">taxAlpha</span><span class="field-desc">Tax alpha generation estimate</span><span class="source-tag computed">Computed</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Retirement Tab <span class="api">/api/clients/[id]/scenarios + /scenarios/[id]/run</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">scenario.successRate</span><span class="field-desc">Monte Carlo success %</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">percentilePaths</span><span class="field-desc">p10, p25, p50, p75, p90</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">ssAnalysis, pension</span><span class="field-desc">Social Security + pension analysis</span><span class="source-tag computed">Computed</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Behavioral Tab <span class="api">/api/clients/[id]/behavioral</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">sentiment</span><span class="field-desc">calm/anxious/frustrated/panicked/euphoric</span><span class="source-tag ai">AI</span></div>
+        <div class="field-row"><span class="field-name">behavioralRiskScore</span><span class="field-desc">0-100 behavioral risk score</span><span class="source-tag ai">AI</span></div>
+        <div class="field-row"><span class="field-name">biases, deEscalation</span><span class="field-desc">Detected biases + de-escalation scripts</span><span class="source-tag ai">AI</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Beneficiary Audit Tab <span class="api">/api/clients/[id]/beneficiary-audit</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">account/beneficiary/pct</span><span class="field-desc">Account + beneficiary designations</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">sfDesignations</span><span class="field-desc">SF FinancialAccountParty records</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">orionGroupInfo</span><span class="field-desc">Orion account group metadata</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">auditFlags</span><span class="field-desc">Mismatch/missing/outdated flags</span><span class="source-tag computed">Computed</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Compliance Reviews <span class="api">/api/clients/[id]/compliance-reviews</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">reviews[].title/status</span><span class="field-desc">Local compliance review records</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">sfComplianceTasks</span><span class="field-desc">SF compliance-related tasks</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">sfComplianceCases</span><span class="field-desc">SF compliance cases</span><span class="source-tag sf">SF</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Withdrawal Tab <span class="api">/api/withdrawals?clientId=</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">amount, method, reason</span><span class="field-desc">Withdrawal request details</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">status pipeline</span><span class="field-desc">pending &rarr; nwr &rarr; sf_case &rarr; eclipse &rarr; completed</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">salesforceCaseId</span><span class="field-desc">Linked SF Case ID</span><span class="source-tag sf">SF</span></div>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-header">Other Tabs: Social Intel, Diagnostics, Onboarding, Planning Intelligence, Business Succession, Profile Updates, Pre-Case Validator</div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">socialProfiles/events</span><span class="field-desc">LinkedIn monitoring + life events</span><span class="source-tag ai">AI</span></div>
+        <div class="field-row"><span class="field-name">diagnosticScores (0-100)</span><span class="field-desc">Financial assessment domains</span><span class="source-tag ai">AI</span></div>
+        <div class="field-row"><span class="field-name">onboardingProgress</span><span class="field-desc">100-day onboarding pipeline</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">planningIntelligence</span><span class="field-desc">Cross-module insights + SF goals</span><span class="source-tag ai">AI</span></div>
+        <div class="field-row"><span class="field-name">valuations/flp/buySell</span><span class="field-desc">Business succession planning</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">profileUpdates</span><span class="field-desc">AI-detected profile changes</span><span class="source-tag ai">AI</span></div>
+        <div class="field-row"><span class="field-name">validationResults</span><span class="field-desc">Pre-case compliance validation</span><span class="source-tag internal">Internal</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STANDALONE PAGES -->
+<!-- ============================================================ -->
+<div class="section-title">Standalone Pages <span>20+ pages</span></div>
+
+<div class="page-section" data-search="analytics engagement compliance calendar meetings workflows reports copilot research withdrawals onboarding profiles custodial discovery fact-finders intake monte carlo admin settings">
+  <div class="page-header" onclick="toggle(this)">
+    <div class="page-title">Analytics, Engagement, Compliance, Calendar <span class="page-route">/analytics /engagement /compliance /calendar</span></div>
+    <div class="page-badges">
+      <span class="field-count">~50 fields</span>
+      <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="component">
+      <div class="component-header">Analytics <span class="api">/api/analytics + /api/engagement/dashboard</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">totalAum, totalClients</span><span class="field-desc">Aggregate book stats</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">atRiskClients[]</span><span class="field-desc">Clients with low contact</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">segmentAnalytics</span><span class="field-desc">AUM + count by segment (A/B/C/D)</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">complianceOverview</span><span class="field-desc">current/expiring/overdue/pending</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">capacityMetrics</span><span class="field-desc">currentClients, maxCapacity, utilization%</span><span class="source-tag internal">Internal</span></div>
+      </div>
+    </div>
+    <div class="component">
+      <div class="component-header">Engagement <span class="api">/api/engagement/dashboard + /actions + /events</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">scores[].compositeScore</span><span class="field-desc">Engagement score 0-100 per client</span><span class="source-tag ai">AI</span></div>
+        <div class="field-row"><span class="field-name">signals[].strength</span><span class="field-desc">Intent signals (high/medium/low)</span><span class="source-tag ai">AI</span></div>
+        <div class="field-row"><span class="field-name">actions[].title/priority</span><span class="field-desc">Next best actions</span><span class="source-tag ai">AI</span></div>
+        <div class="field-row"><span class="field-name">activityTimeline</span><span class="field-desc">Activity timeline events</span><span class="source-tag internal">Internal</span></div>
+      </div>
+    </div>
+    <div class="component">
+      <div class="component-header">Compliance <span class="api">/api/compliance + /kyc/dashboard + /fiduciary/stats</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">healthScore</span><span class="field-desc">Compliance health 0-100</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">kycSummary</span><span class="field-desc">KYC compliance rates</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">fiduciaryStats</span><span class="field-desc">Fiduciary validation stats</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">orionCompliance</span><span class="field-desc">Risk tiles + account alerts</span><span class="source-tag orion">Orion</span></div>
+      </div>
+    </div>
+    <div class="component">
+      <div class="component-header">Calendar <span class="api">/api/calendar + /tasks/overdue + /tasks/upcoming</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">meetings[].title/time</span><span class="field-desc">Meetings by day/week/month</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">sfEvents</span><span class="field-desc">SF Events merged into calendar</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">tasks[].title/dueDate</span><span class="field-desc">Task deadlines on calendar</span><span class="source-tag internal">Internal</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-section" data-search="meetings workflows reports copilot research withdrawals custodial">
+  <div class="page-header" onclick="toggle(this)">
+    <div class="page-title">Meetings, Workflows, Reports, Copilot, Research, Withdrawals <span class="page-route">6 pages</span></div>
+    <div class="page-badges">
+      <span class="field-count">~60 fields</span>
+      <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="component">
+      <div class="component-header">Meetings <span class="api">/api/meetings + SF Event sync</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">title, start/endTime</span><span class="field-desc">Meeting details</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">client, tasks, notes</span><span class="field-desc">Linked client + generated tasks</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">sfEventId</span><span class="field-desc">SF Event sync (createEvent)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">prepBrief, summary</span><span class="field-desc">AI prep + summarization</span><span class="source-tag ai">AI</span></div>
+      </div>
+    </div>
+    <div class="component">
+      <div class="component-header">Workflows <span class="api">Workflow template CRUD</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">template.name/steps</span><span class="field-desc">Workflow template + step config</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">step.taskConfig</span><span class="field-desc">Auto task creation per step</span><span class="source-tag internal">Internal</span></div>
+      </div>
+    </div>
+    <div class="component">
+      <div class="component-header">Reports <span class="api">/api/reports</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">reportName, clientId, version</span><span class="field-desc">Report metadata</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">status (draft/final/archived)</span><span class="field-desc">Report lifecycle</span><span class="source-tag internal">Internal</span></div>
+      </div>
+    </div>
+    <div class="component">
+      <div class="component-header">Copilot <span class="api">/api/conversations + /api/sop/query</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">turns[].content</span><span class="field-desc">Conversation messages</span><span class="source-tag ai">AI</span></div>
+        <div class="field-row"><span class="field-name">modes</span><span class="field-desc">conversation, email, cheat_sheet, pdf, brand</span><span class="source-tag ai">AI</span></div>
+      </div>
+    </div>
+    <div class="component">
+      <div class="component-header">Research <span class="api">Research feeds + articles + briefs</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">article.title/source/topics</span><span class="field-desc">Research articles</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">brief.executiveSummary</span><span class="field-desc">AI research brief</span><span class="source-tag ai">AI</span></div>
+      </div>
+    </div>
+    <div class="component">
+      <div class="component-header">Withdrawals <span class="api">/api/withdrawals + SF Case sync</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">amount, method, reason</span><span class="field-desc">Withdrawal request</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">status pipeline</span><span class="field-desc">7-step status flow</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">salesforceCaseId</span><span class="field-desc">SF Case creation (createCase)</span><span class="source-tag sf">SF</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Calculators -->
+<div class="section-title">Calculators <span>9 calculator pages</span></div>
+
+<div class="page-section" data-search="rmd roth conversion asset location tax bracket qsbs concentrated stock ltc life insurance budget calculator monte carlo">
+  <div class="page-header" onclick="toggle(this)">
+    <div class="page-title">All Calculators <span class="page-route">/calculators/* + /tax-strategy/* + /monte-carlo</span></div>
+    <div class="page-badges">
+      <span class="field-count">~120 fields</span>
+      <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="note">All calculators use internal computation engines. Client data can be pre-populated from Orion (e.g., RMD imports account balance). Results are saved as calculator runs.</div>
+
+    <div class="component">
+      <div class="component-header">RMD Calculator <span class="api">POST /api/calculators/rmd + /rmd/aggregated + /rmd/compare-strategies</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">accountHolderDOB</span><span class="field-desc">Date of birth</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">accountBalance</span><span class="field-desc">Prior year-end balance (Orion import available)</span><span class="source-tag orion">Orion</span></div>
+        <div class="field-row"><span class="field-name">projectionYears</span><span class="field-desc">Years to project</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">qcdAmount</span><span class="field-desc">Qualified charitable distribution</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">results</span><span class="field-desc">RMD schedule + tax impact</span><span class="source-tag computed">Computed</span></div>
+      </div>
+    </div>
+    <div class="component">
+      <div class="component-header">Roth Conversion <span class="api">POST /api/calculators/roth-conversion + /roth/multi-year</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">traditionalIRABalance</span><span class="field-desc">Traditional IRA balance</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">conversionAmount</span><span class="field-desc">Amount to convert</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">taxBracketAnalysis</span><span class="field-desc">Bracket impact visualization</span><span class="source-tag computed">Computed</span></div>
+      </div>
+    </div>
+    <div class="component">
+      <div class="component-header">Asset Location <span class="api">POST /api/calculators/asset-location</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">holdings[].ticker/value</span><span class="field-desc">Current holdings</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">accountCapacities</span><span class="field-desc">Taxable/Traditional/Roth capacity</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">optimalPlacement</span><span class="field-desc">Suggested placement per holding</span><span class="source-tag computed">Computed</span></div>
+      </div>
+    </div>
+    <div class="component">
+      <div class="component-header">Tax Bracket, QSBS, Concentrated Stock, LTC, Life Insurance Gap, Budget</div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">taxBracket: income, filing</span><span class="field-desc">Tax bracket projection inputs</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">qsbs: holdings[].qualified</span><span class="field-desc">QSBS qualification tracking</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">concentrated: shares, price</span><span class="field-desc">Concentrated stock diversification</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">ltc: age, health, coverage</span><span class="field-desc">Long-term care planning</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">lifeIns: income, dependents</span><span class="field-desc">Life insurance gap analysis</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">budget: expenses, income</span><span class="field-desc">Pre/post-retirement budgeting</span><span class="source-tag internal">Internal</span></div>
+      </div>
+    </div>
+    <div class="component">
+      <div class="component-header">Monte Carlo <span class="api">POST /api/calculators/monte-carlo</span></div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">initialPortfolio</span><span class="field-desc">Starting portfolio value</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">allocationWeights</span><span class="field-desc">10 asset class weights</span><span class="source-tag internal">Internal</span></div>
+        <div class="field-row"><span class="field-name">successRate</span><span class="field-desc">Monte Carlo success probability</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">yearlyBands</span><span class="field-desc">p10-p90 wealth bands by year</span><span class="source-tag computed">Computed</span></div>
+        <div class="field-row"><span class="field-name">cashflows[].amount</span><span class="field-desc">Custom cash flow events</span><span class="source-tag internal">Internal</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SF Functions -->
+<div class="section-title">Salesforce Functions &mdash; 25/25 Live <span>100% utilization</span></div>
+
+<div class="page-section open" data-search="salesforce sf queries functions utilization getHouseholds getPersonAccounts getFinancialAccounts getBeneficiary createTask createEvent createCase createOpportunity">
+  <div class="page-header" onclick="toggle(this)">
+    <div class="page-title">SF Query Library <span class="page-route">server/integrations/salesforce/queries.ts</span></div>
+    <div class="page-badges">
+      <span class="field-count">25 functions</span>
+      <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="component">
+      <div class="component-header">SOQL Queries (20 read functions)</div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">getHouseholdsByAdvisor</span><span class="field-desc">/api/clients/stats (SF fallback)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">getPersonAccountsByHousehold</span><span class="field-desc">/api/clients/[id]/members (SF fallback)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">getFinancialAccountsByHousehold</span><span class="field-desc">/api/clients/[id]/portfolio (SF fallback)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">getTopHoldingsByHousehold</span><span class="field-desc">/api/clients/[id]/portfolio (SF fallback)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">getRevenueYTDByHousehold</span><span class="field-desc">/api/clients/[id]/billing (SF fallback)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">getAssetsAndLiabilities</span><span class="field-desc">/api/clients/[id]/balance-sheet (SF fallback)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">getFinancialGoals</span><span class="field-desc">data-service.ts &rarr; getGoals()</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">getBeneficiaryDesignations</span><span class="field-desc">/api/clients/[id]/beneficiary-audit</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">getOpenTasksByAdvisor</span><span class="field-desc">data-service.ts &rarr; getTasks()</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">getComplianceTasksByHousehold</span><span class="field-desc">/api/clients/[id]/compliance-reviews</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">getTasksByHousehold</span><span class="field-desc">/api/clients/[id]/activity (SF fallback)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">getUpcomingEvents</span><span class="field-desc">data-service.ts &rarr; getSchedule()</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">getEventsByHousehold</span><span class="field-desc">/api/clients/[id]/activity (SF fallback)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">getOpenCasesByAdvisor</span><span class="field-desc">/api/clients/stats (SF fallback)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">getComplianceCasesByHousehold</span><span class="field-desc">/api/clients/[id]/compliance-reviews</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">getStaleOpportunities</span><span class="field-desc">/api/clients/stats (SF fallback)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">getOpenOpportunities</span><span class="field-desc">/api/clients/stats (pipeline)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">getActivityHistory</span><span class="field-desc">/api/clients/[id]/activity (SF fallback)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">getDocumentsByHousehold</span><span class="field-desc">data-service.ts &rarr; getDocuments()</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">getAdvisorProfile</span><span class="field-desc">data-service.ts &rarr; getAdvisorProfile()</span><span class="source-tag sf">SF</span></div>
+      </div>
+    </div>
+    <div class="component">
+      <div class="component-header">DML Operations (5 write functions)</div>
+      <div class="field-grid">
+        <div class="field-row"><span class="field-name">createTask</span><span class="field-desc">/api/tasks POST (fire-and-forget sync)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">createEvent</span><span class="field-desc">/api/meetings POST (fire-and-forget sync)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">createCase</span><span class="field-desc">/api/cases POST (new endpoint)</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">createOpportunity</span><span class="field-desc">/api/opportunities POST</span><span class="source-tag sf">SF</span></div>
+        <div class="field-row"><span class="field-name">createInteractionSummary</span><span class="field-desc">/api/meetings/[id]/summarize POST</span><span class="source-tag sf">SF</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<script>
+function toggle(el) {
+  el.closest('.page-section').classList.toggle('open');
+}
+
+function filterSections(query) {
+  if (!query) {
+    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('hidden'));
+    return;
+  }
+  const q = query.toLowerCase();
+  document.querySelectorAll('.page-section').forEach(s => {
+    const searchText = (s.dataset.search || '') + ' ' + s.textContent.toLowerCase();
+    s.classList.toggle('hidden', !searchText.includes(q));
+  });
+}
+
+// Open first section by default
+document.querySelector('.page-section')?.classList.add('open');
+</script>
+</body>
+</html>

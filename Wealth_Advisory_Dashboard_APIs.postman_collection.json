@@ -1,0 +1,101 @@
+{
+  "info": {
+    "_postman_id": "5ad1095a-3267-4c57-8989-c36383e7e00e",
+    "name": "Wealth Advisory Dashboard APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "2388518"
+  },
+  "item": [
+    {
+      "name": "OAuth Service",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "type": "text",
+              "key": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "type": "text",
+              "key": "client_id",
+              "value": "{{MULESOFT_CLIENT_ID}}"
+            },
+            {
+              "type": "text",
+              "key": "client_secret",
+              "value": "{{MULESOFT_CLIENT_SECRET}}"
+            },
+            {
+              "type": "text",
+              "key": "scope",
+              "value": "https://graph.microsoft.com/.default"
+            }
+          ]
+        },
+        "url": {
+          "raw": "https://od-auth-service-uat-dgm3vs.63g8ag.usa-e1.cloudhub.io/v1.0/oauth2/token",
+          "protocol": "https",
+          "host": [
+            "od-auth-service-uat-dgm3vs",
+            "63g8ag",
+            "usa-e1",
+            "cloudhub",
+            "io"
+          ],
+          "path": [
+            "v1.0",
+            "oauth2",
+            "token"
+          ]
+        },
+        "description": "OAuth2 client_credentials flow for MuleSoft WAD EAPI. Set MULESOFT_CLIENT_ID and MULESOFT_CLIENT_SECRET in Postman environment variables."
+      },
+      "response": []
+    },
+    {
+      "name": "Client Portfolio Value",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{BEARER_TOKEN}}"
+          }
+        ],
+        "url": {
+          "raw": "https://od-wad-eapi-dev-t0nidn.63g8ag.usa-e1.cloudhub.io/api/v1/portfolio/clients/value",
+          "protocol": "https",
+          "host": [
+            "od-wad-eapi-dev-t0nidn",
+            "63g8ag",
+            "usa-e1",
+            "cloudhub",
+            "io"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "portfolio",
+            "clients",
+            "value"
+          ]
+        },
+        "description": "Fetch all client household values with AUM. Requires Bearer token from OAuth Service request."
+      },
+      "response": []
+    }
+  ]
+}

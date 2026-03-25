@@ -1,0 +1,1388 @@
+// =============================================================================
+// API RESPONSE CONTRACTS + TRANSFORM LAYER
+// Wealth Advisory Dashboard — Front-End Receiving Interfaces
+// =============================================================================
+//
+// THIS FILE FILLS THE GAP:
+//   Orion/Salesforce → MuleSoft → [THIS FILE: what arrives] → transform → UI interface
+//
+// STRUCTURE:
+//   1. Raw API response interfaces (what MuleSoft sends to your front end)
+//   2. Transform functions (converts API responses → your existing UI interfaces)
+//   3. Updated data-service.ts pattern (swap mock → real with one-line changes)
+//
+// NAMING CONVENTION:
+//   API response types:  Api{Resource}Response  (what comes IN from the wire)
+//   UI types:            {Resource}             (what your components already consume)
+//   Transformers:        transform{Resource}    (maps API → UI)
+//
+// =============================================================================
+
+
+// =============================================================================
+// SECTION 1: COMMON API ENVELOPE
+// =============================================================================
+// MuleSoft experience APIs typically wrap responses in a standard envelope.
+// This is the outer shape every response comes in.
+// =============================================================================
+
+export interface ApiEnvelope<T> {
+  data: T;
+  meta: {
+    source: "orion" | "salesforce" | "mixed" | "ai-platform";
+    timestamp: string;       // ISO datetime of when the API assembled this
+    cached: boolean;         // whether this came from MuleSoft's cache layer
+    cacheAge?: number;       // seconds since cached, if cached=true
+  };
+  pagination?: {
+    page: number;
+    pageSize: number;
+    totalRecords: number;
+    totalPages: number;
+    hasNext: boolean;
+  };
+  errors?: {
+    code: string;
+    message: string;
+    field?: string;
+  }[];
+}
+
+
+// =============================================================================
+// SECTION 2: ORION API RESPONSE INTERFACES
+// =============================================================================
+// These mirror what Orion actually returns through MuleSoft.
+// Field names match Orion's API documentation / Swagger spec.
+// =============================================================================
+
+
+// ─── 2A. HOUSEHOLD (Orion: GET /v1/Portfolio/Clients/Value) ─────────────────
+
+export interface ApiOrionHousehold {
+  id: number;                        // Orion Household ID
+  name: string;                      // "Chen Household"
+  firstName: string;                 // Head of household first name
+  lastName: string;                  // Head of household last name
+  representativeId: number;          // Assigned advisor Orion ID
+  isActive: boolean;
+  address1: string | null;
+  address2: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
+  country: string | null;
+  email: string | null;
+  homePhone: string | null;
+  fax: string | null;
+  createdDate: string;               // ISO datetime
+  editedDate: string;                // ISO datetime
+  // Fields from /Value variant:
+  currentValue?: number;             // Total AUM as of today
+  asOfDate?: string;                 // Date of the AUM snapshot
+}
+
+export type ApiOrionHouseholdListResponse = ApiEnvelope<ApiOrionHousehold[]>;
+export type ApiOrionHouseholdDetailResponse = ApiEnvelope<ApiOrionHousehold>;
+
+
+// ─── 2B. HOUSEHOLD VERBOSE (Orion: GET /v1/Portfolio/Clients/Verbose/{id}) ──
+
+export interface ApiOrionHouseholdVerbose extends ApiOrionHousehold {
+  portfolio: {
+    firstName: string;
+    lastName: string;
+    name: string;
+    representativeId: number;
+    isActive: boolean;
+    startDate: string;
+    address1: string | null;
+    city: string | null;
+    state: string | null;
+    zip: string | null;
+    email: string | null;
+    homePhone: string | null;
+    categoryId: number | null;       // Client category in Orion
+  };
+  billing: {
+    feeScheduleId: number | null;
+    billingStyle: string | null;
+    paymentSource: string | null;
+  } | null;
+  recurringAdjustments: unknown[];
+}
+
+export type ApiOrionHouseholdVerboseResponse = ApiEnvelope<ApiOrionHouseholdVerbose>;
+
+
+// ─── 2C. PORTFOLIO TREE (Orion: GET /v1/Portfolio/Clients/{id}/PortfolioTree) ─
+
+export interface ApiOrionPortfolioTreeNode {
+  entityType: "Household" | "Registration" | "Account";
+  id: number;
+  name: string;
+  value: number | null;
+  children: ApiOrionPortfolioTreeNode[];
+}
+
+export type ApiOrionPortfolioTreeResponse = ApiEnvelope<ApiOrionPortfolioTreeNode>;
+
+
+// ─── 2D. ACCOUNT (Orion: GET /v1/Portfolio/Accounts) ────────────────────────
+
+export interface ApiOrionAccount {
+  id: number;                        // Orion Account ID
+  name: string;                      // Account display name
+  custodianId: number | null;        // Custodian (Schwab, Fidelity, etc.)
+  custodianName?: string;            // Resolved custodian name (from /Custodians/Simple)
+  custodialAccountNumber: string | null;
+  fundFamilyId: number | null;
+  managementStyleId: number | null;
+  isActive: boolean;
+  currentValue: number;              // Current market value
+  startDate: string;
+  registrationId: number;            // Parent registration
+  registrationType?: string;         // "IRA", "401k", "Trust", etc.
+  clientId: number;                  // Parent household ID
+}
+
+export type ApiOrionAccountListResponse = ApiEnvelope<ApiOrionAccount[]>;
+
+
+// ─── 2E. ASSET / HOLDING (Orion: GET /v1/Portfolio/Assets) ──────────────────
+
+export interface ApiOrionAsset {
+  id: number;
+  accountId: number;
+  ticker: string | null;             // null for some alternative assets
+  description: string;               // Full security name
+  shares: number;
+  price: number;
+  marketValue: number;
+  costBasis: number;
+  unrealizedGainLoss: number;
+  assetClassification: string | null; // Orion's asset class name
+  sectorClassification: string | null;
+  dividendYield: number | null;
+  expenseRatio: number | null;
+  weight: number;                    // % of account
+  asOfDate: string;
+}
+
+export type ApiOrionAssetListResponse = ApiEnvelope<ApiOrionAsset[]>;
+
+
+// ─── 2F. PERFORMANCE (Orion: GET /v1/Portfolio/Clients/{id}/Performance/Summary) ─
+
+export interface ApiOrionPerformancePeriod {
+  quickDate: string;                 // "MTD", "QTD", "YTD", "1Yr", "3Yr", "5Yr", "ITD"
+  startDate: string;
+  endDate: string;
+  returnPercent: number;             // Portfolio return
+  benchmarkReturnPercent: number;    // Benchmark return
+  netFlows: number | null;
+  beginningMarketValue: number;
+  endingMarketValue: number;
+}
+
+export type ApiOrionPerformanceResponse = ApiEnvelope<ApiOrionPerformancePeriod[]>;
+
+
+// ─── 2G. REPORTING SCOPE (Orion: POST /v1/Reporting/Scope) ──────────────────
+// The MASTER endpoint — returns different shapes based on `managed` bitmask.
+
+export interface ApiOrionReportingScopeRequest {
+  entity: "Household" | "Representative";
+  entityIds: number[];
+  asOfDate: string;                  // "2026-03-16"
+  managed: number;                   // Bitmask: 1=Perf, 2=Activity, 4=Alloc, 8=Detail, 16=Tax
+}
+
+export interface ApiOrionReportingScopeAllocation {
+  assetClassName: string;
+  marketValue: number;
+  percentage: number;                // Actual % of portfolio
+  targetPercentage: number | null;   // Target from model, null if no model assigned
+  drift: number | null;              // Actual - Target
+}
+
+export interface ApiOrionReportingScopePerformance {
+  entityId: number;
+  entityName: string;
+  periods: ApiOrionPerformancePeriod[];
+}
+
+export interface ApiOrionReportingScopeTax {
+  accountId: number;
+  ticker: string;
+  description: string;
+  shares: number;
+  costBasis: number;
+  marketValue: number;
+  unrealizedGainLoss: number;
+  holdingPeriod: "Short-Term" | "Long-Term";
+  purchaseDate: string;
+  taxLotId: number;
+}
+
+export interface ApiOrionReportingScopeResponse {
+  allocation?: ApiOrionReportingScopeAllocation[];
+  performance?: ApiOrionReportingScopePerformance[];
+  activity?: unknown[];              // Transaction activity
+  portfolioDetail?: unknown[];       // Detailed positions
+  taxDetail?: ApiOrionReportingScopeTax[];
+}
+
+export type ApiReportingScopeResponse = ApiEnvelope<ApiOrionReportingScopeResponse>;
+
+
+// ─── 2H. AUM OVER TIME (Orion: GET /v1/Portfolio/Clients/{id}/AumOverTime) ──
+
+export interface ApiOrionAumDataPoint {
+  asOfDate: string;
+  value: number;
+}
+
+export type ApiOrionAumOverTimeResponse = ApiEnvelope<ApiOrionAumDataPoint[]>;
+
+
+// ─── 2I. GOAL TRACKING (Orion: GET /v1/Portfolio/Clients/{id}/GoalTracking) ─
+
+export interface ApiOrionGoal {
+  goalId: number;
+  goalName: string;
+  goalType: string;                  // "Retirement", "Education", etc.
+  targetValue: number;
+  currentValue: number;
+  fundedRatio: number;               // 0.0 - 1.0
+  targetDate: string | null;
+  status: string;                    // Orion's goal status
+}
+
+export type ApiOrionGoalTrackingResponse = ApiEnvelope<ApiOrionGoal[]>;
+
+
+// ─── 2J. COMPLIANCE (Orion: GET /v1/Compliance/RiskDashboard/*) ─────────────
+
+export interface ApiOrionRiskTile {
+  tileName: string;
+  count: number;
+  severity: string;
+  description: string;
+}
+
+export interface ApiOrionAccountAlert {
+  accountId: number;
+  accountName: string;
+  alertType: string;
+  alertMessage: string;
+  severity: string;
+  createdDate: string;
+}
+
+export interface ApiOrionOutOfTolerance {
+  accountId: number;
+  accountName: string;
+  clientId: number;
+  clientName: string;
+  daysOutOfTolerance: number;
+  currentDrift: number;
+  modelName: string;
+}
+
+export type ApiOrionRiskTilesResponse = ApiEnvelope<ApiOrionRiskTile[]>;
+export type ApiOrionAccountAlertsResponse = ApiEnvelope<ApiOrionAccountAlert[]>;
+export type ApiOrionOutOfToleranceResponse = ApiEnvelope<ApiOrionOutOfTolerance[]>;
+
+
+// ─── 2K. BILLING (Orion: GET /v1/Billing/Instances/{id}) ────────────────────
+
+export interface ApiOrionBillInstance {
+  instanceId: number;
+  marketValue: number;               // AUM at billing date
+  balanceDue: number;                // Calculated fee
+  householdCount: number;
+  isMockBill: boolean;               // true = forecast, false = actual
+  asOfDate: string;
+}
+
+export type ApiOrionBillInstanceResponse = ApiEnvelope<ApiOrionBillInstance>;
+
+
+// ─── 2L. TRANSACTIONS (Orion: GET /v1/Portfolio/Clients/{id}/Transactions) ──
+
+export interface ApiOrionTransaction {
+  transactionId: number;
+  accountId: number;
+  accountName: string;
+  transDate: string;
+  ticker: string | null;
+  description: string;
+  transType: string;                 // "Buy", "Sell", "Dividend", "Contribution", "Distribution"
+  amount: number;
+  shares: number | null;
+  price: number | null;
+}
+
+export type ApiOrionTransactionListResponse = ApiEnvelope<ApiOrionTransaction[]>;
+
+
+// ─── 2M. RISK PROFILE (Orion: GET /v1/Risk/Profile/{clientId}) ──────────────
+
+export interface ApiOrionRiskProfile {
+  clientId: number;
+  riskScore: number;
+  riskCategory: string;              // "Conservative", "Moderate", etc.
+  completedDate: string;
+  expirationDate: string | null;
+}
+
+export type ApiOrionRiskProfileResponse = ApiEnvelope<ApiOrionRiskProfile>;
+
+
+// ─── 2N. TAX LOT (Orion: GET /v1/Portfolio/Accounts/{id}/TaxLot) ────────────
+
+export interface ApiOrionTaxLot {
+  taxLotId: number;
+  accountId: number;
+  ticker: string;
+  description: string;
+  shares: number;
+  costBasis: number;
+  marketValue: number;
+  unrealizedGainLoss: number;
+  holdingPeriod: "Short-Term" | "Long-Term";
+  purchaseDate: string;
+  adjustedCostBasis: number;
+}
+
+export type ApiOrionTaxLotResponse = ApiEnvelope<ApiOrionTaxLot[]>;
+
+
+// ─── 2O. RMD CALCULATIONS (Orion: GET /v1/Portfolio/Clients/{id}/RmdCalculations) ─
+
+export interface ApiOrionRmd {
+  accountId: number;
+  accountName: string;
+  priorYearEndBalance: number;
+  distributionPeriod: number;
+  rmdAmount: number;
+  distributionsTaken: number;
+  remainingRmd: number;
+  clientAge: number;
+}
+
+export type ApiOrionRmdResponse = ApiEnvelope<ApiOrionRmd[]>;
+
+
+// ─── 2P. NET WORTH / BALANCE SHEET (Orion: GET /v1/Portfolio/Clients/{id}/BalanceSheet) ─
+
+export interface ApiOrionBalanceSheetItem {
+  category: string;                  // "Investment", "Real Estate", "Mortgage", etc.
+  itemName: string;
+  value: number;
+  type: "asset" | "liability";
+}
+
+export interface ApiOrionBalanceSheet {
+  totalAssets: number;
+  totalLiabilities: number;
+  netWorth: number;
+  items: ApiOrionBalanceSheetItem[];
+}
+
+export type ApiOrionBalanceSheetResponse = ApiEnvelope<ApiOrionBalanceSheet>;
+
+
+// ─── 2Q. REPRESENTATIVE (Orion: GET /v1/Portfolio/Representatives/Value) ────
+
+export interface ApiOrionRepresentative {
+  id: number;
+  name: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone: string | null;
+  currentValue: number;              // Total AUM for this rep
+  clientCount: number;
+}
+
+export type ApiOrionRepresentativeResponse = ApiEnvelope<ApiOrionRepresentative>;
+
+
+// =============================================================================
+// SECTION 3: SALESFORCE API RESPONSE INTERFACES
+// =============================================================================
+// These mirror what Salesforce returns through MuleSoft.
+// Field names use Salesforce's FinServ__ namespace convention.
+// =============================================================================
+
+
+// ─── 3A. HOUSEHOLD ACCOUNT (SF: Account WHERE RecordType = IndustriesHousehold) ─
+
+export interface ApiSfHousehold {
+  Id: string;                        // Salesforce Record ID (18-char)
+  Name: string;                      // "Chen Household"
+  RecordType: { DeveloperName: "IndustriesHousehold" };
+  OwnerId: string;                   // Advisor's SF User ID
+  FinServ__Status__c: string;        // "Active", "Inactive"
+  FinServ__ReviewFrequency__c: string; // "Quarterly", "Semi-Annual", "Annual"
+  FinServ__ServiceModel__c: string;  // "Advanced", "Comprehensive", "Core"
+  FinServ__TotalAUMPrimary__c: number;
+  FinServ__TotalNonFinancialAssets__c: number;
+  FinServ__TotalFinancialAccounts__c: number;
+  FinServ__LastReview__c: string | null;  // ISO date
+  FinServ__NextReview__c: string | null;
+  FinServ__InvestmentObjectives__c: string | null;
+  CreatedDate: string;
+}
+
+export type ApiSfHouseholdListResponse = ApiEnvelope<ApiSfHousehold[]>;
+
+
+// ─── 3B. PERSON ACCOUNT (SF: Account WHERE RecordType = PersonAccount) ──────
+
+export interface ApiSfPersonAccount {
+  Id: string;
+  FirstName: string;
+  LastName: string;
+  PersonEmail: string | null;
+  Phone: string | null;
+  PersonBirthdate: string | null;
+  PersonMailingCity: string | null;
+  PersonMailingState: string | null;
+  FinServ__RiskTolerance__c: string | null;
+  FinServ__InvestmentExperience__c: string | null;
+  FinServ__Occupation__c: string | null;
+  FinServ__EmployerName__c: string | null;
+  FinServ__LastInteraction__c: string | null;
+  ParentId: string;                  // Household Account ID
+}
+
+export type ApiSfPersonAccountListResponse = ApiEnvelope<ApiSfPersonAccount[]>;
+
+
+// ─── 3C. FINANCIAL ACCOUNT (SF: FinServ__FinancialAccount__c) ───────────────
+
+export interface ApiSfFinancialAccount {
+  Id: string;
+  Name: string;
+  FinServ__FinancialAccountType__c: string; // "Investment", "Bank", "Insurance"
+  FinServ__Balance__c: number;
+  FinServ__Status__c: string;
+  FinServ__HeldAway__c: boolean;
+  FinServ__OwnerType__c: string;
+  FinServ__PrimaryOwner__c: string;  // Household ID
+  FinServ__Custodian__c: string | null;
+  FinServ__OpenDate__c: string | null;
+}
+
+export type ApiSfFinancialAccountListResponse = ApiEnvelope<ApiSfFinancialAccount[]>;
+
+
+// ─── 3D. FINANCIAL HOLDING (SF: FinServ__FinancialHolding__c) ───────────────
+
+export interface ApiSfFinancialHolding {
+  Id: string;
+  Name: string;
+  FinServ__Symbol__c: string | null;
+  FinServ__MarketValue__c: number;
+  FinServ__GainLoss__c: number | null;
+  FinServ__Shares__c: number;
+  FinServ__Price__c: number;
+  FinServ__FinancialAccount__c: string; // Parent account ID
+  FinServ__FinancialAccount__r: { Name: string };
+}
+
+export type ApiSfFinancialHoldingListResponse = ApiEnvelope<ApiSfFinancialHolding[]>;
+
+
+// ─── 3E. FINANCIAL GOAL (SF: FinServ__FinancialGoal__c) ─────────────────────
+
+export interface ApiSfFinancialGoal {
+  Id: string;
+  Name: string;
+  FinServ__Type__c: string;          // "Retirement", "Education", etc.
+  FinServ__TargetValue__c: number;
+  FinServ__ActualValue__c: number;
+  FinServ__TargetDate__c: string | null;
+  FinServ__Status__c: string;
+  FinServ__PrimaryOwner__c: string;  // Household ID
+}
+
+export type ApiSfFinancialGoalListResponse = ApiEnvelope<ApiSfFinancialGoal[]>;
+
+
+// ─── 3F. REVENUE (SF: FinServ__Revenue__c) ──────────────────────────────────
+
+export interface ApiSfRevenue {
+  Id: string;
+  FinServ__Amount__c: number;
+  FinServ__RevenueDate__c: string;
+  FinServ__FinancialAccount__r: {
+    FinServ__PrimaryOwner__c: string;
+  };
+}
+
+export type ApiSfRevenueListResponse = ApiEnvelope<ApiSfRevenue[]>;
+
+
+// ─── 3G. TASK (SF: Task) ────────────────────────────────────────────────────
+
+export interface ApiSfTask {
+  Id: string;
+  Subject: string;
+  Status: string;                    // "Not Started", "In Progress", "Completed", "Deferred"
+  Priority: string;                  // "High", "Normal", "Low"
+  ActivityDate: string | null;       // Due date
+  Type: string | null;
+  WhatId: string | null;             // Related record (Household ID)
+  What: { Name: string } | null;
+  WhoId: string | null;              // Related contact (Person Account ID)
+  Who: { Name: string } | null;
+  OwnerId: string;
+  Description: string | null;
+  CreatedDate: string;
+}
+
+export type ApiSfTaskListResponse = ApiEnvelope<ApiSfTask[]>;
+
+
+// ─── 3H. EVENT (SF: Event) ──────────────────────────────────────────────────
+
+export interface ApiSfEvent {
+  Id: string;
+  Subject: string;
+  StartDateTime: string;             // ISO datetime
+  EndDateTime: string;
+  Type: string | null;               // "Annual Review", "Tax Planning", etc.
+  WhatId: string | null;
+  What: { Name: string } | null;
+  WhoId: string | null;
+  Who: { Name: string } | null;
+  Location: string | null;
+  OwnerId: string;
+}
+
+export type ApiSfEventListResponse = ApiEnvelope<ApiSfEvent[]>;
+
+
+// ─── 3I. CASE (SF: Case) ────────────────────────────────────────────────────
+
+export interface ApiSfCase {
+  Id: string;
+  Subject: string;
+  Status: string;
+  Priority: string;
+  Type: string | null;               // "Service Request", "Compliance Review", etc.
+  CreatedDate: string;
+  ClosedDate: string | null;
+  AccountId: string | null;
+  Account: { Name: string } | null;
+  ContactId: string | null;
+  Description: string | null;
+  OwnerId: string;
+}
+
+export type ApiSfCaseListResponse = ApiEnvelope<ApiSfCase[]>;
+
+
+// ─── 3J. OPPORTUNITY (SF: Opportunity) ──────────────────────────────────────
+
+export interface ApiSfOpportunity {
+  Id: string;
+  Name: string;
+  StageName: string;
+  Amount: number | null;
+  CloseDate: string;
+  AccountId: string | null;
+  Account: { Name: string } | null;
+  LastActivityDate: string | null;
+  OwnerId: string;
+}
+
+export type ApiSfOpportunityListResponse = ApiEnvelope<ApiSfOpportunity[]>;
+
+
+// ─── 3K. USER / ADVISOR (SF: User) ─────────────────────────────────────────
+
+export interface ApiSfUser {
+  Id: string;
+  Name: string;
+  FirstName: string;
+  LastName: string;
+  Email: string;
+  Phone: string | null;
+  Title: string | null;
+  SmallPhotoUrl: string | null;
+  IsActive: boolean;
+  Profile: { Name: string };
+}
+
+export type ApiSfUserResponse = ApiEnvelope<ApiSfUser>;
+
+
+// ─── 3L. ASSETS & LIABILITIES (SF: FinServ__AssetsAndLiabilities__c) ────────
+
+export interface ApiSfAssetOrLiability {
+  Id: string;
+  Name: string;
+  FinServ__Amount__c: number;
+  FinServ__AssetsAndLiabilitiesType__c: string; // "Real Estate", "Mortgage", etc.
+  FinServ__PrimaryOwner__c: string;
+}
+
+export type ApiSfAssetsAndLiabilitiesResponse = ApiEnvelope<ApiSfAssetOrLiability[]>;
+
+
+// ─── 3M. DOCUMENT (SF: ContentDocumentLink + ContentVersion) ────────────────
+
+export interface ApiSfDocument {
+  ContentDocument: {
+    Id: string;
+    Title: string;
+    FileType: string;
+    CreatedDate: string;
+  };
+  LinkedEntityId: string;            // Household or Account ID it's attached to
+}
+
+export type ApiSfDocumentListResponse = ApiEnvelope<ApiSfDocument[]>;
+
+
+// ─── 3N. BENEFICIARY PARTY (SF: FinancialAccountParty) ──────────────────────
+
+export interface ApiSfBeneficiaryParty {
+  FinancialAccountId: string;
+  Role: string;                      // "Beneficiary", "Contingent Beneficiary"
+  RelatedAccount: { Name: string };
+}
+
+export type ApiSfBeneficiaryPartyListResponse = ApiEnvelope<ApiSfBeneficiaryParty[]>;
+
+
+// ─── 3O. SALES GOALS (SF: Custom/Dashboard-derived) ────────────────────────
+
+export interface ApiSfSalesGoal {
+  goalType: "recurring" | "non-recurring";
+  label: string;
+  targetAmount: number;
+  currentAmount: number;
+  progressPct: number;
+  period: string;
+}
+
+export type ApiSfSalesGoalListResponse = ApiEnvelope<ApiSfSalesGoal[]>;
+
+
+// ─── 3P. COMPLIANCE ITEMS (SF: Derived from Task + Case + ContentDocumentLink) ─
+
+export interface ApiSfComplianceItem {
+  id: string;
+  category: string;
+  title: string;
+  description: string;
+  clientName: string;
+  householdId: string;
+  status: "current" | "expiring_soon" | "overdue" | "pending";
+  dueDate: string;
+  lastCompleted: string | null;
+  assignedTo: string;
+  sfTaskId: string | null;
+  sfCaseId: string | null;
+  sfDocumentId: string | null;
+}
+
+export type ApiSfComplianceItemListResponse = ApiEnvelope<ApiSfComplianceItem[]>;
+
+
+// =============================================================================
+// SECTION 4: COMBINED / EXPERIENCE LAYER RESPONSES
+// =============================================================================
+// These are the COMPOSED endpoints MuleSoft builds — combining Orion + Salesforce
+// into a single call for the front end.
+// =============================================================================
+
+
+// ─── 4A. DASHBOARD SUMMARY (combines Orion rep AUM + SF households + SF events) ─
+
+export interface ApiDashboardSummaryResponse {
+  totalAUM: number;
+  totalAUMChange: number;            // MTD change %
+  aumTrend: number[];                // Last 9 monthly snapshots for sparkline
+  totalClients: number;
+  clientSegments: { segment: string; count: number }[];
+  netFlowsYTD: number;
+  netFlowsTrend: number[];
+  meetingsToday: number;
+  revenueYTD: number;
+  salesGoals: ApiSfSalesGoal[];
+}
+
+export type ApiDashboardResponse = ApiEnvelope<ApiDashboardSummaryResponse>;
+
+
+// ─── 4B. CLIENT ROSTER (combines SF Person Accounts + Orion AUM) ────────────
+
+export interface ApiClientRosterEntry {
+  // From Salesforce:
+  sfId: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone: string | null;
+  occupation: string | null;
+  employer: string | null;
+  riskTolerance: string | null;
+  dateOfBirth: string | null;
+  city: string | null;
+  state: string | null;
+  householdSfId: string;
+  householdName: string;
+  status: string;
+  segment: string;
+  // From Orion (overlaid by MuleSoft):
+  orionHouseholdId: number | null;
+  totalAUM: number;
+  accountCount: number;
+  lastReview: string | null;
+  nextReview: string | null;
+}
+
+export type ApiClientRosterResponse = ApiEnvelope<ApiClientRosterEntry[]>;
+
+
+// ─── 4C. CLIENT 360 (full detail for one household) ────────────────────────
+
+export interface ApiClient360Response {
+  household: ApiSfHousehold;
+  members: ApiSfPersonAccount[];
+  financialAccounts: ApiSfFinancialAccount[];
+  goals: ApiSfFinancialGoal[];
+  assetsAndLiabilities: ApiSfAssetOrLiability[];
+  // Orion overlays:
+  orionAccounts: ApiOrionAccount[];
+  orionPerformance: ApiOrionPerformancePeriod[];
+  orionAumHistory: ApiOrionAumDataPoint[];
+  orionBalanceSheet: ApiOrionBalanceSheet | null;
+  // Activity:
+  tasks: ApiSfTask[];
+  events: ApiSfEvent[];
+  cases: ApiSfCase[];
+  documents: ApiSfDocument[];
+}
+
+export type ApiClient360FullResponse = ApiEnvelope<ApiClient360Response>;
+
+
+// ─── 4D. ALERTS (combined Orion compliance + SF tasks/cases) ────────────────
+
+export interface ApiAlertEntry {
+  id: string;
+  source: "orion" | "salesforce";
+  type: string;                      // "rebalance", "rmd", "review", "compliance", etc.
+  severity: "critical" | "high" | "medium" | "low" | "info";
+  title: string;
+  description: string;
+  clientId: string | null;
+  clientName: string | null;
+  createdAt: string;
+  actionUrl: string | null;
+  estimatedValue: number | null;
+  read: boolean;
+}
+
+export type ApiAlertsResponse = ApiEnvelope<ApiAlertEntry[]>;
+
+
+// =============================================================================
+// SECTION 5: TRANSFORM FUNCTIONS
+// =============================================================================
+// These convert the API response interfaces above into the UI interfaces
+// already defined in mock-data-master.ts.
+//
+// Import your existing UI types from mock-data-master.ts:
+//   import type { ClientProfile, Account, Holding, Meeting, Alert, ... } from './mock-data-master';
+// =============================================================================
+
+import type {
+  ClientProfile,
+  Account,
+  Holding,
+  HouseholdMember,
+  DashboardSummaryCard,
+  Meeting,
+  Alert,
+  SalesGoal,
+  UpcomingMeeting,
+  AdvisorCapacity,
+  AssetAllocationSlice,
+  PerformancePeriod,
+  GoalsWidget,
+  // ComplianceItem — you may need to export this from mock-data-master
+  // ActionItem, EngagementScore, etc.
+} from "./mock-data-master";
+
+
+// ─── 5A. Orion Household → UI ClientProfile ────────────────────────────────
+
+export function transformOrionHouseholdToClientProfile(
+  orion: ApiOrionHousehold,
+  sfPerson: ApiSfPersonAccount | null,
+  sfHousehold: ApiSfHousehold | null
+): ClientProfile {
+  return {
+    id: String(orion.id),
+    firstName: sfPerson?.FirstName ?? orion.firstName,
+    lastName: sfPerson?.LastName ?? orion.lastName,
+    email: sfPerson?.PersonEmail ?? orion.email ?? "",
+    phone: sfPerson?.Phone ?? orion.homePhone ?? "",
+    address: {
+      street: orion.address1 ?? "",
+      city: sfPerson?.PersonMailingCity ?? orion.city ?? "",
+      state: sfPerson?.PersonMailingState ?? orion.state ?? "",
+      zip: orion.zip ?? "",
+    },
+    dateOfBirth: sfPerson?.PersonBirthdate ?? "",
+    age: sfPerson?.PersonBirthdate
+      ? Math.floor((Date.now() - new Date(sfPerson.PersonBirthdate).getTime()) / 31557600000)
+      : 0,
+    occupation: sfPerson?.FinServ__Occupation__c ?? "",
+    employer: sfPerson?.FinServ__EmployerName__c ?? "",
+    segment: mapServiceModelToSegment(sfHousehold?.FinServ__ServiceModel__c),
+    status: mapSfStatusToUiStatus(sfHousehold?.FinServ__Status__c),
+    riskTolerance: mapRiskTolerance(sfPerson?.FinServ__RiskTolerance__c),
+    totalAUM: orion.currentValue ?? 0,
+    lastContactDays: sfPerson?.FinServ__LastInteraction__c
+      ? Math.floor((Date.now() - new Date(sfPerson.FinServ__LastInteraction__c).getTime()) / 86400000)
+      : 0,
+    annualIncome: 0,                 // Not in API — enriched later or from SF custom field
+    taxFilingStatus: "Single",       // Not in API — enriched later
+    stateOfResidence: sfPerson?.PersonMailingState ?? orion.state ?? "",
+    advisorId: String(orion.representativeId),
+    onboardedDate: orion.createdDate,
+    notes: "",
+  };
+}
+
+
+// ─── 5B. Orion Account → UI Account ────────────────────────────────────────
+
+export function transformOrionAccountToUiAccount(orion: ApiOrionAccount): Account {
+  return {
+    id: String(orion.id),
+    clientId: String(orion.clientId),
+    name: orion.name,
+    type: mapOrionRegistrationTypeToAccountType(orion.registrationType),
+    custodian: orion.custodianName ?? String(orion.custodianId ?? "Unknown"),
+    accountNumber: orion.custodialAccountNumber ?? "",
+    balance: orion.currentValue,
+    contributions_YTD: 0,            // Requires separate Reporting/Activity call
+    beneficiaryDesignated: false,     // Requires Beneficiaries endpoint
+    lastRebalanced: "",              // Requires compliance/trading data
+  };
+}
+
+
+// ─── 5C. Orion Asset → UI Holding ──────────────────────────────────────────
+
+export function transformOrionAssetToHolding(asset: ApiOrionAsset): Holding {
+  const gainLossPct = asset.costBasis > 0
+    ? (asset.unrealizedGainLoss / asset.costBasis) * 100
+    : 0;
+
+  return {
+    id: String(asset.id),
+    accountId: String(asset.accountId),
+    ticker: asset.ticker ?? "N/A",
+    name: asset.description,
+    assetClass: asset.assetClassification ?? "Other",
+    sector: asset.sectorClassification ?? "Other",
+    shares: asset.shares,
+    costBasis: asset.costBasis,
+    marketValue: asset.marketValue,
+    unrealizedGainLoss: asset.unrealizedGainLoss,
+    unrealizedGainLossPct: gainLossPct,
+    weight: asset.weight,
+    dividendYield: asset.dividendYield ?? 0,
+    expenseRatio: asset.expenseRatio ?? 0,
+  };
+}
+
+
+// ─── 5D. Orion Performance → UI PerformancePeriod ──────────────────────────
+
+export function transformOrionPerformance(period: ApiOrionPerformancePeriod): PerformancePeriod {
+  return {
+    period: period.quickDate,
+    returnPct: period.returnPercent,
+    benchmarkPct: period.benchmarkReturnPercent,
+    alpha: period.returnPercent - period.benchmarkReturnPercent,
+    sharpeRatio: 0,                  // Requires additional calculation / separate endpoint
+    maxDrawdown: 0,                  // Requires time-series analysis
+  };
+}
+
+
+// ─── 5E. Reporting Scope Allocation → UI AssetAllocationSlice ──────────────
+
+// Color palette for allocation chart segments
+const ALLOCATION_COLORS = [
+  "#2563eb", "#059669", "#d97706", "#dc2626", "#7c3aed",
+  "#0891b2", "#4f46e5", "#ca8a04", "#be123c", "#0d9488",
+];
+
+export function transformAllocationToSlice(
+  alloc: ApiOrionReportingScopeAllocation,
+  index: number
+): AssetAllocationSlice {
+  return {
+    sector: alloc.assetClassName,
+    value: alloc.marketValue,
+    targetPct: alloc.targetPercentage ?? alloc.percentage,
+    actualPct: alloc.percentage,
+    drift: alloc.drift ?? 0,
+    color: ALLOCATION_COLORS[index % ALLOCATION_COLORS.length],
+  };
+}
+
+
+// ─── 5F. SF Event → UI Meeting ─────────────────────────────────────────────
+
+export function transformSfEventToMeeting(event: ApiSfEvent): Meeting {
+  const start = new Date(event.StartDateTime);
+  const end = new Date(event.EndDateTime);
+
+  return {
+    id: event.Id,
+    time: formatTime(start),
+    endTime: formatTime(end),
+    clientName: event.What?.Name ?? event.Who?.Name ?? "Unknown",
+    clientId: event.WhatId ?? event.WhoId ?? "",
+    meetingType: mapEventTypeToMeetingType(event.Type),
+    clientAUM: 0,                    // Enriched by Orion overlay in combined endpoint
+    tier: "B",                       // Enriched by segment lookup
+    location: mapLocationString(event.Location),
+    prepNotes: event.Subject,
+  };
+}
+
+
+// ─── 5G. SF Event → UI UpcomingMeeting ─────────────────────────────────────
+
+export function transformSfEventToUpcomingMeeting(event: ApiSfEvent): UpcomingMeeting {
+  const start = new Date(event.StartDateTime);
+  const end = new Date(event.EndDateTime);
+
+  return {
+    id: event.Id,
+    clientName: event.What?.Name ?? event.Who?.Name ?? "Unknown",
+    clientId: event.WhatId ?? event.WhoId ?? "",
+    meetingType: event.Type ?? "Ad Hoc",
+    date: start.toISOString().split("T")[0],
+    time: formatTime(start),
+    endTime: formatTime(end),
+    source: "salesforce",
+    location: mapLocationString(event.Location),
+  };
+}
+
+
+// ─── 5H. Combined Alert → UI Alert ────────────────────────────────────────
+
+export function transformApiAlertToUiAlert(alert: ApiAlertEntry): Alert {
+  return {
+    id: alert.id,
+    type: mapAlertType(alert.type),
+    severity: alert.severity,
+    title: alert.title,
+    description: alert.description,
+    read: alert.read,
+    estimatedValue: alert.estimatedValue,
+    clientId: alert.clientId,
+    actionUrl: alert.actionUrl ?? "#",
+    createdAt: alert.createdAt,
+  };
+}
+
+
+// ─── 5I. SF Task → UI ActionItem-like shape ────────────────────────────────
+
+export function transformSfTaskToActionItem(task: ApiSfTask) {
+  return {
+    id: task.Id,
+    clientId: task.WhatId ?? "",
+    clientName: task.What?.Name ?? task.Who?.Name ?? "",
+    action: task.Subject,
+    priority: mapSfPriorityToUi(task.Priority),
+    category: "outreach" as const,   // Could be AI-classified later
+    dueDate: task.ActivityDate,
+    status: mapSfTaskStatusToUi(task.Status),
+  };
+}
+
+
+// ─── 5J. SF Sales Goal → UI SalesGoal ─────────────────────────────────────
+
+export function transformSfSalesGoal(goal: ApiSfSalesGoal): SalesGoal {
+  return {
+    id: `sg-${goal.goalType}`,
+    type: goal.goalType,
+    label: goal.label,
+    targetAmount: goal.targetAmount,
+    currentAmount: goal.currentAmount,
+    progressPct: goal.progressPct,
+    period: goal.period as "YTD" | "QTD" | "MTD",
+    sourceUrl: "",                   // Salesforce dashboard URL from config
+  };
+}
+
+
+// ─── 5K. Dashboard Summary → UI DashboardSummaryCard[] ─────────────────────
+
+export function transformDashboardSummary(
+  summary: ApiDashboardSummaryResponse
+): DashboardSummaryCard[] {
+  return [
+    {
+      label: "Total AUM",
+      value: summary.totalAUM,
+      format: "currency_sparkline",
+      trend: summary.aumTrend,
+      trendDirection: summary.totalAUMChange >= 0 ? "up" : "down",
+      trendPct: summary.totalAUMChange,
+    },
+    {
+      label: "Total Clients",
+      value: summary.totalClients,
+      format: "count",
+      trend: [],                     // Client count trend not in API — can be cached
+      trendDirection: "up",
+      trendPct: 0,
+    },
+    {
+      label: "Net Flows YTD",
+      value: summary.netFlowsYTD,
+      format: "currency_sparkline",
+      trend: summary.netFlowsTrend,
+      trendDirection: summary.netFlowsYTD >= 0 ? "up" : "down",
+      trendPct: 0,
+    },
+    {
+      label: "Meetings Today",
+      value: summary.meetingsToday,
+      format: "count",
+      trend: [],
+      trendDirection: "flat",
+      trendPct: 0,
+    },
+  ];
+}
+
+
+// ─── 5L. Orion Goals → UI GoalsWidget ──────────────────────────────────────
+
+export function transformOrionGoalsToWidget(goals: ApiOrionGoal[]): GoalsWidget {
+  const totalTarget = goals.reduce((sum, g) => sum + g.targetValue, 0);
+  const totalCurrent = goals.reduce((sum, g) => sum + g.currentValue, 0);
+
+  // Group by goalType
+  const byCategory = goals.reduce<Record<string, { count: number; fundedSum: number }>>((acc, g) => {
+    if (!acc[g.goalType]) acc[g.goalType] = { count: 0, fundedSum: 0 };
+    acc[g.goalType].count++;
+    acc[g.goalType].fundedSum += g.fundedRatio;
+    return acc;
+  }, {});
+
+  return {
+    aggregateFundedRatio: totalTarget > 0 ? totalCurrent / totalTarget : 0,
+    totalGoals: goals.length,
+    clientsWithGoals: new Set(goals.map(g => g.goalId)).size, // Approximation
+    totalTargetAmount: totalTarget,
+    totalCurrentAmount: totalCurrent,
+    goalsByCategory: Object.entries(byCategory).map(([category, data]) => ({
+      category,
+      count: data.count,
+      funded: data.fundedSum / data.count, // Average funded ratio
+    })),
+  };
+}
+
+
+// ─── 5M. Client Roster → UI ClientProfile[] ───────────────────────────────
+
+export function transformClientRosterToProfiles(
+  roster: ApiClientRosterEntry[]
+): ClientProfile[] {
+  return roster.map((entry) => ({
+    id: entry.sfId,
+    firstName: entry.firstName,
+    lastName: entry.lastName,
+    email: entry.email ?? "",
+    phone: entry.phone ?? "",
+    address: {
+      street: "",
+      city: entry.city ?? "",
+      state: entry.state ?? "",
+      zip: "",
+    },
+    dateOfBirth: entry.dateOfBirth ?? "",
+    age: entry.dateOfBirth
+      ? Math.floor((Date.now() - new Date(entry.dateOfBirth).getTime()) / 31557600000)
+      : 0,
+    occupation: entry.occupation ?? "",
+    employer: entry.employer ?? "",
+    segment: entry.segment as "A" | "B" | "C" | "D",
+    status: entry.status as ClientProfile["status"],
+    riskTolerance: mapRiskTolerance(entry.riskTolerance),
+    totalAUM: entry.totalAUM,
+    lastContactDays: 0,              // Enriched by activity data
+    annualIncome: 0,
+    taxFilingStatus: "Single",
+    stateOfResidence: entry.state ?? "",
+    advisorId: "",
+    onboardedDate: "",
+    notes: "",
+  }));
+}
+
+
+// =============================================================================
+// SECTION 6: HELPER / MAPPER FUNCTIONS
+// =============================================================================
+
+function mapServiceModelToSegment(
+  serviceModel: string | null | undefined
+): "A" | "B" | "C" | "D" {
+  switch (serviceModel) {
+    case "Comprehensive": return "A";
+    case "Advanced": return "A";
+    case "Core": return "B";
+    default: return "C";
+  }
+}
+
+function mapSfStatusToUiStatus(
+  sfStatus: string | null | undefined
+): "Active" | "Onboarding" | "Inactive" | "At-Risk" {
+  switch (sfStatus) {
+    case "Active": return "Active";
+    case "Inactive": return "Inactive";
+    case "Onboarding": return "Onboarding";
+    default: return "Active";
+  }
+}
+
+function mapRiskTolerance(
+  tolerance: string | null | undefined
+): ClientProfile["riskTolerance"] {
+  switch (tolerance) {
+    case "Conservative": return "Conservative";
+    case "Moderate": return "Moderate";
+    case "Moderately Aggressive": return "Moderately Aggressive";
+    case "Aggressive": return "Aggressive";
+    default: return "Moderate";
+  }
+}
+
+function mapOrionRegistrationTypeToAccountType(
+  regType: string | null | undefined
+): Account["type"] {
+  const map: Record<string, Account["type"]> = {
+    "IRA": "Traditional IRA",
+    "Traditional IRA": "Traditional IRA",
+    "Roth IRA": "Roth IRA",
+    "Rollover IRA": "Rollover IRA",
+    "401k": "401k",
+    "401(k)": "401k",
+    "403b": "403b",
+    "403(b)": "403b",
+    "529": "529",
+    "Trust": "Trust",
+    "HSA": "HSA",
+    "Brokerage": "Brokerage",
+    "Joint": "Joint Brokerage",
+    "UGMA": "UGMA/UTMA",
+    "UTMA": "UGMA/UTMA",
+    "Annuity": "Annuity",
+    "ESPP": "ESPP",
+  };
+  return map[regType ?? ""] ?? "Brokerage";
+}
+
+function mapEventTypeToMeetingType(
+  eventType: string | null
+): Meeting["meetingType"] {
+  const map: Record<string, Meeting["meetingType"]> = {
+    "Annual Review": "Annual Review",
+    "Portfolio Check-In": "Portfolio Check-In",
+    "Onboarding": "Onboarding",
+    "Tax Planning": "Tax Planning",
+    "Estate Review": "Estate Review",
+    "Insurance Review": "Insurance Review",
+  };
+  return map[eventType ?? ""] ?? "Ad Hoc";
+}
+
+function mapLocationString(
+  location: string | null
+): Meeting["location"] {
+  if (!location) return "Virtual";
+  if (location.toLowerCase().includes("virtual") || location.toLowerCase().includes("zoom") || location.toLowerCase().includes("teams")) return "Virtual";
+  if (location.toLowerCase().includes("office")) return "In-Office";
+  return "Client Site";
+}
+
+function mapAlertType(type: string): Alert["type"] {
+  const valid: Alert["type"][] = [
+    "rebalance", "rmd", "review", "compliance",
+    "opportunity", "beneficiary", "tax", "insurance",
+  ];
+  return valid.includes(type as Alert["type"]) ? (type as Alert["type"]) : "compliance";
+}
+
+function mapSfPriorityToUi(
+  priority: string
+): "critical" | "high" | "medium" | "low" {
+  switch (priority) {
+    case "Highest":
+    case "Urgent": return "critical";
+    case "High": return "high";
+    case "Normal": return "medium";
+    case "Low": return "low";
+    default: return "medium";
+  }
+}
+
+function mapSfTaskStatusToUi(
+  status: string
+): "pending" | "in_progress" | "completed" | "dismissed" {
+  switch (status) {
+    case "Not Started":
+    case "Waiting on someone else": return "pending";
+    case "In Progress": return "in_progress";
+    case "Completed": return "completed";
+    case "Deferred": return "dismissed";
+    default: return "pending";
+  }
+}
+
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+
+// =============================================================================
+// SECTION 7: UPDATED DATA-SERVICE PATTERN
+// =============================================================================
+// Shows how to swap your existing mock data-service.ts to use real API calls.
+// Each service function: call API → unwrap envelope → transform → return UI type.
+// =============================================================================
+
+const API_BASE = "/api/v1"; // MuleSoft experience layer base URL
+
+async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    headers: {
+      "Content-Type": "application/json",
+      // Auth header injected by middleware/interceptor
+    },
+    ...options,
+  });
+  if (!res.ok) throw new Error(`API ${res.status}: ${endpoint}`);
+  const envelope: ApiEnvelope<T> = await res.json();
+  if (envelope.errors?.length) {
+    throw new Error(envelope.errors.map((e) => e.message).join("; "));
+  }
+  return envelope.data;
+}
+
+// Example: How dashboardService swaps from mock to real
+export const dashboardServiceReal = {
+  async getSummaryCards(): Promise<DashboardSummaryCard[]> {
+    const summary = await fetchApi<ApiDashboardSummaryResponse>("/dashboard/summary");
+    return transformDashboardSummary(summary);
+  },
+
+  async getTodaysSchedule(): Promise<Meeting[]> {
+    const events = await fetchApi<ApiSfEvent[]>("/events/today");
+    return events.map(transformSfEventToMeeting);
+  },
+
+  async getUpcomingMeetings(): Promise<UpcomingMeeting[]> {
+    const events = await fetchApi<ApiSfEvent[]>("/events/upcoming?days=7");
+    return events.map(transformSfEventToUpcomingMeeting);
+  },
+
+  async getAlerts(): Promise<Alert[]> {
+    const alerts = await fetchApi<ApiAlertEntry[]>("/alerts");
+    return alerts.map(transformApiAlertToUiAlert);
+  },
+
+  async getSalesGoals(): Promise<SalesGoal[]> {
+    const goals = await fetchApi<ApiSfSalesGoal[]>("/salesforce/goals");
+    return goals.map(transformSfSalesGoal);
+  },
+};
+
+// Example: How clientService swaps from mock to real
+export const clientServiceReal = {
+  async getRoster(): Promise<ClientProfile[]> {
+    const roster = await fetchApi<ApiClientRosterEntry[]>("/clients/roster");
+    return transformClientRosterToProfiles(roster);
+  },
+
+  async getAccounts(clientId: string): Promise<Account[]> {
+    const accounts = await fetchApi<ApiOrionAccount[]>(`/clients/${clientId}/accounts`);
+    return accounts.map(transformOrionAccountToUiAccount);
+  },
+
+  async getHoldings(clientId: string): Promise<Holding[]> {
+    const assets = await fetchApi<ApiOrionAsset[]>(`/clients/${clientId}/holdings`);
+    return assets.map(transformOrionAssetToHolding);
+  },
+};
+
+// Example: How portfolioService swaps from mock to real
+export const portfolioServiceReal = {
+  async getAllocation(householdId: string): Promise<AssetAllocationSlice[]> {
+    const allocs = await fetchApi<ApiOrionReportingScopeAllocation[]>(
+      `/portfolio/${householdId}/allocation`
+    );
+    return allocs.map(transformAllocationToSlice);
+  },
+
+  async getPerformance(householdId: string): Promise<PerformancePeriod[]> {
+    const periods = await fetchApi<ApiOrionPerformancePeriod[]>(
+      `/portfolio/${householdId}/performance`
+    );
+    return periods.map(transformOrionPerformance);
+  },
+
+  async getHoldings(householdId: string): Promise<Holding[]> {
+    const assets = await fetchApi<ApiOrionAsset[]>(
+      `/portfolio/${householdId}/holdings`
+    );
+    return assets.map(transformOrionAssetToHolding);
+  },
+};
+
+
+// =============================================================================
+// SECTION 8: FEATURE FLAG — MOCK vs REAL
+// =============================================================================
+// Use this pattern in your app to toggle between mock and real data.
+// =============================================================================
+
+/*
+import { dashboardService as dashboardServiceMock } from './data-service';       // your existing mock
+import { dashboardServiceReal } from './api-response-contracts';                  // this file
+
+const USE_REAL_API = process.env.NEXT_PUBLIC_USE_REAL_API === 'true';
+
+export const dashboardService = USE_REAL_API ? dashboardServiceReal : dashboardServiceMock;
+*/

@@ -1,0 +1,101 @@
+{
+  "info": {
+    "_postman_id": "5ad1095a-3267-4c57-8989-c36383e7e00e",
+    "name": "Wealth Advisory Dashboard APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "2388518"
+  },
+  "item": [
+    {
+      "name": "OAuth Service",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "type": "text",
+              "key": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "type": "text",
+              "key": "client_id",
+              "value": "e00f0697-fc07-4d7e-b089-5d84e90e28a9"
+            },
+            {
+              "type": "text",
+              "key": "client_secret",
+              "value": "{{AZURE_CLIENT_SECRET}}"
+            },
+            {
+              "type": "text",
+              "key": "scope",
+              "value": "https://graph.microsoft.com/.default"
+            }
+          ]
+        },
+        "url": {
+          "raw": "https://od-auth-service-uat-dgm3vs.63g8ag.usa-e1.cloudhub.io/v1.0/oauth2/token",
+          "protocol": "https",
+          "host": [
+            "od-auth-service-uat-dgm3vs",
+            "63g8ag",
+            "usa-e1",
+            "cloudhub",
+            "io"
+          ],
+          "path": [
+            "v1.0",
+            "oauth2",
+            "token"
+          ]
+        },
+        "description": "Generated from cURL: curl --location 'https://od-auth-service-uat-dgm3vs.63g8ag.usa-e1.cloudhub.io/v1.0/oauth2/token' \\\r\n--header 'Content-Type: application/x-www-form-urlencoded' \\\r\n--data-urlencode 'grant_type=client_credentials' \\\r\n--data-urlencode 'client_id=e00f0697-fc07-4d7e-b089-5d84e90e28a9' \\\r\n--data-urlencode 'client_secret={{AZURE_CLIENT_SECRET}}' \\\r\n--data-urlencode 'scope=https://graph.microsoft.com/.default'"
+      },
+      "response": []
+    },
+    {
+      "name": "Client Portfolio",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJ0eXAiOiJKV1QiLCJub25jZSI6ImJDUUxDaThZVWlDSUw4aWQtYkJIdFJPWVNmbE9Sd29wV2NUZUNlLTRRZkkiLCJhbGciOiJSUzI1NiIsIng1dCI6IlFaZ045SHFOa0dORU00R2VLY3pEMDJQY1Z2NCIsImtpZCI6IlFaZ045SHFOa0dORU00R2VLY3pEMDJQY1Z2NCJ9.eyJhdWQiOiJodHRwczovL2dyYXBoLm1pY3Jvc29mdC5jb20iLCJpc3MiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC8xMWJmZTdlZC1hOTZkLTQ3YjgtOTNiOS1mMWQ1Y2VkNzA5MWIvIiwiaWF0IjoxNzczNjk3NTc1LCJuYmYiOjE3NzM2OTc1NzUsImV4cCI6MTc3MzcwMTQ3NSwiYWlvIjoiQVNRQTIvOGJBQUFBS3Y0aDkxWmJ2Mm1oMnJpbVZvcllET1BuQ2xTMXdwVVVnT0RxOUVneWRJMD0iLCJhcHBfZGlzcGxheW5hbWUiOiJXQUQgRGV2IiwiYXBwaWQiOiJlMDBmMDY5Ny1mYzA3LTRkN2UtYjA4OS01ZDg0ZTkwZTI4YTkiLCJhcHBpZGFjciI6IjEiLCJpZHAiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC8xMWJmZTdlZC1hOTZkLTQ3YjgtOTNiOS1mMWQ1Y2VkNzA5MWIvIiwiaWR0eXAiOiJhcHAiLCJvaWQiOiI5MTAwN2Y3My0zNDdmLTQ5OWUtOWVkYy0xYzUzYzczNTliM2QiLCJyaCI6IjEuQVJ3QTdlZV9FVzJwdUVlVHVmSFZ6dGNKR3dNQUFBQUFBQUFBd0FBQUFBQUFBQUFBQUFBY0FBLiIsInN1YiI6IjkxMDA3ZjczLTM0N2YtNDk5ZS05ZWRjLTFjNTNjNzM1OWIzZCIsInRlbmFudF9yZWdpb25fc2NvcGUiOiJOQSIsInRpZCI6IjExYmZlN2VkLWE5NmQtNDdiOC05M2I5LWYxZDVjZWQ3MDkxYiIsInV0aSI6Ikh3Vld1Tkd6dFVhRmFTc3pWQkFjQUEiLCJ2ZXIiOiIxLjAiLCJ3aWRzIjpbIjA5OTdhMWQwLTBkMWQtNGFjYi1iNDA4LWQ1Y2E3MzEyMWU5MCJdLCJ4bXNfYWNkIjoxNzczNjk2NzA5LCJ4bXNfYWN0X2ZjdCI6IjMgOSIsInhtc19mdGQiOiItajBnSmg5dDZFU0NpaWdvcUQzWXhkOGZPbnRLUXRwMjJOaGhGMEVZZGlrQmRYTjNaWE4wTXkxa2MyMXoiLCJ4bXNfaWRyZWwiOiI3IDE4IiwieG1zX3JkIjoiMC40MkxsWUJKaWxCRVM0V0FYRXVDNzY1ejRvOVBkZF9mMGF3XzM1TEZjQm9weUNnbG9mbFlwdnpQdHJsUFBrbFczY3NxM2Z3V0tjZ2dKTUROQXdBRW9EUlRsRmhMby1hWXY4WHBHbUtDQ3V2SXV0UkNHTFFBIiwieG1zX3N1Yl9mY3QiOiIzIDkiLCJ4bXNfdGNkdCI6MTQ4ODUzNDAzOCwieG1zX3RudF9mY3QiOiI4IDMifQ.JyX-YsncZK4KgPzYdwyAnatTSa9IUQQWS81FVGMpPBH4J_fu6gTDOgWtwyiCLFlv4C73RhIAOm1_KL3oohbOes7CI5BJmP42NptzfZlF3d8cz45RIHPIchl1tvaThXl-dgwH_ycuBoGu88_9wIxyYa_Mm8Kd6UohJ9RMIePwQdc2m3PjEDw693rNLTIDJASjDH2V3wLZf96LYPG1iS37zrFdpN8ihnPWgE0LPL__nkR6oqn8BdDasVTi99VdIfe_R8NK5GAfmT-rRzKz7suHtX_XgbTchfpvo3bAcePsPElMdaooSgMhg9ENkyUjkzM8v4jQMqsbuD2tCTk3L-SMNA"
+          }
+        ],
+        "url": {
+          "raw": "https://od-wad-eapi-dev-t0nidn.63g8ag.usa-e1.cloudhub.io/api/v1/portfolio/clients/value",
+          "protocol": "https",
+          "host": [
+            "od-wad-eapi-dev-t0nidn",
+            "63g8ag",
+            "usa-e1",
+            "cloudhub",
+            "io"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "portfolio",
+            "clients",
+            "value"
+          ]
+        },
+        "description": "Generated from cURL: curl --location 'https://od-wad-eapi-dev-t0nidn.63g8ag.usa-e1.cloudhub.io/api/v1/portfolio/clients/value' \\\r\n--header 'Content-Type: application/json' \\\r\n--header 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJub25jZSI6ImJDUUxDaThZVWlDSUw4aWQtYkJIdFJPWVNmbE9Sd29wV2NUZUNlLTRRZkkiLCJhbGciOiJSUzI1NiIsIng1dCI6IlFaZ045SHFOa0dORU00R2VLY3pEMDJQY1Z2NCIsImtpZCI6IlFaZ045SHFOa0dORU00R2VLY3pEMDJQY1Z2NCJ9.eyJhdWQiOiJodHRwczovL2dyYXBoLm1pY3Jvc29mdC5jb20iLCJpc3MiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC8xMWJmZTdlZC1hOTZkLTQ3YjgtOTNiOS1mMWQ1Y2VkNzA5MWIvIiwiaWF0IjoxNzczNjk3NTc1LCJuYmYiOjE3NzM2OTc1NzUsImV4cCI6MTc3MzcwMTQ3NSwiYWlvIjoiQVNRQTIvOGJBQUFBS3Y0aDkxWmJ2Mm1oMnJpbVZvcllET1BuQ2xTMXdwVVVnT0RxOUVneWRJMD0iLCJhcHBfZGlzcGxheW5hbWUiOiJXQUQgRGV2IiwiYXBwaWQiOiJlMDBmMDY5Ny1mYzA3LTRkN2UtYjA4OS01ZDg0ZTkwZTI4YTkiLCJhcHBpZGFjciI6IjEiLCJpZHAiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC8xMWJmZTdlZC1hOTZkLTQ3YjgtOTNiOS1mMWQ1Y2VkNzA5MWIvIiwiaWR0eXAiOiJhcHAiLCJvaWQiOiI5MTAwN2Y3My0zNDdmLTQ5OWUtOWVkYy0xYzUzYzczNTliM2QiLCJyaCI6IjEuQVJ3QTdlZV9FVzJwdUVlVHVmSFZ6dGNKR3dNQUFBQUFBQUFBd0FBQUFBQUFBQUFBQUFBY0FBLiIsInN1YiI6IjkxMDA3ZjczLTM0N2YtNDk5ZS05ZWRjLTFjNTNjNzM1OWIzZCIsInRlbmFudF9yZWdpb25fc2NvcGUiOiJOQSIsInRpZCI6IjExYmZlN2VkLWE5NmQtNDdiOC05M2I5LWYxZDVjZWQ3MDkxYiIsInV0aSI6Ikh3Vld1Tkd6dFVhRmFTc3pWQkFjQUEiLCJ2ZXIiOiIxLjAiLCJ3aWRzIjpbIjA5OTdhMWQwLTBkMWQtNGFjYi1iNDA4LWQ1Y2E3MzEyMWU5MCJdLCJ4bXNfYWNkIjoxNzczNjk2NzA5LCJ4bXNfYWN0X2ZjdCI6IjMgOSIsInhtc19mdGQiOiItajBnSmg5dDZFU0NpaWdvcUQzWXhkOGZPbnRLUXRwMjJOaGhGMEVZZGlrQmRYTjNaWE4wTXkxa2MyMXoiLCJ4bXNfaWRyZWwiOiI3IDE4IiwieG1zX3JkIjoiMC40MkxsWUJKaWxCRVM0V0FYRXVDNzY1ejRvOVBkZF9mMGF3XzM1TEZjQm9weUNnbG9mbFlwdnpQdHJsUFBrbFczY3NxM2Z3V0tjZ2dKTUROQXdBRW9EUlRsRmhMby1hWXY4WHBHbUtDQ3V2SXV0UkNHTFFBIiwieG1zX3N1Yl9mY3QiOiIzIDkiLCJ4bXNfdGNkdCI6MTQ4ODUzNDAzOCwieG1zX3RudF9mY3QiOiI4IDMifQ.JyX-YsncZK4KgPzYdwyAnatTSa9IUQQWS81FVGMpPBH4J_fu6gTDOgWtwyiCLFlv4C73RhIAOm1_KL3oohbOes7CI5BJmP42NptzfZlF3d8cz45RIHPIchl1tvaThXl-dgwH_ycuBoGu88_9wIxyYa_Mm8Kd6UohJ9RMIePwQdc2m3PjEDw693rNLTIDJASjDH2V3wLZf96LYPG1iS37zrFdpN8ihnPWgE0LPL__nkR6oqn8BdDasVTi99VdIfe_R8NK5GAfmT-rRzKz7suHtX_XgbTchfpvo3bAcePsPElMdaooSgMhg9ENkyUjkzM8v4jQMqsbuD2tCTk3L-SMNA'"
+      },
+      "response": []
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+NORTHWESTERN MUTUAL LIFE INSURANCE
+POLICY DECLARATIONS PAGE
+
+Policy Number: NM-2845791
+Policy Type: Whole Life Insurance
+Issue Date: January 15, 2005
+Policy Status: Active - In Force
+
+INSURED
+--------
+Name: Robert Allan Henderson
+Date of Birth: March 15, 1958
+Gender: Male
+Tobacco Use: Non-Smoker
+Risk Class: Preferred Plus
+
+POLICY DETAILS
+---------------
+Face Amount: $2,000,000.00
+Current Death Benefit: $2,245,000.00 (includes paid-up additions)
+Cash Value (as of 02/28/2026): $485,200.00
+Annual Premium: $18,400.00
+Premium Status: Paid through 2026
+Payment Frequency: Annual
+Next Premium Due: January 15, 2027
+
+BENEFICIARY DESIGNATIONS
+--------------------------
+Primary Beneficiary:
+  Margaret L. Henderson (Spouse) - 100%
+  SSN: XXX-XX-7843
+  DOB: 07/22/1960
+  Relationship: Wife
+
+Contingent Beneficiary:
+  Henderson Family Trust (Revocable Living Trust)
+  Trust Date: June 15, 2024
+  Trustee: Robert A. Henderson & Margaret L. Henderson
+
+RIDERS AND ENDORSEMENTS
+-------------------------
+1. Waiver of Premium Rider - Active
+2. Accidental Death Benefit Rider - $500,000
+3. Long-Term Care Rider - Allows acceleration of death benefit for LTC needs
+   Daily Benefit: Up to $350/day
+   Benefit Period: 48 months
+   Elimination Period: 90 days
+
+DIVIDENDS
+----------
+2025 Annual Dividend: $12,400
+Dividend Option: Paid-Up Additions
+Cumulative Paid-Up Additions: $245,000
+
+LOAN INFORMATION
+-----------------
+Outstanding Policy Loans: $0
+Available Loan Value: $436,680.00 (90% of cash value)
+Loan Interest Rate: 5.00% fixed
+
+ADDITIONAL COVERAGE
+--------------------
+Policy #NM-2845792: Margaret L. Henderson
+  Type: Whole Life
+  Face Amount: $1,000,000
+  Status: Active
+  Annual Premium: $12,200
+
+Agent: Thomas Williams, CLU
+Agency: Northwestern Mutual - Atlanta
+Phone: (404) 555-9200

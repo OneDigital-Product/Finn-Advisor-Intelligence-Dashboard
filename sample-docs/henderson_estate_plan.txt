@@ -1,0 +1,102 @@
+ESTATE PLANNING SUMMARY
+Henderson Family
+
+Prepared by: Johnson & Bradley, Attorneys at Law
+Date: June 15, 2024
+Last Updated: June 15, 2024
+
+CLIENT INFORMATION
+-------------------
+Robert Allan Henderson
+DOB: March 15, 1958
+SSN: XXX-XX-4521
+
+Margaret Lynn Henderson
+DOB: July 22, 1960
+SSN: XXX-XX-7843
+
+Address: 1245 Peachtree Rd NE, Atlanta, GA 30309
+
+ESTATE DOCUMENTS ON FILE
+--------------------------
+
+1. REVOCABLE LIVING TRUST
+   Trust Name: Henderson Family Revocable Living Trust
+   Date Established: June 15, 2024
+   Trustees: Robert A. Henderson & Margaret L. Henderson (Co-Trustees)
+   Successor Trustee: First National Bank of Georgia, Trust Division
+   Beneficiaries:
+     - During lifetime: Robert and Margaret Henderson
+     - Upon first death: Surviving spouse receives all trust assets
+     - Upon second death:
+       - 40% to Henderson Family Foundation (charitable)
+       - 30% to James Henderson (son), DOB 04/12/1985
+       - 30% to Katherine Henderson-Park (daughter), DOB 09/28/1987
+
+2. POUR-OVER WILLS
+   Robert Henderson - Last Will and Testament, dated June 15, 2024
+   Margaret Henderson - Last Will and Testament, dated June 15, 2024
+   Both wills direct all probate assets to the Henderson Family Revocable Living Trust.
+
+3. DURABLE POWER OF ATTORNEY - FINANCIAL
+   Robert Henderson: Agent - Margaret Henderson; Successor Agent - James Henderson
+   Margaret Henderson: Agent - Robert Henderson; Successor Agent - Katherine Henderson-Park
+
+4. HEALTHCARE POWER OF ATTORNEY
+   Robert Henderson: Agent - Margaret Henderson; Successor Agent - James Henderson
+   Margaret Henderson: Agent - Robert Henderson; Successor Agent - Katherine Henderson-Park
+
+5. ADVANCE HEALTHCARE DIRECTIVES (Living Wills)
+   Both Robert and Margaret have executed advance directives.
+   Do not resuscitate (DNR) preferences: Documented
+   Organ donation: Both have opted in
+
+ASSETS IN TRUST
+----------------
+Henderson Family Trust Account (Fidelity): $850,000
+Real Property: 1245 Peachtree Rd NE, Atlanta, GA 30309 (est. value $1,200,000)
+Rental Property: 445 Roswell Rd, Marietta, GA (est. value $380,000)
+
+ASSETS OUTSIDE TRUST (Transfer-on-Death or Beneficiary Designated)
+-------------------------------------------------------------------
+Fidelity Individual Brokerage (Z42-881247): $2,193,010 - TOD to Margaret Henderson
+Fidelity Traditional IRA (X71-554893): $1,502,000 - Beneficiary: Margaret Henderson
+Northwestern Mutual Life Insurance (NM-2845791): $2,245,000 death benefit - Beneficiary: Margaret Henderson
+Social Security Benefits - Automatically transferred
+
+CHARITABLE PLANNING
+---------------------
+Henderson Family Foundation: Established 2020
+  Type: Donor-Advised Fund at Atlanta Community Foundation
+  Current Balance: $350,000
+  Annual Grant Target: $25,000-$50,000
+  Focus Areas: Education, Arts, Community Development
+
+Charitable Remainder Trust: Under consideration for 2026
+  Proposed funding: Appreciated AAPL stock ($145,800 unrealized gain)
+  Estimated annual income: 5% of trust value
+  Remainder beneficiary: Henderson Family Foundation
+
+ESTIMATED ESTATE VALUE
+------------------------
+Joint Assets: $8,500,000 (approximate)
+  Investment accounts: $4,545,010
+  Retirement accounts: $1,502,000
+  Life insurance death benefits: $3,245,000
+  Real property: $1,580,000
+  Personal property/vehicles: $150,000
+  Less: Estimated debts: ($0)
+  Less: Charitable commitments: ($350,000)
+
+Federal Estate Tax Exemption (2026): $13,610,000 per person ($27,220,000 married couple)
+Estimated Federal Estate Tax: $0
+
+RECOMMENDATIONS (from last review)
+-------------------------------------
+1. Monitor proposed estate tax exemption sunset (2026 legislation pending)
+2. Consider accelerated gifting strategy if exemption reduced
+3. Evaluate charitable remainder trust for concentrated stock positions
+4. Annual review of beneficiary designations across all accounts
+5. Update trust provisions if grandchildren are born
+
+NEXT REVIEW DATE: June 2026

@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "eval_name": "task-count-cache-invalidation",
+  "prompt": "ok so I just edited a task for a client and went back to the client list and the task count didn't update, I had to refresh the whole page, that's annoying as fuck why doesn't it just show the updated number",
+  "assertions": [
+    {"text": "Response contains all 7 sections from the skill format", "type": "structural"},
+    {"text": "References real file paths from the codebase", "type": "evidence"},
+    {"text": "Proposes exactly 3 fixes ordered by effort level", "type": "structural"},
+    {"text": "Section 6 makes a clear recommendation rather than staying neutral", "type": "quality"},
+    {"text": "Section 7 names specific implementation changes", "type": "quality"},
+    {"text": "Section 1 preserves the user's frustrated tone without sanitizing", "type": "tone"}
+  ]
+}

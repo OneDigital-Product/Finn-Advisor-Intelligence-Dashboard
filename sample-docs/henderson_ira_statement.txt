@@ -1,0 +1,63 @@
+FIDELITY INVESTMENTS
+TRADITIONAL IRA ACCOUNT STATEMENT - PERIOD ENDING FEBRUARY 28, 2026
+
+Account Holder: Robert A. Henderson
+Account Number: X71-554893
+Account Type: Traditional IRA
+Custodian: Fidelity Investments
+Tax Status: Tax-Deferred
+Date of Birth: 03/15/1958
+RMD Required: Yes (Age 68 in 2026)
+
+ACCOUNT SUMMARY
+----------------
+Beginning Balance (01/31/2026): $1,485,200.00
+Deposits/Contributions: $0.00
+RMD Distribution (02/15/2026): -$5,200.00
+Change in Market Value: +$18,900.00
+Dividends Reinvested: $3,100.00
+Ending Balance (02/28/2026): $1,502,000.00
+
+REQUIRED MINIMUM DISTRIBUTION (RMD) STATUS
+-------------------------------------------
+2026 RMD Amount: $62,400.00
+Distributed YTD: $10,400.00
+Remaining: $52,000.00
+Distribution Schedule: Monthly ($5,200/month)
+Distribution Method: Cash to linked checking account
+Target Completion: December 2026
+
+CURRENT HOLDINGS
+-----------------
+Ticker    Name                              Shares      Price       Market Value     Weight
+------    ----                              ------      -----       ------------     ------
+FXAIX     Fidelity 500 Index Fund           3,200       $198.50     $635,200.00      42.3%
+FTBFX     Fidelity Total Bond Fund          25,000      $9.82       $245,500.00      16.3%
+FSPSX     Fidelity Intl Index Fund           8,000      $46.20      $369,600.00      24.6%
+FXNAX     Fidelity US Bond Index            12,000      $10.15      $121,800.00       8.1%
+FDGRX     Fidelity Growth Company            800        $162.40     $129,920.00       8.7%
+
+TOTAL IRA VALUE: $1,502,000.00
+
+ASSET ALLOCATION
+-----------------
+US Equities:       51.0%
+International:     24.6%
+Fixed Income:      24.4%
+
+BENEFICIARY INFORMATION
+------------------------
+Primary: Margaret L. Henderson (Spouse) - 100%
+Contingent: Henderson Family Trust - 100%
+Last Updated: June 15, 2024
+
+IMPORTANT TAX INFORMATION
+---------------------------
+All distributions are taxed as ordinary income.
+Early withdrawal penalty (10%) does not apply - account holder is over 59½.
+RMD deadline: December 31, 2026
+Failure to take full RMD results in 25% excise tax on shortfall.
+
+Account established: 1998
+Total contributions (historical): $385,000
+Rollover from Henderson Industries 401(k): $420,000 (2018)

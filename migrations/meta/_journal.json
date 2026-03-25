@@ -1,0 +1,139 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1773244339009,
+      "tag": "0000_adorable_iron_patriot",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1773257729797,
+      "tag": "0001_chunky_beyonder",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773265795617,
+      "tag": "0002_medical_mother_askani",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1773265407600,
+      "tag": "0003_concerned_forgotten_one",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1773266399201,
+      "tag": "0004_bizarre_iron_patriot",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1773265186200,
+      "tag": "0005_lying_baron_zemo",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1773266313575,
+      "tag": "0006_workable_black_bolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1773267509716,
+      "tag": "0005_messy_vertigo",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1773268058208,
+      "tag": "0005_foamy_justin_hammer",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1773270900000,
+      "tag": "0007_pending_profile_updates",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1773273409717,
+      "tag": "0010_nifty_agent_brand",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1773539556000,
+      "tag": "0008_fee_schedule_and_capacity",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1773538000000,
+      "tag": "0008_outlook_event_id_unique",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1773273056965,
+      "tag": "0011_salesforce_unique_constraints",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1773548074000,
+      "tag": "0011_assessment_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1773570000000,
+      "tag": "0012_research_feeds",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1773580000000,
+      "tag": "0013_api_key_metadata",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1773689249921,
+      "tag": "0001_charitable_remainder_trusts",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1773700000000,
+      "tag": "0015_portfolio_schema_alignment",
+      "breakpoints": true
+    }
+  ]
+}

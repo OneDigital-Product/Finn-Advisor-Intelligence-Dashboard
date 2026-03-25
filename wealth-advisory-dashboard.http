@@ -1,0 +1,82 @@
+@env = uat
+
+### OAuth token
+# @name oauthToken
+POST {{oauth_base_url}}/v1.0/oauth2/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials
+&client_id={{client_id}}
+&client_secret={{client_secret}}
+&scope={{scope}}
+
+### Client portfolio value
+GET {{wad_base_url}}/api/v1/portfolio/clients/value
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+### Client portfolio value with token from OAuth request
+# Use this variant if your HTTP client supports named-response references.
+GET {{wad_base_url}}/api/v1/portfolio/clients/value
+Content-Type: application/json
+Authorization: Bearer {{oauthToken.response.body.$.access_token}}
+
+### Client accounts value
+GET {{wad_base_url}}/api/v1/portfolio/clients/{{client_id_for_accounts}}/accounts/value
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+### Client accounts value with token from OAuth request
+GET {{wad_base_url}}/api/v1/portfolio/clients/{{client_id_for_accounts}}/accounts/value
+Content-Type: application/json
+Authorization: Bearer {{oauthToken.response.body.$.access_token}}
+
+### Client assets
+GET {{wad_base_url}}/api/v1/portfolio/clients/{{client_id_for_assets}}/assets
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+### Client assets with token from OAuth request
+GET {{wad_base_url}}/api/v1/portfolio/clients/{{client_id_for_assets}}/assets
+Content-Type: application/json
+Authorization: Bearer {{oauthToken.response.body.$.access_token}}
+
+### Reporting scope
+POST {{wad_base_url}}/api/v1/reporting/scope
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "entity": "{{reporting_entity}}",
+  "entityIds": [{{reporting_entity_id}}],
+  "asOfDate": "{{reporting_as_of_date}}",
+  "managed": {{reporting_managed}},
+  "calculations": [
+    {
+      "$type": "{{reporting_calculation_1}}"
+    },
+    {
+      "$type": "{{reporting_calculation_2}}"
+    }
+  ]
+}
+
+### Reporting scope with token from OAuth request
+POST {{wad_base_url}}/api/v1/reporting/scope
+Content-Type: application/json
+Authorization: Bearer {{oauthToken.response.body.$.access_token}}
+
+{
+  "entity": "{{reporting_entity}}",
+  "entityIds": [{{reporting_entity_id}}],
+  "asOfDate": "{{reporting_as_of_date}}",
+  "managed": {{reporting_managed}},
+  "calculations": [
+    {
+      "$type": "{{reporting_calculation_1}}"
+    },
+    {
+      "$type": "{{reporting_calculation_2}}"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.logoContainer {
+  transform: translate(0, 0) scale(1, 1) rotate(0deg);
+  will-change: transform;
+  line-height: 0;
+}
+
+.shadow {
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse,
+    rgba(26, 150, 191, 0.16) 0%,
+    transparent 70%
+  );
+  filter: blur(10px);
+  opacity: 0.6;
+  transform: scaleX(1) scaleY(1);
+  will-change: transform, opacity;
+  margin-top: 2px;
+}
+
+.divider {
+  border: none;
+  height: 2px;
+  background: #8eb935;
+  border-radius: 1px;
+}

@@ -1,0 +1,23 @@
+{
+  "skill_name": "voice-to-engineering",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "holy shit why does the dashboard take like 10 seconds to load, I literally just opened the app and I'm staring at a blank screen, this is embarrassing if a client sees this",
+      "expected_output": "Structured response with 7 sections: what you said, what you should have said, what I interpret, why this is happening, three fixes, recommendation, implementation direction. Should reference actual dashboard code, query patterns, and loading states.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "ok so I just edited a task for a client and went back to the client list and the task count didn't update, I had to refresh the whole page, that's annoying as fuck why doesn't it just show the updated number",
+      "expected_output": "Structured response diagnosing cache invalidation issue. Should identify React Query invalidation gaps, propose queryClient.invalidateQueries fixes, and suggest optimistic updates.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "the portfolio section shows different numbers than what I see in the header, like the AUM in the header says 24M but the accounts below add up to something totally different, what the hell is going on with these numbers",
+      "expected_output": "Structured response diagnosing data source mismatch between summary endpoint AUM and portfolio endpoint account totals. Should trace both data paths and identify the discrepancy source.",
+      "files": []
+    }
+  ]
+}

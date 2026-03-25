@@ -1,0 +1,80 @@
+FORM 1040 - U.S. INDIVIDUAL INCOME TAX RETURN - TAX YEAR 2025
+
+Filing Status: Married Filing Jointly
+Taxpayer: Robert A. Henderson
+SSN: XXX-XX-4521
+Spouse: Margaret L. Henderson
+SSN: XXX-XX-7843
+
+Address: 1245 Peachtree Rd NE, Atlanta, GA 30309
+Phone: (404) 555-1001
+Email: robert.henderson@gmail.com
+Date of Birth: 03/15/1958
+Spouse Date of Birth: 07/22/1960
+
+INCOME
+-------
+Wages, salaries, tips (W-2): $0
+Taxable interest (1099-INT): $18,450
+Ordinary dividends (1099-DIV): $87,200
+  Qualified dividends: $72,100
+Capital gains (Schedule D): $34,800
+  Short-term: $4,200
+  Long-term: $30,600
+IRA distributions (1099-R): $62,000
+  Taxable amount: $62,000
+Social Security benefits: $42,000
+  Taxable amount: $35,700
+Rental income (Schedule E): $24,000
+Other income: $0
+
+Total Income: $268,450
+Adjusted Gross Income: $255,150
+
+DEDUCTIONS
+----------
+State and local taxes (SALT cap): $10,000
+Mortgage interest: $0
+Charitable contributions: $45,000
+  Cash contributions: $20,000
+  Non-cash (appreciated securities): $25,000
+Medical expenses (above threshold): $3,200
+
+Total Itemized Deductions: $58,200
+
+TAXABLE INCOME: $196,950
+
+TAX COMPUTATION
+---------------
+Tax: $38,419
+Qualified dividends/LTCG rate: 15%
+Net Investment Income Tax (3.8%): $4,850
+Additional Medicare Tax: $0
+Total Tax: $43,269
+
+PAYMENTS & CREDITS
+------------------
+Federal income tax withheld: $12,400
+Estimated tax payments: $35,000
+Total payments: $47,400
+
+REFUND: $4,131
+
+SCHEDULE B - INTEREST AND DIVIDENDS
+Fidelity Investments - Taxable account: $8,200 interest, $52,400 dividends
+Schwab Individual Account: $6,100 interest, $22,800 dividends
+Bank of America Savings: $4,150 interest
+Henderson Family Trust: $12,000 dividends
+
+SCHEDULE D - CAPITAL GAINS
+Sale of AAPL (500 shares) 03/15/2025: $18,200 gain (long-term)
+Sale of MSFT (200 shares) 06/01/2025: $12,400 gain (long-term)
+Sale of Various ETFs: $4,200 gain (short-term)
+
+REQUIRED MINIMUM DISTRIBUTIONS
+Robert Henderson Traditional IRA - Fidelity: $62,000 (RMD met)
+Margaret Henderson - Not yet subject to RMDs
+
+Prepared by: Thompson & Associates CPA
+EIN: 58-XXXXXXX
+Date: February 15, 2026

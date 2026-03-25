@@ -1,0 +1,46 @@
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: advisor-app
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://advisor:password@postgres:5432/advisor_db
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SESSION_SECRET=${SESSION_SECRET:-dev-secret-change-in-prod}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - advisor-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: advisor-postgres
+    environment:
+      POSTGRES_USER: advisor
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: advisor_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U advisor']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - advisor-network
+
+volumes:
+  postgres_data:
+
+networks:
+  advisor-network:
+    driver: bridge
