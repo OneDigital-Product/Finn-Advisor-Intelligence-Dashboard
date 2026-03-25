@@ -3,6 +3,7 @@
   "version": "2.0.0",
   "type": "module",
   "license": "MIT",
+  "packageManager": "npm@10.8.0",
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",
