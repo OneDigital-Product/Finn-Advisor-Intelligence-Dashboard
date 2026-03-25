@@ -367,6 +367,42 @@ export async function GET(request: Request) {
     // Serve live (or stale-live) data — never seed data for SF users
     if (allClients.length > 0 || (_dataSources.fallback as string) !== "local-db") {
       // -------------------------------------------------------------------
+      // Blend local seed/demo clients into the enriched list so demo
+      // walkthroughs (e.g. James Chen) appear alongside live SF data.
+      // -------------------------------------------------------------------
+      try {
+        const localClients = await storage.getClients(session.userId);
+        const liveIds = new Set(allClients.map((c: any) => c.salesforceContactId || c.id));
+        const aumMap = await storage.getAumByClient(localClients.map((c) => c.id));
+        for (const lc of localClients) {
+          if (!liveIds.has(lc.id) && !liveIds.has(lc.salesforceContactId)) {
+            const aumData = aumMap.get(lc.id);
+            allClients.push({
+              id: lc.id,
+              firstName: lc.firstName,
+              lastName: lc.lastName,
+              email: lc.email,
+              phone: lc.phone,
+              segment: lc.segment,
+              status: lc.status || "active",
+              riskTolerance: lc.riskTolerance,
+              dateOfBirth: lc.dateOfBirth,
+              occupation: lc.occupation,
+              employer: lc.employer,
+              totalAum: aumData?.totalAum ?? 0,
+              currentAUM: aumData?.totalAum ?? 0,
+              entityType: "individual",
+              source: "local-db",
+              lastContactDate: lc.lastContactDate,
+              nextReviewDate: lc.nextReviewDate,
+            });
+          }
+        }
+      } catch (blendErr) {
+        logger.warn({ err: blendErr }, "[Clients] Failed to blend local demo clients");
+      }
+
+      // -------------------------------------------------------------------
       // Server-side search, sort, and paginate the full enriched list
       // -------------------------------------------------------------------
       let filtered = allClients;

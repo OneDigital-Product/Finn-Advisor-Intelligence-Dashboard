@@ -212,6 +212,16 @@ export async function GET(_request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: "Client not found" }, { status: 404 });
     }
 
+    // Compute AUM and account count from the accounts table (clients table has no AUM column)
+    const accounts = await storage.getAccountsByClient(String(client.id));
+    const computedAum = accounts.reduce((sum: number, a: any) => sum + (Number(a.totalValue) || 0), 0);
+    const computedAccountCount = accounts.length;
+
+    // Also compute from AUM helper for consistency
+    const aumMap = await storage.getAumByClient([String(client.id)]);
+    const aumData = aumMap.get(String(client.id));
+    const finalAum = aumData?.totalAum || computedAum;
+
     const mapped = {
       id: String(client.id),
       firstName: (client as any).firstName || "",
@@ -226,8 +236,8 @@ export async function GET(_request: Request, { params }: RouteContext) {
       occupation: (client as any).occupation || "",
       dateOfBirth: (client as any).dateOfBirth || null,
       annualIncome: (client as any).annualIncome || (client as any).estimatedAnnualIncome || null,
-      totalAum: (client as any).totalAum || (client as any).currentAUM || 0,
-      accountCount: (client as any).accountCount || 0,
+      totalAum: finalAum,
+      accountCount: computedAccountCount,
       isLiveData: false as const,
     };
 
