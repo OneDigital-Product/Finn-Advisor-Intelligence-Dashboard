@@ -29,6 +29,11 @@ async function assertInstanceOwnership(instanceId: string, advisorId: string) {
   return instance;
 }
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerWorkflowAutomationRoutes(app: Express) {
   app.get("/api/workflow-automations/definitions", requireAdvisor, async (req, res) => {
     try {
@@ -44,7 +49,7 @@ export function registerWorkflowAutomationRoutes(app: Express) {
 
   app.get("/api/workflow-automations/definitions/:id", requireAdvisor, async (req, res) => {
     try {
-      const definition = await storage.getWorkflowDefinition_v2(req.params.id);
+      const definition = await storage.getWorkflowDefinition_v2(p(req.params.id));
       if (!definition) return res.status(404).json({ message: "Definition not found" });
       res.json(definition);
     } catch (error: any) {
@@ -118,7 +123,7 @@ export function registerWorkflowAutomationRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
 
-      const instance = await assertInstanceOwnership(req.params.id, advisor.id);
+      const instance = await assertInstanceOwnership(p(req.params.id), advisor.id);
       if (!instance) return res.status(404).json({ message: "Instance not found" });
 
       const [definition, steps, gates] = await Promise.all([
@@ -192,16 +197,16 @@ export function registerWorkflowAutomationRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
 
-      const gate = await storage.getWorkflowGate(req.params.gateId);
+      const gate = await storage.getWorkflowGate(p(req.params.gateId));
       if (!gate) return res.status(404).json({ message: "Gate not found" });
       if (gate.ownerId !== advisor.id) return res.status(403).json({ message: "Not authorized to act on this gate" });
 
       const body = validateBody(gateActionSchema, req, res);
       if (!body) return;
 
-      await workflowOrchestrator.resolveGate(req.params.gateId, body.decision, body.decisionNote);
+      await workflowOrchestrator.resolveGate(p(req.params.gateId), body.decision, body.decisionNote);
 
-      const updatedGate = await storage.getWorkflowGate(req.params.gateId);
+      const updatedGate = await storage.getWorkflowGate(p(req.params.gateId));
       res.json(updatedGate);
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -242,10 +247,10 @@ export function registerWorkflowAutomationRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
 
-      const instance = await assertInstanceOwnership(req.params.id, advisor.id);
+      const instance = await assertInstanceOwnership(p(req.params.id), advisor.id);
       if (!instance) return res.status(404).json({ message: "Instance not found" });
 
-      const result = await workflowOrchestrator.cancelWorkflow(req.params.id);
+      const result = await workflowOrchestrator.cancelWorkflow(p(req.params.id));
       res.json(result);
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -258,10 +263,10 @@ export function registerWorkflowAutomationRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
 
-      const instance = await assertInstanceOwnership(req.params.id, advisor.id);
+      const instance = await assertInstanceOwnership(p(req.params.id), advisor.id);
       if (!instance) return res.status(404).json({ message: "Instance not found" });
 
-      const result = await workflowOrchestrator.pauseWorkflow(req.params.id);
+      const result = await workflowOrchestrator.pauseWorkflow(p(req.params.id));
       res.json(result);
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -274,10 +279,10 @@ export function registerWorkflowAutomationRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
 
-      const instance = await assertInstanceOwnership(req.params.id, advisor.id);
+      const instance = await assertInstanceOwnership(p(req.params.id), advisor.id);
       if (!instance) return res.status(404).json({ message: "Instance not found" });
 
-      const result = await workflowOrchestrator.resumeWorkflow(req.params.id);
+      const result = await workflowOrchestrator.resumeWorkflow(p(req.params.id));
       res.json(result);
     } catch (error: any) {
       logger.error({ err: error }, "API error");

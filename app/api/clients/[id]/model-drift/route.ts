@@ -11,13 +11,13 @@ import { logger } from "@server/lib/logger";
  */
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = await requireAuth();
     if (auth.error) return auth.error;
 
-    const clientId = params.id;
+    const { id: clientId } = await params;
     const idCheck = validateId(clientId);
     if (!idCheck.valid) return idCheck.error;
 

@@ -12,6 +12,11 @@ const updateHouseholdSchema = insertHouseholdSchema.omit({ advisorId: true }).pa
   { message: "At least one field must be provided" }
 );
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerHouseholdRoutes(app: Express) {
   app.get("/api/households", async (req, res) => {
     try {
@@ -105,7 +110,7 @@ export function registerHouseholdRoutes(app: Express) {
 
   app.get("/api/households/:id", async (req, res) => {
     try {
-      const household = await storage.getHousehold(req.params.id);
+      const household = await storage.getHousehold(p(req.params.id));
       if (!household) return res.status(404).json({ message: "Household not found" });
       if (household.advisorId !== req.session.userId!) {
         return res.status(403).json({ message: "Access denied" });
@@ -127,12 +132,12 @@ export function registerHouseholdRoutes(app: Express) {
 
   app.get("/api/households/:id/members", async (req, res) => {
     try {
-      const household = await storage.getHousehold(req.params.id);
+      const household = await storage.getHousehold(p(req.params.id));
       if (!household) return res.status(404).json({ message: "Household not found" });
       if (household.advisorId !== req.session.userId!) {
         return res.status(403).json({ message: "Access denied" });
       }
-      const members = await storage.getHouseholdMembers(req.params.id);
+      const members = await storage.getHouseholdMembers(p(req.params.id));
       res.json(members);
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -164,7 +169,7 @@ export function registerHouseholdRoutes(app: Express) {
     try {
       const body = validateBody(updateHouseholdSchema, req, res);
       if (!body) return;
-      const existing = await storage.getHousehold(req.params.id);
+      const existing = await storage.getHousehold(p(req.params.id));
       if (!existing) return res.status(404).json({ message: "Household not found" });
       if (existing.advisorId !== req.session.userId!) {
         return res.status(403).json({ message: "Access denied" });
@@ -175,7 +180,7 @@ export function registerHouseholdRoutes(app: Express) {
           return res.status(400).json({ message: "Primary client not found or not owned by you" });
         }
       }
-      const result = await storage.updateHousehold(req.params.id, body);
+      const result = await storage.updateHousehold(p(req.params.id), body);
       res.json(result);
     } catch (error: any) {
       logger.error({ err: error }, "API error");

@@ -13,6 +13,11 @@ import {
   VALIDATION_MODULES,
 } from "../engines/submission-validator";
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerValidationRoutes(app: Express) {
   app.post("/api/validations/run", requireAuth, async (req, res) => {
     try {
@@ -56,7 +61,7 @@ export function registerValidationRoutes(app: Express) {
 
   app.post("/api/approvals/:id/validate", requireAuth, async (req, res) => {
     try {
-      const { id } = req.params;
+      const id = p(req.params.id);
       const runBy = req.session.userId || "system";
 
       const [item] = await db
@@ -93,7 +98,7 @@ export function registerValidationRoutes(app: Express) {
 
   app.get("/api/approvals/:id/validation-results", requireAuth, async (req, res) => {
     try {
-      const { id } = req.params;
+      const id = p(req.params.id);
       const { history } = req.query;
 
       if (history === "true") {
@@ -179,7 +184,7 @@ export function registerValidationRoutes(app: Express) {
 
   app.patch("/api/validation-rules/:id", requireAuth, async (req, res) => {
     try {
-      const { id } = req.params;
+      const id = p(req.params.id);
       const schema = z.object({
         enabled: z.boolean().optional(),
         severity: z.enum(["error", "warn", "info"]).optional(),

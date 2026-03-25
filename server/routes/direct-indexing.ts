@@ -29,12 +29,17 @@ function parseQueryNum(value: string | undefined, defaultVal: number): number {
   return isNaN(parsed) ? defaultVal : parsed;
 }
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerDirectIndexingRoutes(app: Express) {
   app.get("/api/clients/:clientId/tax-lots", requireAuth, async (req, res) => {
     try {
-      let lots = await storage.getTaxLotsByClient(req.params.clientId);
+      let lots = await storage.getTaxLotsByClient(p(req.params.clientId));
       if (lots.length === 0) {
-        lots = await directIndexingEngine.generateTaxLotsFromHoldings(req.params.clientId);
+        lots = await directIndexingEngine.generateTaxLotsFromHoldings(p(req.params.clientId));
       }
       res.json(lots);
     } catch (error: any) {
@@ -45,7 +50,7 @@ export function registerDirectIndexingRoutes(app: Express) {
 
   app.get("/api/accounts/:accountId/tax-lots", requireAuth, async (req, res) => {
     try {
-      const lots = await storage.getTaxLotsByAccount(req.params.accountId);
+      const lots = await storage.getTaxLotsByAccount(p(req.params.accountId));
       res.json(lots);
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -55,7 +60,7 @@ export function registerDirectIndexingRoutes(app: Express) {
 
   app.get("/api/clients/:clientId/direct-index-portfolios", requireAuth, async (req, res) => {
     try {
-      const portfolios = await storage.getDirectIndexPortfoliosByClient(req.params.clientId);
+      const portfolios = await storage.getDirectIndexPortfoliosByClient(p(req.params.clientId));
       res.json(portfolios);
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -69,7 +74,7 @@ export function registerDirectIndexingRoutes(app: Express) {
       if (!body) return;
 
       const portfolio = await directIndexingEngine.generateDirectIndexPortfolio(
-        req.params.clientId,
+        p(req.params.clientId),
         body.targetIndex,
         body.totalValue,
         body.accountId,
@@ -83,14 +88,14 @@ export function registerDirectIndexingRoutes(app: Express) {
 
   app.get("/api/clients/:clientId/harvestable-lots", requireAuth, async (req, res) => {
     try {
-      let lots = await storage.getTaxLotsByClient(req.params.clientId);
+      let lots = await storage.getTaxLotsByClient(p(req.params.clientId));
       if (lots.length === 0) {
-        await directIndexingEngine.generateTaxLotsFromHoldings(req.params.clientId);
+        await directIndexingEngine.generateTaxLotsFromHoldings(p(req.params.clientId));
       }
       const taxRate = parseQueryNum(req.query.taxRate as string, 0.37);
       const minLoss = parseQueryNum(req.query.minLoss as string, 500);
       const harvestable = await directIndexingEngine.identifyHarvestableLots(
-        req.params.clientId,
+        p(req.params.clientId),
         taxRate,
         minLoss,
       );
@@ -103,7 +108,7 @@ export function registerDirectIndexingRoutes(app: Express) {
 
   app.get("/api/clients/:clientId/wash-sale-tracker", requireAuth, async (req, res) => {
     try {
-      const tracker = await directIndexingEngine.getWashSaleTracker(req.params.clientId);
+      const tracker = await directIndexingEngine.getWashSaleTracker(p(req.params.clientId));
       res.json(tracker);
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -117,7 +122,7 @@ export function registerDirectIndexingRoutes(app: Express) {
       if (!body) return;
 
       const event = await storage.createWashSaleEvent({
-        clientId: req.params.clientId,
+        clientId: p(req.params.clientId),
         ticker: body.ticker,
         sellDate: body.sellDate,
         sellAccountId: body.sellAccountId,
@@ -137,7 +142,7 @@ export function registerDirectIndexingRoutes(app: Express) {
 
   app.get("/api/direct-index-portfolios/:portfolioId/tracking", requireAuth, async (req, res) => {
     try {
-      const report = await directIndexingEngine.getTrackingReport(req.params.portfolioId);
+      const report = await directIndexingEngine.getTrackingReport(p(req.params.portfolioId));
       if (!report) return res.status(404).json({ message: "Portfolio not found" });
       res.json(report);
     } catch (error: any) {
@@ -149,7 +154,7 @@ export function registerDirectIndexingRoutes(app: Express) {
   app.get("/api/clients/:clientId/tax-alpha", requireAuth, async (req, res) => {
     try {
       const taxRate = parseQueryNum(req.query.taxRate as string, 0.37);
-      const report = await directIndexingEngine.getTaxAlphaAttribution(req.params.clientId, taxRate);
+      const report = await directIndexingEngine.getTaxAlphaAttribution(p(req.params.clientId), taxRate);
       res.json(report);
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -160,8 +165,8 @@ export function registerDirectIndexingRoutes(app: Express) {
   app.get("/api/clients/:clientId/wash-sale-compliance/:ticker", requireAuth, async (req, res) => {
     try {
       const results = await directIndexingEngine.checkWashSaleCompliance(
-        req.params.clientId,
-        req.params.ticker,
+        p(req.params.clientId),
+        p(req.params.ticker),
       );
       res.json(results);
     } catch (error: any) {
@@ -175,7 +180,7 @@ export function registerDirectIndexingRoutes(app: Express) {
       const taxRate = parseQueryNum(req.query.taxRate as string, 0.37);
       const portfolioValue = parseQueryNum(req.query.portfolioValue as string, 1000000);
       const report = await directIndexingEngine.calculateTaxAlphaComparison(
-        req.params.clientId,
+        p(req.params.clientId),
         portfolioValue,
         taxRate,
       );
@@ -202,7 +207,7 @@ export function registerDirectIndexingRoutes(app: Express) {
     try {
       const taxRate = parseQueryNum(req.query.taxRate as string, 0.37);
       const strategy = await directIndexingEngine.generateHarvestingStrategy(
-        req.params.clientId,
+        p(req.params.clientId),
         taxRate,
       );
       res.json(strategy);
@@ -214,14 +219,14 @@ export function registerDirectIndexingRoutes(app: Express) {
 
   app.get("/api/clients/:clientId/direct-index-portfolios/:portfolioId/construction-analysis", requireAuth, async (req, res) => {
     try {
-      const portfolio = await storage.getDirectIndexPortfolio(req.params.portfolioId);
+      const portfolio = await storage.getDirectIndexPortfolio(p(req.params.portfolioId));
       if (!portfolio) return res.status(404).json({ message: "Portfolio not found" });
-      if (portfolio.clientId !== req.params.clientId) {
+      if (portfolio.clientId !== p(req.params.clientId)) {
         return res.status(403).json({ message: "Portfolio does not belong to this client" });
       }
       const esgExclusions = req.query.esgExclusions ? (req.query.esgExclusions as string).split(",") : [];
       const analysis = await directIndexingEngine.analyzePortfolioConstruction(
-        req.params.portfolioId,
+        p(req.params.portfolioId),
         esgExclusions,
       );
       res.json(analysis);
@@ -236,7 +241,7 @@ export function registerDirectIndexingRoutes(app: Express) {
       const annualIncome = parseQueryNum(req.query.annualIncome as string, 500000);
       const filingStatus = (req.query.filingStatus as string) || "married_filing_jointly";
       const context = await directIndexingEngine.assessClientTaxContext(
-        req.params.clientId,
+        p(req.params.clientId),
         annualIncome,
         filingStatus,
       );
@@ -259,17 +264,17 @@ export function registerDirectIndexingRoutes(app: Express) {
 
   app.get("/api/clients/:clientId/direct-index-portfolios/:portfolioId/rebalance-proposal", requireAuth, async (req, res) => {
     try {
-      const portfolio = await storage.getDirectIndexPortfolio(req.params.portfolioId);
+      const portfolio = await storage.getDirectIndexPortfolio(p(req.params.portfolioId));
       if (!portfolio) return res.status(404).json({ message: "Portfolio not found" });
-      if (portfolio.clientId !== req.params.clientId) {
+      if (portfolio.clientId !== p(req.params.clientId)) {
         return res.status(403).json({ message: "Portfolio does not belong to this client" });
       }
 
       const driftTolerance = parseFloat(req.query.driftTolerance as string) || 1.0;
       const taxRate = parseFloat(req.query.taxRate as string) || 0.37;
       const proposal = await directIndexingEngine.generateRebalanceProposal(
-        req.params.portfolioId,
-        req.params.clientId,
+        p(req.params.portfolioId),
+        p(req.params.clientId),
         driftTolerance,
         taxRate,
       );

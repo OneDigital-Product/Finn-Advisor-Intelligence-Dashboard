@@ -153,7 +153,8 @@ export type DiagnosticResponse = z.infer<typeof diagnosticResponseSchema>;
 
 async function extractTextFromBuffer(buffer: Buffer, mimetype: string): Promise<string> {
   if (mimetype === "application/pdf") {
-    const pdfParse = (await import("pdf-parse")).default;
+    const pdfParseModule = await import("pdf-parse");
+    const pdfParse = (pdfParseModule as any).default || pdfParseModule;
     const data = await pdfParse(buffer);
     return data.text;
   }

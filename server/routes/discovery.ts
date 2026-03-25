@@ -53,6 +53,11 @@ const updateSessionSchema = z.object({
   clientId: z.string().nullable().optional(),
 });
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerDiscoveryRoutes(app: Express) {
   app.get("/api/discovery/questionnaires", requireAuth, async (req, res) => {
     try {
@@ -76,7 +81,7 @@ export function registerDiscoveryRoutes(app: Express) {
     try {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
-      const questionnaire = await storage.getDiscoveryQuestionnaire(req.params.id);
+      const questionnaire = await storage.getDiscoveryQuestionnaire(p(req.params.id));
       if (!questionnaire) return res.status(404).json({ message: "Questionnaire not found" });
       if (questionnaire.advisorId !== advisor.id) return res.status(403).json({ message: "Not authorized" });
       res.json(questionnaire);
@@ -110,12 +115,12 @@ export function registerDiscoveryRoutes(app: Express) {
     try {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
-      const existing = await storage.getDiscoveryQuestionnaire(req.params.id);
+      const existing = await storage.getDiscoveryQuestionnaire(p(req.params.id));
       if (!existing) return res.status(404).json({ message: "Questionnaire not found" });
       if (existing.advisorId !== advisor.id) return res.status(403).json({ message: "Not authorized" });
       const body = validateBody(updateQuestionnaireSchema, req, res);
       if (!body) return;
-      const questionnaire = await storage.updateDiscoveryQuestionnaire(req.params.id, body);
+      const questionnaire = await storage.updateDiscoveryQuestionnaire(p(req.params.id), body);
       if (!questionnaire) return res.status(404).json({ message: "Questionnaire not found" });
       res.json(questionnaire);
     } catch (err) {
@@ -128,10 +133,10 @@ export function registerDiscoveryRoutes(app: Express) {
     try {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
-      const existing = await storage.getDiscoveryQuestionnaire(req.params.id);
+      const existing = await storage.getDiscoveryQuestionnaire(p(req.params.id));
       if (!existing) return res.status(404).json({ message: "Questionnaire not found" });
       if (existing.advisorId !== advisor.id) return res.status(403).json({ message: "Not authorized" });
-      await storage.deleteDiscoveryQuestionnaire(req.params.id);
+      await storage.deleteDiscoveryQuestionnaire(p(req.params.id));
       res.json({ success: true });
     } catch (err) {
       logger.error({ err }, "DELETE /api/discovery/questionnaires/:id error");
@@ -155,7 +160,7 @@ export function registerDiscoveryRoutes(app: Express) {
     try {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
-      const session = await storage.getDiscoverySession(req.params.id);
+      const session = await storage.getDiscoverySession(p(req.params.id));
       if (!session) return res.status(404).json({ message: "Session not found" });
       if (session.advisorId !== advisor.id) return res.status(403).json({ message: "Not authorized" });
       res.json(session);
@@ -199,7 +204,7 @@ export function registerDiscoveryRoutes(app: Express) {
     try {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
-      const existing = await storage.getDiscoverySession(req.params.id);
+      const existing = await storage.getDiscoverySession(p(req.params.id));
       if (!existing) return res.status(404).json({ message: "Session not found" });
       if (existing.advisorId !== advisor.id) return res.status(403).json({ message: "Not authorized" });
       const body = validateBody(updateSessionSchema, req, res);
@@ -212,7 +217,7 @@ export function registerDiscoveryRoutes(app: Express) {
         const q = await storage.getDiscoveryQuestionnaire(body.questionnaireId);
         if (!q || q.advisorId !== advisor.id) return res.status(403).json({ message: "Not authorized to use this questionnaire" });
       }
-      const session = await storage.updateDiscoverySession(req.params.id, body);
+      const session = await storage.updateDiscoverySession(p(req.params.id), body);
       if (!session) return res.status(404).json({ message: "Session not found" });
       res.json(session);
     } catch (err) {
@@ -225,10 +230,10 @@ export function registerDiscoveryRoutes(app: Express) {
     try {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
-      const existing = await storage.getDiscoverySession(req.params.id);
+      const existing = await storage.getDiscoverySession(p(req.params.id));
       if (!existing) return res.status(404).json({ message: "Session not found" });
       if (existing.advisorId !== advisor.id) return res.status(403).json({ message: "Not authorized" });
-      await storage.deleteDiscoverySession(req.params.id);
+      await storage.deleteDiscoverySession(p(req.params.id));
       res.json({ success: true });
     } catch (err) {
       logger.error({ err }, "DELETE /api/discovery/sessions/:id error");
@@ -240,7 +245,7 @@ export function registerDiscoveryRoutes(app: Express) {
     try {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
-      const session = await storage.getDiscoverySession(req.params.id);
+      const session = await storage.getDiscoverySession(p(req.params.id));
       if (!session) return res.status(404).json({ message: "Session not found" });
       if (session.advisorId !== advisor.id) return res.status(403).json({ message: "Not authorized" });
 
@@ -263,7 +268,7 @@ export function registerDiscoveryRoutes(app: Express) {
     try {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
-      const session = await storage.getDiscoverySession(req.params.id);
+      const session = await storage.getDiscoverySession(p(req.params.id));
       if (!session) return res.status(404).json({ message: "Session not found" });
       if (session.advisorId !== advisor.id) return res.status(403).json({ message: "Not authorized" });
 
@@ -293,7 +298,7 @@ export function registerDiscoveryRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
 
-      const session = await storage.getDiscoverySession(req.params.id);
+      const session = await storage.getDiscoverySession(p(req.params.id));
       if (!session) return res.status(404).json({ message: "Session not found" });
       if (session.advisorId !== advisor.id) return res.status(403).json({ message: "Not authorized" });
 
@@ -386,7 +391,7 @@ export function registerDiscoveryRoutes(app: Express) {
           }
 
           const completion = Object.keys(matchedAnswers).length > 0
-            ? calculateCompletionPercentage(activeDefinition.questionSchema, matchedAnswers)
+            ? calculateCompletionPercentage(activeDefinition.questionSchema as any, matchedAnswers)
             : 0;
 
           const [ffResponse] = await db
@@ -424,7 +429,7 @@ export function registerDiscoveryRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
 
-      const session = await storage.getDiscoverySession(req.params.id);
+      const session = await storage.getDiscoverySession(p(req.params.id));
       if (!session) return res.status(404).json({ message: "Session not found" });
       if (session.advisorId !== advisor.id) return res.status(403).json({ message: "Not authorized" });
 

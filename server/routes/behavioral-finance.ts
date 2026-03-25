@@ -8,6 +8,11 @@ import { BehavioralFinanceEngine } from "../engines/behavioral-finance";
 
 const engine = new BehavioralFinanceEngine();
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 const analyzeSchema = z.object({
   communicationText: z.string().min(10, "Communication text must be at least 10 characters"),
   sourceType: z.enum(["meeting_transcript", "email", "phone_notes", "chat", "manual"]),
@@ -24,12 +29,12 @@ export function registerBehavioralFinanceRoutes(app: Express) {
       const body = validateBody(analyzeSchema, req, res);
       if (!body) return;
 
-      const client = await storage.getClient(req.params.id);
+      const client = await storage.getClient(p(req.params.id));
       if (!client) return res.status(404).json({ message: "Client not found" });
       if (client.advisorId !== advisor.id) return res.status(403).json({ message: "Access denied" });
 
       const analysisData = await engine.analyzeClientCommunication(
-        req.params.id,
+        p(req.params.id),
         advisor.id,
         body.communicationText,
         body.sourceType,
@@ -49,16 +54,16 @@ export function registerBehavioralFinanceRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ message: "Unauthorized" });
 
-      const meeting = await storage.getMeeting(req.params.meetingId);
+      const meeting = await storage.getMeeting(p(req.params.meetingId));
       if (!meeting) return res.status(404).json({ message: "Meeting not found" });
-      if (meeting.clientId !== req.params.id) return res.status(400).json({ message: "Meeting does not belong to this client" });
+      if (meeting.clientId !== p(req.params.id)) return res.status(400).json({ message: "Meeting does not belong to this client" });
 
-      const client = await storage.getClient(req.params.id);
+      const client = await storage.getClient(p(req.params.id));
       if (!client) return res.status(404).json({ message: "Client not found" });
       if (client.advisorId !== advisor.id) return res.status(403).json({ message: "Access denied" });
 
       const analysisData = await engine.analyzeMeetingTranscript(
-        req.params.meetingId,
+        p(req.params.meetingId),
         advisor.id
       );
 
@@ -78,11 +83,11 @@ export function registerBehavioralFinanceRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ message: "Unauthorized" });
 
-      const client = await storage.getClient(req.params.id);
+      const client = await storage.getClient(p(req.params.id));
       if (!client) return res.status(404).json({ message: "Client not found" });
       if (client.advisorId !== advisor.id) return res.status(403).json({ message: "Access denied" });
 
-      const profile = await engine.getClientBehavioralProfile(req.params.id);
+      const profile = await engine.getClientBehavioralProfile(p(req.params.id));
       res.json(profile);
     } catch (err: any) {
       res.status(500).json({ message: sanitizeErrorMessage(err, "Failed to get behavioral profile") });
@@ -94,11 +99,11 @@ export function registerBehavioralFinanceRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ message: "Unauthorized" });
 
-      const client = await storage.getClient(req.params.id);
+      const client = await storage.getClient(p(req.params.id));
       if (!client) return res.status(404).json({ message: "Client not found" });
       if (client.advisorId !== advisor.id) return res.status(403).json({ message: "Access denied" });
 
-      const alert = await engine.checkVolatilityAlerts(req.params.id, advisor.id);
+      const alert = await engine.checkVolatilityAlerts(p(req.params.id), advisor.id);
       res.json(alert);
     } catch (err: any) {
       res.status(500).json({ message: sanitizeErrorMessage(err, "Failed to check alerts") });
@@ -110,11 +115,11 @@ export function registerBehavioralFinanceRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ message: "Unauthorized" });
 
-      const client = await storage.getClient(req.params.id);
+      const client = await storage.getClient(p(req.params.id));
       if (!client) return res.status(404).json({ message: "Client not found" });
       if (client.advisorId !== advisor.id) return res.status(403).json({ message: "Access denied" });
 
-      const notes = await engine.generateMeetingBehavioralNotes(req.params.id);
+      const notes = await engine.generateMeetingBehavioralNotes(p(req.params.id));
       res.json({ notes });
     } catch (err: any) {
       res.status(500).json({ message: sanitizeErrorMessage(err, "Failed to generate coaching notes") });
@@ -138,11 +143,11 @@ export function registerBehavioralFinanceRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ message: "Unauthorized" });
 
-      const client = await storage.getClient(req.params.id);
+      const client = await storage.getClient(p(req.params.id));
       if (!client) return res.status(404).json({ message: "Client not found" });
       if (client.advisorId !== advisor.id) return res.status(403).json({ message: "Access denied" });
 
-      const analyses = await storage.getBehavioralAnalysesByClient(req.params.id);
+      const analyses = await storage.getBehavioralAnalysesByClient(p(req.params.id));
       const timeline = analyses.map((a) => ({
         id: a.id,
         date: a.createdAt,

@@ -8,6 +8,11 @@ import {
   type ServiceName,
 } from "../services/service-routing";
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerDataServiceRoutes(app: Express) {
   app.get("/api/data-services", requireAuth, requireAdvisor, (_req: Request, res: Response) => {
     const services = listAvailableServices();
@@ -15,13 +20,15 @@ export function registerDataServiceRoutes(app: Express) {
   });
 
   app.get("/api/data-services/:serviceName/:methodName/metadata", requireAuth, requireAdvisor, (req: Request, res: Response) => {
-    const { serviceName, methodName } = req.params;
+    const serviceName = p(req.params.serviceName);
+    const methodName = p(req.params.methodName);
     const metadata = getServiceMetadata(serviceName as ServiceName, methodName);
     res.json(metadata);
   });
 
   app.post("/api/data-services/:serviceName/:methodName", requireAuth, requireAdvisor, async (req: Request, res: Response) => {
-    const { serviceName, methodName } = req.params;
+    const serviceName = p(req.params.serviceName);
+    const methodName = p(req.params.methodName);
     const args: unknown[] = Array.isArray(req.body.args) ? req.body.args : [];
     try {
       const result = await executeServiceCall(serviceName as ServiceName, methodName, args);

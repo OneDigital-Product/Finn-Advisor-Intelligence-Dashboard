@@ -17,14 +17,19 @@ const createGoalSchema = z.object({
 
 const updateGoalSchema = createGoalSchema.partial();
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerGoalRoutes(app: Express) {
   app.get("/api/clients/:clientId/goals", requireAuth, async (req, res) => {
     try {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ message: "Not authenticated" });
-      const client = await storage.getClient(req.params.clientId);
+      const client = await storage.getClient(p(req.params.clientId));
       if (!client || client.advisorId !== advisor.id) return res.status(403).json({ message: "Forbidden" });
-      const goals = await storage.getFinancialGoalsByClient(req.params.clientId);
+      const goals = await storage.getFinancialGoalsByClient(p(req.params.clientId));
       res.json(goals);
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -36,7 +41,7 @@ export function registerGoalRoutes(app: Express) {
     try {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ message: "Not authenticated" });
-      const client = await storage.getClient(req.params.clientId);
+      const client = await storage.getClient(p(req.params.clientId));
       if (!client || client.advisorId !== advisor.id) return res.status(403).json({ message: "Forbidden" });
 
       const parsed = createGoalSchema.safeParse(req.body);
@@ -46,7 +51,7 @@ export function registerGoalRoutes(app: Express) {
       const { name, targetAmount, currentAmount, timeHorizonYears, priority, bucket, linkedAccountIds, notes } = parsed.data;
 
       const goal = await storage.createFinancialGoal({
-        clientId: req.params.clientId,
+        clientId: p(req.params.clientId),
         name,
         targetAmount: String(targetAmount),
         currentAmount: String(currentAmount),
@@ -68,10 +73,10 @@ export function registerGoalRoutes(app: Express) {
     try {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ message: "Not authenticated" });
-      const client = await storage.getClient(req.params.clientId);
+      const client = await storage.getClient(p(req.params.clientId));
       if (!client || client.advisorId !== advisor.id) return res.status(403).json({ message: "Forbidden" });
-      const goal = await storage.getFinancialGoal(req.params.goalId);
-      if (!goal || goal.clientId !== req.params.clientId) return res.status(404).json({ message: "Goal not found" });
+      const goal = await storage.getFinancialGoal(p(req.params.goalId));
+      if (!goal || goal.clientId !== p(req.params.clientId)) return res.status(404).json({ message: "Goal not found" });
 
       const parsed = updateGoalSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -90,7 +95,7 @@ export function registerGoalRoutes(app: Express) {
       if (data.notes !== undefined) updates.notes = data.notes;
       if (req.body.status !== undefined) updates.status = req.body.status;
 
-      const updated = await storage.updateFinancialGoal(req.params.goalId, updates);
+      const updated = await storage.updateFinancialGoal(p(req.params.goalId), updates);
       res.json(updated);
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -102,11 +107,11 @@ export function registerGoalRoutes(app: Express) {
     try {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ message: "Not authenticated" });
-      const client = await storage.getClient(req.params.clientId);
+      const client = await storage.getClient(p(req.params.clientId));
       if (!client || client.advisorId !== advisor.id) return res.status(403).json({ message: "Forbidden" });
-      const goal = await storage.getFinancialGoal(req.params.goalId);
-      if (!goal || goal.clientId !== req.params.clientId) return res.status(404).json({ message: "Goal not found" });
-      await storage.deleteFinancialGoal(req.params.goalId);
+      const goal = await storage.getFinancialGoal(p(req.params.goalId));
+      if (!goal || goal.clientId !== p(req.params.clientId)) return res.status(404).json({ message: "Goal not found" });
+      await storage.deleteFinancialGoal(p(req.params.goalId));
       res.json({ success: true });
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -157,11 +162,11 @@ export function registerGoalRoutes(app: Express) {
     try {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ message: "Not authenticated" });
-      const client = await storage.getClient(req.params.clientId);
+      const client = await storage.getClient(p(req.params.clientId));
       if (!client || client.advisorId !== advisor.id) return res.status(403).json({ message: "Forbidden" });
 
-      const goals = await storage.getFinancialGoalsByClient(req.params.clientId);
-      const accounts = await storage.getAccountsByClient(req.params.clientId);
+      const goals = await storage.getFinancialGoalsByClient(p(req.params.clientId));
+      const accounts = await storage.getAccountsByClient(p(req.params.clientId));
 
       const allHoldings = [];
       for (const account of accounts) {

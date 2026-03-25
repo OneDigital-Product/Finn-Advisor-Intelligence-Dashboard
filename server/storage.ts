@@ -199,7 +199,7 @@ export interface IStorage {
   getTasks(advisorId: string): Promise<Task[]>;
   getTasksByClient(clientId: string): Promise<Task[]>;
   getTasksByMeeting(meetingId: string): Promise<Task[]>;
-  getTasksByMeetingIds(meetingIds: number[]): Promise<Task[]>;
+  getTasksByMeetingIds(meetingIds: string[]): Promise<Task[]>;
   createTask(task: InsertTask): Promise<Task>;
   updateTask(id: string, data: Partial<Task>): Promise<Task | undefined>;
   deleteTask(id: string): Promise<void>;
@@ -1046,7 +1046,7 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(tasks).where(eq(tasks.meetingId, meetingId)).orderBy(desc(tasks.createdAt));
   }
 
-  async getTasksByMeetingIds(meetingIds: number[]): Promise<Task[]> {
+  async getTasksByMeetingIds(meetingIds: string[]): Promise<Task[]> {
     if (meetingIds.length === 0) return [];
     return db.select().from(tasks).where(inArray(tasks.meetingId, meetingIds as any)).orderBy(desc(tasks.createdAt));
   }
@@ -3293,7 +3293,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createResearchBrief(data: InsertResearchBrief): Promise<ResearchBrief> {
-    const [brief] = await db.insert(researchBriefs).values(data).returning();
+    const [brief] = await db.insert(researchBriefs).values(data as any).returning();
     return brief;
   }
 

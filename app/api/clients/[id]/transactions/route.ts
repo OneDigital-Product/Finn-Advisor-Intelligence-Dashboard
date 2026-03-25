@@ -14,11 +14,11 @@ import { logger } from "@server/lib/logger";
  * Optional query param: ?accountId=123 to scope to a specific account.
  * If accountId is provided, fetches account-level transactions; otherwise fetches client-level.
  */
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAuth();
   if (auth.error) return auth.error;
 
-  const clientId = params.id;
+  const { id: clientId } = await params;
   const idCheck = validateId(clientId);
   if (!idCheck.valid) return idCheck.error;
 

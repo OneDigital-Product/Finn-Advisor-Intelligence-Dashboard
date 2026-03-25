@@ -77,6 +77,11 @@ async function authorizeWithdrawal(req: any, res: any, withdrawalId: string) {
   return { advisor, withdrawal };
 }
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerWithdrawalRoutes(app: Express) {
   app.get("/api/withdrawals", requireAuth, async (req, res) => {
     try {
@@ -107,7 +112,7 @@ export function registerWithdrawalRoutes(app: Express) {
 
   app.get("/api/withdrawals/:id", requireAuth, async (req, res) => {
     try {
-      const ctx = await authorizeWithdrawal(req, res, req.params.id);
+      const ctx = await authorizeWithdrawal(req, res, p(req.params.id));
       if (!ctx) return;
 
       const { withdrawal } = ctx;
@@ -184,7 +189,7 @@ export function registerWithdrawalRoutes(app: Express) {
 
   app.post("/api/withdrawals/:id/set-aside", requireAuth, async (req, res) => {
     try {
-      const ctx = await authorizeWithdrawal(req, res, req.params.id);
+      const ctx = await authorizeWithdrawal(req, res, p(req.params.id));
       if (!ctx) return;
       const { advisor, withdrawal } = ctx;
 
@@ -231,7 +236,7 @@ export function registerWithdrawalRoutes(app: Express) {
 
   app.post("/api/withdrawals/:id/salesforce-case", requireAuth, async (req, res) => {
     try {
-      const ctx = await authorizeWithdrawal(req, res, req.params.id);
+      const ctx = await authorizeWithdrawal(req, res, p(req.params.id));
       if (!ctx) return;
       const { advisor, withdrawal } = ctx;
 
@@ -282,7 +287,7 @@ export function registerWithdrawalRoutes(app: Express) {
 
   app.post("/api/withdrawals/:id/eclipse-file", requireAuth, async (req, res) => {
     try {
-      const ctx = await authorizeWithdrawal(req, res, req.params.id);
+      const ctx = await authorizeWithdrawal(req, res, p(req.params.id));
       if (!ctx) return;
       const { advisor, withdrawal } = ctx;
 
@@ -326,7 +331,7 @@ export function registerWithdrawalRoutes(app: Express) {
 
   app.post("/api/withdrawals/:id/confirm-trade", requireAuth, async (req, res) => {
     try {
-      const ctx = await authorizeWithdrawal(req, res, req.params.id);
+      const ctx = await authorizeWithdrawal(req, res, p(req.params.id));
       if (!ctx) return;
       const { advisor, withdrawal } = ctx;
 
@@ -384,7 +389,7 @@ export function registerWithdrawalRoutes(app: Express) {
 
   app.post("/api/withdrawals/:id/cancel", requireAuth, async (req, res) => {
     try {
-      const ctx = await authorizeWithdrawal(req, res, req.params.id);
+      const ctx = await authorizeWithdrawal(req, res, p(req.params.id));
       if (!ctx) return;
       const { advisor, withdrawal } = ctx;
 
@@ -435,10 +440,10 @@ export function registerWithdrawalRoutes(app: Express) {
 
   app.get("/api/withdrawals/:id/audit-log", requireAuth, async (req, res) => {
     try {
-      const ctx = await authorizeWithdrawal(req, res, req.params.id);
+      const ctx = await authorizeWithdrawal(req, res, p(req.params.id));
       if (!ctx) return;
 
-      const auditLog = await storage.getWithdrawalAuditLog(req.params.id);
+      const auditLog = await storage.getWithdrawalAuditLog(p(req.params.id));
       res.json(auditLog);
     } catch (err) {
       logger.error({ err }, "Error fetching withdrawal audit log");
@@ -448,7 +453,7 @@ export function registerWithdrawalRoutes(app: Express) {
 
   app.post("/api/withdrawals/:id/sync-salesforce", requireAuth, async (req, res) => {
     try {
-      const ctx = await authorizeWithdrawal(req, res, req.params.id);
+      const ctx = await authorizeWithdrawal(req, res, p(req.params.id));
       if (!ctx) return;
       const { advisor, withdrawal } = ctx;
 

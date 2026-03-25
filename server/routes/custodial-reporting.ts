@@ -9,6 +9,11 @@ import { accounts, clients, nigoRecords } from "@shared/schema";
 import { eq, sql, and, desc } from "drizzle-orm";
 import { chatCompletion, isAIAvailable } from "../openai";
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerCustodialReportingRoutes(app: Express) {
   app.get("/api/custodial-reporting/rmd-summary", requireAuth, async (req, res) => {
     try {
@@ -227,7 +232,7 @@ export function registerCustodialReportingRoutes(app: Express) {
 
   app.patch("/api/custodial-reporting/nigo/:id", requireAuth, async (req, res) => {
     try {
-      const { id } = req.params;
+      const id = p(req.params.id);
       const advisorId = req.session.userId;
       if (!advisorId) return res.status(401).json({ message: "Unauthorized" });
 
@@ -259,7 +264,7 @@ export function registerCustodialReportingRoutes(app: Express) {
 
   app.post("/api/custodial-reporting/nigo/:id/guidance", requireAuth, async (req, res) => {
     try {
-      const { id } = req.params;
+      const id = p(req.params.id);
       const advisorId = req.session.userId;
       if (!advisorId) return res.status(401).json({ message: "Unauthorized" });
 

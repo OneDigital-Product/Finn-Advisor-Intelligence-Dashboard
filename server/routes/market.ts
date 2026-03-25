@@ -6,10 +6,15 @@ import { marketDataService } from "../market-data";
 import { setWebSocketClient, getWebSocketClient } from "../market-data/websocket-holder";
 export { setWebSocketClient };
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerMarketRoutes(app: Express) {
   app.get("/api/market/quote/:ticker", requireAuth, async (req, res) => {
     try {
-      const quote = await marketDataService.getQuote(req.params.ticker.toUpperCase());
+      const quote = await marketDataService.getQuote(p(req.params.ticker).toUpperCase());
       if (!quote) return res.status(404).json({ message: "Quote not found" });
       res.json(quote);
     } catch (error: any) {
@@ -45,7 +50,7 @@ export function registerMarketRoutes(app: Express) {
 
   app.get("/api/clients/:clientId/market-data", requireAuth, async (req, res) => {
     try {
-      const accounts = await storage.getAccountsByClient(req.params.clientId);
+      const accounts = await storage.getAccountsByClient(p(req.params.clientId));
       const allHoldings = [];
       for (const acct of accounts) {
         const holdings = await storage.getHoldingsByAccount(acct.id);
@@ -67,7 +72,7 @@ export function registerMarketRoutes(app: Express) {
 
   app.get("/api/market/historical/:ticker", requireAuth, async (req, res) => {
     try {
-      const ticker = req.params.ticker.toUpperCase();
+      const ticker = p(req.params.ticker).toUpperCase();
       const period = (req.query.period as string) || "1Y";
       const interval = (req.query.interval as string) || "daily";
       const data = await marketDataService.getHistorical(ticker, period as any, interval as any);
@@ -80,7 +85,7 @@ export function registerMarketRoutes(app: Express) {
 
   app.get("/api/market/fundamentals/:ticker", requireAuth, async (req, res) => {
     try {
-      const ticker = req.params.ticker.toUpperCase();
+      const ticker = p(req.params.ticker).toUpperCase();
       const fundamentals = await marketDataService.getFundamentals(ticker);
       if (!fundamentals) return res.status(404).json({ message: "Not found" });
       res.json(fundamentals);

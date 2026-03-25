@@ -26,6 +26,11 @@ const updateNigoSchema = z.object({
   rmdYear: z.coerce.number().int().optional(),
 });
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerNigoRoutes(app: Express) {
   app.get("/api/nigo", requireAuth, async (req, res) => {
     try {
@@ -95,7 +100,7 @@ export function registerNigoRoutes(app: Express) {
       const [updated] = await db
         .update(nigoItems)
         .set(updates)
-        .where(eq(nigoItems.id, req.params.id))
+        .where(eq(nigoItems.id, p(req.params.id)))
         .returning();
 
       if (!updated) return res.status(404).json({ message: "NIGO item not found" });
@@ -153,16 +158,16 @@ export function registerNigoRoutes(app: Express) {
     try {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ message: "Not authenticated" });
-      const client = await storage.getClient(req.params.clientId);
+      const client = await storage.getClient(p(req.params.clientId));
       if (!client || client.advisorId !== advisor.id) return res.status(403).json({ message: "Forbidden" });
 
-      const validationResult = await runFullValidation(req.params.clientId);
+      const validationResult = await runFullValidation(p(req.params.clientId));
 
       const { preCaseValidations } = await import("@shared/schema");
       const [saved] = await db
         .insert(preCaseValidations)
         .values({
-          clientId: req.params.clientId,
+          clientId: p(req.params.clientId),
           advisorId: advisor.id,
           validationType: "full",
           overallResult: validationResult.overallResult,
@@ -182,14 +187,14 @@ export function registerNigoRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ message: "Not authenticated" });
 
-      const client = await storage.getClient(req.params.clientId);
+      const client = await storage.getClient(p(req.params.clientId));
       if (!client || client.advisorId !== advisor.id) return res.status(403).json({ message: "Forbidden" });
 
       const { preCaseValidations } = await import("@shared/schema");
       const results = await db
         .select()
         .from(preCaseValidations)
-        .where(eq(preCaseValidations.clientId, req.params.clientId))
+        .where(eq(preCaseValidations.clientId, p(req.params.clientId)))
         .orderBy(desc(preCaseValidations.createdAt))
         .limit(10);
 

@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 
-export function qp(val: string | string[] | qs.ParsedQs | qs.ParsedQs[] | undefined): string {
+export function qp(val: string | string[] | qs.ParsedQs | qs.ParsedQs[] | (string | qs.ParsedQs)[] | undefined): string {
   if (Array.isArray(val)) return String(val[0] ?? "");
   if (typeof val === "object" && val !== null) return "";
   return val ?? "";

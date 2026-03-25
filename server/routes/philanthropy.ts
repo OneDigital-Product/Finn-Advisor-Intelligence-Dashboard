@@ -34,10 +34,15 @@ async function verifyAccountOwnership(accountId: string, advisorId: string): Pro
   return !!account && account.advisorId === advisorId;
 }
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerPhilanthropyRoutes(app: Express) {
   app.get("/api/clients/:clientId/philanthropy", requireAuth, async (req, res) => {
     try {
-      const { clientId } = req.params;
+      const clientId = p(req.params.clientId);
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ error: "Not authenticated" });
       if (!(await verifyClientOwnership(clientId, advisor.id))) {
@@ -102,12 +107,12 @@ export function registerPhilanthropyRoutes(app: Express) {
     try {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ error: "Not authenticated" });
-      if (!(await verifyAccountOwnership(req.params.id, advisor.id))) {
+      if (!(await verifyAccountOwnership(p(req.params.id), advisor.id))) {
         return res.status(403).json({ error: "Access denied" });
       }
 
       const data = updateAccountSchema.parse(req.body);
-      const account = await storage.updateCharitableAccount(req.params.id, data);
+      const account = await storage.updateCharitableAccount(p(req.params.id), data);
       if (!account) return res.status(404).json({ error: "Account not found" });
       res.json(account);
     } catch (error: any) {
@@ -119,11 +124,11 @@ export function registerPhilanthropyRoutes(app: Express) {
     try {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ error: "Not authenticated" });
-      if (!(await verifyAccountOwnership(req.params.id, advisor.id))) {
+      if (!(await verifyAccountOwnership(p(req.params.id), advisor.id))) {
         return res.status(403).json({ error: "Access denied" });
       }
 
-      await storage.deleteCharitableAccount(req.params.id);
+      await storage.deleteCharitableAccount(p(req.params.id));
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: sanitizeErrorMessage(error, "Failed to delete charitable account") });
@@ -151,7 +156,7 @@ export function registerPhilanthropyRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ error: "Not authenticated" });
 
-      await storage.deleteCharitableContribution(req.params.id);
+      await storage.deleteCharitableContribution(p(req.params.id));
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: sanitizeErrorMessage(error, "Failed to delete contribution") });
@@ -179,7 +184,7 @@ export function registerPhilanthropyRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ error: "Not authenticated" });
 
-      await storage.deleteCharitableGrant(req.params.id);
+      await storage.deleteCharitableGrant(p(req.params.id));
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: sanitizeErrorMessage(error, "Failed to delete grant") });
@@ -207,14 +212,14 @@ export function registerPhilanthropyRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ error: "Not authenticated" });
 
-      const existing = await storage.getCharitableGoal(req.params.id);
+      const existing = await storage.getCharitableGoal(p(req.params.id));
       if (!existing) return res.status(404).json({ error: "Goal not found" });
       if (!(await verifyClientOwnership(existing.clientId, advisor.id))) {
         return res.status(403).json({ error: "Access denied" });
       }
 
       const data = updateGoalSchema.parse(req.body);
-      const goal = await storage.updateCharitableGoal(req.params.id, data);
+      const goal = await storage.updateCharitableGoal(p(req.params.id), data);
       res.json(goal);
     } catch (error: any) {
       res.status(400).json({ error: sanitizeErrorMessage(error, "Failed to update charitable goal") });
@@ -226,13 +231,13 @@ export function registerPhilanthropyRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ error: "Not authenticated" });
 
-      const existing = await storage.getCharitableGoal(req.params.id);
+      const existing = await storage.getCharitableGoal(p(req.params.id));
       if (!existing) return res.status(404).json({ error: "Goal not found" });
       if (!(await verifyClientOwnership(existing.clientId, advisor.id))) {
         return res.status(403).json({ error: "Access denied" });
       }
 
-      await storage.deleteCharitableGoal(req.params.id);
+      await storage.deleteCharitableGoal(p(req.params.id));
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: sanitizeErrorMessage(error, "Failed to delete charitable goal") });

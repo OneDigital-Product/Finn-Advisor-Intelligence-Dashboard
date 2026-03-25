@@ -28,10 +28,15 @@ interface PlanningIntelligenceResult {
 
 const diEngine = new DirectIndexingEngine();
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerCrossModuleIntelligenceRoutes(app: Router) {
   app.get("/api/clients/:clientId/planning-intelligence", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { clientId } = req.params;
+      const clientId = p(req.params.clientId);
 
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(403).json({ error: "Unauthorized" });

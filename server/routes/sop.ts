@@ -96,6 +96,11 @@ const formRequirementsQuerySchema = z.object({
   actionType: z.string().min(1),
 });
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerSopRoutes(app: Express) {
   app.get("/api/sop/documents", requireAuth, async (req, res) => {
     try {
@@ -110,9 +115,9 @@ export function registerSopRoutes(app: Express) {
 
   app.get("/api/sop/documents/:id", requireAuth, async (req, res) => {
     try {
-      const doc = await storage.getSopDocument(req.params.id);
+      const doc = await storage.getSopDocument(p(req.params.id));
       if (!doc) return res.status(404).json({ message: "SOP document not found" });
-      const chunks = await storage.getSopChunks(req.params.id);
+      const chunks = await storage.getSopChunks(p(req.params.id));
       res.json({ ...doc, chunks });
     } catch (err) {
       logger.error({ err }, "Error fetching SOP document");
@@ -152,17 +157,17 @@ export function registerSopRoutes(app: Express) {
       const body = validateBody(updateSopDocumentSchema, req, res);
       if (!body) return;
 
-      const existing = await storage.getSopDocument(req.params.id);
+      const existing = await storage.getSopDocument(p(req.params.id));
       if (!existing) return res.status(404).json({ message: "SOP document not found" });
 
-      const updated = await storage.updateSopDocument(req.params.id, body);
+      const updated = await storage.updateSopDocument(p(req.params.id), body);
 
       if (body.content) {
-        await storage.deleteSopChunksByDocument(req.params.id);
+        await storage.deleteSopChunksByDocument(p(req.params.id));
         const chunks = chunkText(body.content);
         for (let i = 0; i < chunks.length; i++) {
           await storage.createSopChunk({
-            documentId: req.params.id,
+            documentId: p(req.params.id),
             chunkIndex: i,
             content: chunks[i],
             metadata: { charCount: chunks[i].length, wordCount: chunks[i].split(/\s+/).length },
@@ -179,9 +184,9 @@ export function registerSopRoutes(app: Express) {
 
   app.delete("/api/sop/documents/:id", requireAuth, async (req, res) => {
     try {
-      const existing = await storage.getSopDocument(req.params.id);
+      const existing = await storage.getSopDocument(p(req.params.id));
       if (!existing) return res.status(404).json({ message: "SOP document not found" });
-      await storage.deleteSopDocument(req.params.id);
+      await storage.deleteSopDocument(p(req.params.id));
       res.json({ message: "Deleted" });
     } catch (err) {
       logger.error({ err }, "Error deleting SOP document");
@@ -240,7 +245,7 @@ export function registerSopRoutes(app: Express) {
 
   app.get("/api/custodial-instructions/:id", requireAuth, async (req, res) => {
     try {
-      const instr = await storage.getCustodialInstruction(req.params.id);
+      const instr = await storage.getCustodialInstruction(p(req.params.id));
       if (!instr) return res.status(404).json({ message: "Custodial instruction not found" });
       res.json(instr);
     } catch (err) {
@@ -265,9 +270,9 @@ export function registerSopRoutes(app: Express) {
     try {
       const body = validateBody(updateCustodialInstructionSchema, req, res);
       if (!body) return;
-      const existing = await storage.getCustodialInstruction(req.params.id);
+      const existing = await storage.getCustodialInstruction(p(req.params.id));
       if (!existing) return res.status(404).json({ message: "Custodial instruction not found" });
-      const updated = await storage.updateCustodialInstruction(req.params.id, body);
+      const updated = await storage.updateCustodialInstruction(p(req.params.id), body);
       res.json(updated);
     } catch (err) {
       logger.error({ err }, "Error updating custodial instruction");
@@ -277,9 +282,9 @@ export function registerSopRoutes(app: Express) {
 
   app.delete("/api/custodial-instructions/:id", requireAuth, async (req, res) => {
     try {
-      const existing = await storage.getCustodialInstruction(req.params.id);
+      const existing = await storage.getCustodialInstruction(p(req.params.id));
       if (!existing) return res.status(404).json({ message: "Custodial instruction not found" });
-      await storage.deleteCustodialInstruction(req.params.id);
+      await storage.deleteCustodialInstruction(p(req.params.id));
       res.json({ message: "Deleted" });
     } catch (err) {
       logger.error({ err }, "Error deleting custodial instruction");

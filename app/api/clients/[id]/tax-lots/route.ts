@@ -15,11 +15,11 @@ import { logger } from "@server/lib/logger";
  * If accountId is provided, fetches tax lots for that account only;
  * otherwise fetches all accounts for the client and retrieves tax lots in parallel.
  */
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAuth();
   if (auth.error) return auth.error;
 
-  const clientId = params.id;
+  const { id: clientId } = await params;
   const idCheck = validateId(clientId);
   if (!idCheck.valid) return idCheck.error;
 

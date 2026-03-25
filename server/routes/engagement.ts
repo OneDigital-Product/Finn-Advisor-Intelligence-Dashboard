@@ -9,6 +9,11 @@ import { getClient as getSalesforceClient, isSalesforceEnabled } from "../integr
 import { isValidSalesforceId } from "../integrations/salesforce/validate-salesforce-id";
 import { insertEngagementEventSchema } from "@shared/schema";
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerEngagementRoutes(app: Express) {
   app.post("/api/engagement/events", requireAuth, requireAdvisor, async (req, res) => {
     try {
@@ -45,12 +50,12 @@ export function registerEngagementRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
 
-      const client = await storage.getClient(req.params.id);
+      const client = await storage.getClient(p(req.params.id));
       if (!client) return res.status(404).json({ error: "Client not found" });
       if (client.advisorId !== advisor.id) return res.status(403).json({ error: "Not authorized" });
 
       const limit = Math.min(parseInt(String(req.query.limit)) || 50, 200);
-      const events = await storage.getEngagementEventsByClient(req.params.id, limit);
+      const events = await storage.getEngagementEventsByClient(p(req.params.id), limit);
       res.json({ events });
     } catch (err: any) {
       logger.error({ err }, "[Engagement] Client events error");
@@ -116,10 +121,10 @@ export function registerEngagementRoutes(app: Express) {
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
 
       const signals = await storage.getActiveIntentSignals(advisor.id);
-      const signal = signals.find(s => s.id === req.params.id);
+      const signal = signals.find(s => s.id === p(req.params.id));
       if (!signal) return res.status(404).json({ error: "Signal not found or not authorized" });
 
-      await storage.deactivateIntentSignal(req.params.id);
+      await storage.deactivateIntentSignal(p(req.params.id));
       res.json({ success: true });
     } catch (err: any) {
       logger.error({ err }, "[Engagement] Deactivate signal error");
@@ -162,10 +167,10 @@ export function registerEngagementRoutes(app: Express) {
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
 
       const pending = await storage.getNextBestActions(advisor.id);
-      const existing = pending.find(a => a.id === req.params.id);
+      const existing = pending.find(a => a.id === p(req.params.id));
       if (!existing) return res.status(404).json({ error: "Action not found or not authorized" });
 
-      const action = await storage.completeNextBestAction(req.params.id);
+      const action = await storage.completeNextBestAction(p(req.params.id));
       if (!action) return res.status(404).json({ error: "Action not found" });
 
       if (isSalesforceEnabled()) {
@@ -207,10 +212,10 @@ export function registerEngagementRoutes(app: Express) {
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
 
       const pending = await storage.getNextBestActions(advisor.id);
-      const existing = pending.find(a => a.id === req.params.id);
+      const existing = pending.find(a => a.id === p(req.params.id));
       if (!existing) return res.status(404).json({ error: "Action not found or not authorized" });
 
-      const action = await storage.dismissNextBestAction(req.params.id);
+      const action = await storage.dismissNextBestAction(p(req.params.id));
       if (!action) return res.status(404).json({ error: "Action not found" });
       res.json(action);
     } catch (err: any) {

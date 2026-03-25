@@ -19,6 +19,11 @@ const parseDocumentBodySchema = z.object({
   applyUpdates: z.union([z.literal("true"), z.literal(true), z.literal("false"), z.literal(false)]).optional(),
 });
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerDocumentRoutes(app: Express) {
   app.patch("/api/document-checklist/:id", requireAuth, async (req, res) => {
     try {
@@ -27,7 +32,7 @@ export function registerDocumentRoutes(app: Express) {
       const updateData: { received: boolean; receivedDate?: string | null; notes?: string | null } = { received: body.received };
       if (body.receivedDate !== undefined) updateData.receivedDate = body.receivedDate;
       if (body.notes !== undefined) updateData.notes = body.notes;
-      const updated = await storage.updateDocumentChecklistItem(req.params.id, updateData);
+      const updated = await storage.updateDocumentChecklistItem(p(req.params.id), updateData);
       if (!updated) return res.status(404).json({ message: "Checklist item not found" });
       res.json(updated);
     } catch (error: any) {
@@ -38,13 +43,13 @@ export function registerDocumentRoutes(app: Express) {
 
   app.post("/api/clients/:id/init-checklist", requireAuth, async (req, res) => {
     try {
-      const client = await storage.getClient(req.params.id);
+      const client = await storage.getClient(p(req.params.id));
       if (!client) return res.status(404).json({ message: "Client not found" });
 
-      const existing = await storage.getDocumentChecklist(req.params.id);
+      const existing = await storage.getDocumentChecklist(p(req.params.id));
       if (existing.length > 0) return res.json(existing);
 
-      const standardChecklist = getStandardChecklist(req.params.id);
+      const standardChecklist = getStandardChecklist(p(req.params.id));
       const created = [];
       for (const item of standardChecklist) {
         const result = await storage.createDocumentChecklistItem(item);
@@ -59,7 +64,7 @@ export function registerDocumentRoutes(app: Express) {
 
   app.post("/api/clients/:id/parse-document", requireAuth, uploadLimiter, upload.single("file"), async (req, res) => {
     try {
-      const client = await storage.getClient((req.params.id as string));
+      const client = await storage.getClient(p(req.params.id));
       if (!client) return res.status(404).json({ message: "Client not found" });
 
       const bodyFields = validateBody(parseDocumentBodySchema, req, res);
@@ -91,14 +96,14 @@ export function registerDocumentRoutes(app: Express) {
           }
         }
         if (Object.keys(cleanUpdates).length > 0) {
-          await storage.updateClient((req.params.id as string), cleanUpdates);
+          await storage.updateClient(p(req.params.id), cleanUpdates);
         }
 
         const createdAccountIds: string[] = [];
         for (const acct of result.accounts) {
           if (acct.accountNumber && acct.accountType) {
             const created = await storage.createAccount({
-              clientId: (req.params.id as string),
+              clientId: p(req.params.id),
               accountNumber: acct.accountNumber,
               accountType: acct.accountType,
               custodian: acct.custodian || "Unknown",
@@ -112,7 +117,7 @@ export function registerDocumentRoutes(app: Express) {
         }
 
         if (result.holdings.length > 0) {
-          const targetAccountId = createdAccountIds[0] || (await storage.getAccountsByClient((req.params.id as string)))[0]?.id;
+          const targetAccountId = createdAccountIds[0] || (await storage.getAccountsByClient(p(req.params.id)))[0]?.id;
           if (targetAccountId) {
             for (const h of result.holdings) {
               if (h.ticker && h.name) {
@@ -135,7 +140,7 @@ export function registerDocumentRoutes(app: Express) {
 
       const fileName = req.file?.originalname || `${documentType}_${new Date().toISOString().slice(0, 10)}.txt`;
       const savedDoc = await storage.createDocument({
-        clientId: (req.params.id as string),
+        clientId: p(req.params.id),
         name: fileName.replace(/\.[^.]+$/, "").replace(/[_-]/g, " "),
         type: documentType,
         status: "uploaded",
@@ -146,7 +151,7 @@ export function registerDocumentRoutes(app: Express) {
 
       let classificationResult: any = null;
       try {
-        const checklist = await storage.getDocumentChecklist((req.params.id as string));
+        const checklist = await storage.getDocumentChecklist(p(req.params.id));
         const pendingItems = checklist.filter(item => !item.received);
         if (pendingItems.length > 0) {
           const pendingIds = new Set(pendingItems.map(item => item.id));
@@ -194,7 +199,7 @@ export function registerDocumentRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ message: "Not authorized" });
 
-      const doc = await storage.getDocument(req.params.id);
+      const doc = await storage.getDocument(p(req.params.id));
       if (!doc) return res.status(404).json({ message: "Document not found" });
 
       const client = await storage.getClient(doc.clientId);

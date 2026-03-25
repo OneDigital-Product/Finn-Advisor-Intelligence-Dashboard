@@ -11,6 +11,11 @@ const reviewSchema = z.object({
   reviewNote: z.string().max(1000).optional(),
 });
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerProfileUpdateRoutes(app: Express) {
   app.get("/api/profile-updates/pending", requireAuth, async (req, res) => {
     try {
@@ -41,12 +46,12 @@ export function registerProfileUpdateRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
 
-      const client = await storage.getClient(req.params.clientId as string);
+      const client = await storage.getClient(p(req.params.clientId));
       if (!client || client.advisorId !== advisor.id) {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      const updates = await storage.getPendingProfileUpdatesByClient(req.params.clientId as string);
+      const updates = await storage.getPendingProfileUpdatesByClient(p(req.params.clientId));
       res.json(updates);
     } catch (err) {
       logger.error({ err }, "Error fetching client profile updates");
@@ -62,7 +67,7 @@ export function registerProfileUpdateRoutes(app: Express) {
       const body = validateBody(reviewSchema, req, res);
       if (!body) return;
 
-      const update = await storage.getPendingProfileUpdate(req.params.id);
+      const update = await storage.getPendingProfileUpdate(p(req.params.id));
       if (!update) return res.status(404).json({ message: "Update not found" });
       if (update.advisorId !== advisor.id) return res.status(403).json({ message: "Access denied" });
       if (update.status !== "pending") return res.status(400).json({ message: "Update already reviewed" });
@@ -81,14 +86,14 @@ export function registerProfileUpdateRoutes(app: Express) {
           }
         }
 
-        await storage.updatePendingProfileUpdate(req.params.id, {
+        await storage.updatePendingProfileUpdate(p(req.params.id), {
           status: "approved",
           reviewedBy: advisor.id,
           reviewedAt: new Date(),
           reviewNote: body.reviewNote || null,
         });
       } else {
-        await storage.updatePendingProfileUpdate(req.params.id, {
+        await storage.updatePendingProfileUpdate(p(req.params.id), {
           status: "rejected",
           reviewedBy: advisor.id,
           reviewedAt: new Date(),
@@ -96,8 +101,8 @@ export function registerProfileUpdateRoutes(app: Express) {
         });
       }
 
-      await AuditLogger.logEvent(req.params.id, "profile_update_reviewed", {
-        update_id: req.params.id,
+      await AuditLogger.logEvent(p(req.params.id), "profile_update_reviewed", {
+        update_id: p(req.params.id),
         client_id: update.clientId,
         action: body.action,
         reviewer_id: advisor.id,
@@ -106,7 +111,7 @@ export function registerProfileUpdateRoutes(app: Express) {
         timestamp: new Date().toISOString(),
       });
 
-      const updated = await storage.getPendingProfileUpdate(req.params.id);
+      const updated = await storage.getPendingProfileUpdate(p(req.params.id));
       res.json(updated);
     } catch (err) {
       logger.error({ err }, "Error reviewing profile update");

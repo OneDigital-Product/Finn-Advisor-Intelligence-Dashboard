@@ -47,7 +47,7 @@ export async function GET(request: Request) {
   // Batch fetch all tasks for all meetings (avoids N+1: was 1 query per meeting)
   const meetingIds = allMeetings.map(m => m.id);
   const allTasks = meetingIds.length > 0 ? await storage.getTasksByMeetingIds(meetingIds) : [];
-  const tasksByMeeting = new Map<number, typeof allTasks>();
+  const tasksByMeeting = new Map<string, typeof allTasks>();
   for (const task of allTasks) {
     const existing = tasksByMeeting.get(task.meetingId!) || [];
     existing.push(task);

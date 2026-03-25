@@ -22,6 +22,11 @@ async function verifyAccountOwnership(advisorId: string, accountId: string): Pro
   return client.advisorId === advisorId;
 }
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerPortfolioRoutes(app: Express) {
   app.get("/api/accounts", requireAuth, async (req, res) => {
     try {
@@ -73,7 +78,7 @@ export function registerPortfolioRoutes(app: Express) {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      const accountId = req.params.id;
+      const accountId = p(req.params.id);
       const hasAccess = await verifyAccountOwnership(advisorId, accountId);
       if (!hasAccess) {
         return res.status(404).json({ message: "Account not found" });
@@ -108,7 +113,7 @@ export function registerPortfolioRoutes(app: Express) {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      const accountId = req.params.id;
+      const accountId = p(req.params.id);
       const hasAccess = await verifyAccountOwnership(advisorId, accountId);
       if (!hasAccess) {
         return res.status(404).json({ message: "Account not found" });
@@ -136,7 +141,7 @@ export function registerPortfolioRoutes(app: Express) {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      const accountId = req.params.id;
+      const accountId = p(req.params.id);
       const hasAccess = await verifyAccountOwnership(advisorId, accountId);
       if (!hasAccess) {
         return res.status(404).json({ message: "Account not found" });
@@ -182,7 +187,7 @@ export function registerPortfolioRoutes(app: Express) {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      const accountId = req.params.id;
+      const accountId = p(req.params.id);
       const hasAccess = await verifyAccountOwnership(advisorId, accountId);
       if (!hasAccess) {
         return res.status(404).json({ message: "Account not found" });

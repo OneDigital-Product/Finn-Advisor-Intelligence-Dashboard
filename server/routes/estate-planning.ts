@@ -91,6 +91,11 @@ const createGiftSchema = z.object({
   notes: z.string().optional(),
 });
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 const TRUST_TYPE_INFO: Record<string, { label: string; description: string; taxBenefits: string[] }> = {
   GRAT: {
     label: "Grantor Retained Annuity Trust",
@@ -280,7 +285,7 @@ async function verifyClientAccess(req: any, clientId: string): Promise<boolean> 
 export function registerEstatePlanningRoutes(app: Express) {
   app.get("/api/clients/:clientId/beneficiary-audit", requireAuth, async (req, res) => {
     try {
-      const { clientId } = req.params;
+      const clientId = p(req.params.clientId);
       const hasAccess = await verifyClientAccess(req, clientId);
       if (!hasAccess) return res.status(403).json({ message: "Access denied" });
 
@@ -423,7 +428,7 @@ export function registerEstatePlanningRoutes(app: Express) {
 
   app.get("/api/clients/:clientId/estate-planning", requireAuth, async (req, res) => {
     try {
-      const { clientId } = req.params;
+      const clientId = p(req.params.clientId);
       const hasAccess = await verifyClientAccess(req, clientId);
       if (!hasAccess) return res.status(403).json({ message: "Access denied" });
 
@@ -553,11 +558,11 @@ export function registerEstatePlanningRoutes(app: Express) {
     try {
       const body = validateBody(updateTrustSchema, req, res);
       if (!body) return;
-      const existing = await storage.getTrust(req.params.id);
+      const existing = await storage.getTrust(p(req.params.id));
       if (!existing) return res.status(404).json({ message: "Trust not found" });
       const hasAccess = await verifyClientAccess(req, existing.clientId);
       if (!hasAccess) return res.status(403).json({ message: "Access denied" });
-      const trust = await storage.updateTrust(req.params.id, body);
+      const trust = await storage.updateTrust(p(req.params.id), body);
       res.json(trust);
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -567,11 +572,11 @@ export function registerEstatePlanningRoutes(app: Express) {
 
   app.delete("/api/estate-planning/trusts/:id", requireAuth, async (req, res) => {
     try {
-      const existing = await storage.getTrust(req.params.id);
+      const existing = await storage.getTrust(p(req.params.id));
       if (!existing) return res.status(404).json({ message: "Trust not found" });
       const hasAccess = await verifyClientAccess(req, existing.clientId);
       if (!hasAccess) return res.status(403).json({ message: "Access denied" });
-      await storage.deleteTrust(req.params.id);
+      await storage.deleteTrust(p(req.params.id));
       res.json({ success: true });
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -597,13 +602,13 @@ export function registerEstatePlanningRoutes(app: Express) {
 
   app.delete("/api/estate-planning/trust-relationships/:id", requireAuth, async (req, res) => {
     try {
-      const rel = await storage.getTrustRelationship(req.params.id);
+      const rel = await storage.getTrustRelationship(p(req.params.id));
       if (!rel) return res.status(404).json({ message: "Relationship not found" });
       const trust = await storage.getTrust(rel.trustId);
       if (!trust) return res.status(404).json({ message: "Trust not found" });
       const hasAccess = await verifyClientAccess(req, trust.clientId);
       if (!hasAccess) return res.status(403).json({ message: "Access denied" });
-      await storage.deleteTrustRelationship(req.params.id);
+      await storage.deleteTrustRelationship(p(req.params.id));
       res.json({ success: true });
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -629,11 +634,11 @@ export function registerEstatePlanningRoutes(app: Express) {
     try {
       const body = validateBody(updateExemptionSchema, req, res);
       if (!body) return;
-      const existing = await storage.getEstateExemption(req.params.id);
+      const existing = await storage.getEstateExemption(p(req.params.id));
       if (!existing) return res.status(404).json({ message: "Exemption record not found" });
       const hasAccess = await verifyClientAccess(req, existing.clientId);
       if (!hasAccess) return res.status(403).json({ message: "Access denied" });
-      const exemption = await storage.updateEstateExemption(req.params.id, body);
+      const exemption = await storage.updateEstateExemption(p(req.params.id), body);
       res.json(exemption);
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -657,11 +662,11 @@ export function registerEstatePlanningRoutes(app: Express) {
 
   app.delete("/api/estate-planning/gifts/:id", requireAuth, async (req, res) => {
     try {
-      const gift = await storage.getGiftHistoryEntry(req.params.id);
+      const gift = await storage.getGiftHistoryEntry(p(req.params.id));
       if (!gift) return res.status(404).json({ message: "Gift not found" });
       const hasAccess = await verifyClientAccess(req, gift.clientId);
       if (!hasAccess) return res.status(403).json({ message: "Access denied" });
-      await storage.deleteGiftHistoryEntry(req.params.id);
+      await storage.deleteGiftHistoryEntry(p(req.params.id));
       res.json({ success: true });
     } catch (error: any) {
       logger.error({ err: error }, "API error");

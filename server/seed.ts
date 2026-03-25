@@ -1658,7 +1658,7 @@ async function tableExists(tableName: string): Promise<boolean> {
   const result = await db.execute(
     sql`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = ${tableName})`
   );
-  const rows = (result as { rows?: { exists: boolean }[] }).rows ?? result as unknown as { exists: boolean }[];
+  const rows = (result as unknown as { rows?: { exists: boolean }[] }).rows ?? result as unknown as { exists: boolean }[];
   return Array.isArray(rows) && rows.length > 0 && rows[0].exists === true;
 }
 
@@ -1666,6 +1666,6 @@ async function columnExists(tableName: string, columnName: string): Promise<bool
   const result = await db.execute(
     sql`SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = ${tableName} AND column_name = ${columnName})`
   );
-  const rows = (result as { rows?: { exists: boolean }[] }).rows ?? result as unknown as { exists: boolean }[];
+  const rows = (result as unknown as { rows?: { exists: boolean }[] }).rows ?? result as unknown as { exists: boolean }[];
   return Array.isArray(rows) && rows.length > 0 && rows[0].exists === true;
 }

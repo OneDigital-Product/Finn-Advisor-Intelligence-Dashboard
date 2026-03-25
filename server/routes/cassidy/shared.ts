@@ -10,9 +10,10 @@ import { chat as cassidyChat } from "../../lib/cassidy";
 import { chatCompletion } from "../../ai-core";
 import { logger } from "../../lib/logger";
 import { validateBody } from "../../lib/validation";
+import { requireAuth } from "../middleware";
 import { z } from "zod";
 
-export { storage, logger, AuditLogger, AuditEventType, jobEventBus, timeoutManager, callCassidyWorkflow, validateBody };
+export { storage, logger, AuditLogger, AuditEventType, jobEventBus, timeoutManager, callCassidyWorkflow, validateBody, requireAuth };
 
 export const rateLimiter = new RateLimiter();
 

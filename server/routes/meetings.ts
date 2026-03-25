@@ -39,6 +39,11 @@ const transcriptBodySchema = z.object({
   text: z.string().max(10 * 1024 * 1024, "Text exceeds 10MB limit").optional(),
 });
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerMeetingRoutes(app: Express) {
   app.get("/api/meetings", requireAuth, async (req, res) => {
     const advisor = await getSessionAdvisor(req);
@@ -100,7 +105,7 @@ export function registerMeetingRoutes(app: Express) {
   });
 
   app.get("/api/meetings/:id", requireAuth, async (req, res) => {
-    const meeting = await storage.getMeeting(req.params.id);
+    const meeting = await storage.getMeeting(p(req.params.id));
     if (!meeting) return res.status(404).json({ message: "Meeting not found" });
 
     // Verify the requesting user owns this meeting
@@ -117,7 +122,7 @@ export function registerMeetingRoutes(app: Express) {
   });
 
   app.post("/api/meetings/:id/prep", requireAuth, async (req, res) => {
-    const meeting = await storage.getMeeting(req.params.id);
+    const meeting = await storage.getMeeting(p(req.params.id));
     if (!meeting) return res.status(404).json({ message: "Meeting not found" });
     if (meeting.advisorId !== req.session.userId) return res.status(403).json({ message: "Access denied" });
     if (!meeting.clientId) return res.status(400).json({ message: "No client associated" });
@@ -165,7 +170,7 @@ export function registerMeetingRoutes(app: Express) {
   });
 
   app.post("/api/meetings/:id/summarize", requireAuth, async (req, res) => {
-    const meeting = await storage.getMeeting(req.params.id);
+    const meeting = await storage.getMeeting(p(req.params.id));
     if (!meeting) return res.status(404).json({ message: "Meeting not found" });
     if (meeting.advisorId !== req.session.userId) return res.status(403).json({ message: "Access denied" });
     if (meeting.status !== "completed") return res.status(400).json({ message: "Only completed meetings can be summarized" });
@@ -217,10 +222,10 @@ export function registerMeetingRoutes(app: Express) {
   app.post("/api/meetings/:id/notes", requireAuth, async (req, res) => {
     const body = validateBody(meetingNotesSchema, req, res);
     if (!body) return;
-    const existing = await storage.getMeeting(req.params.id);
+    const existing = await storage.getMeeting(p(req.params.id));
     if (!existing) return res.status(404).json({ message: "Meeting not found" });
     if (existing.advisorId !== req.session.userId) return res.status(403).json({ message: "Access denied" });
-    const meeting = await storage.updateMeeting(req.params.id, { notes: body.notes });
+    const meeting = await storage.updateMeeting(p(req.params.id), { notes: body.notes });
     if (!meeting) return res.status(404).json({ message: "Meeting not found" });
     res.json(meeting);
   });
@@ -229,10 +234,10 @@ export function registerMeetingRoutes(app: Express) {
     try {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
-      const meeting = await storage.getMeeting(req.params.id);
+      const meeting = await storage.getMeeting(p(req.params.id));
       if (!meeting) return res.status(404).json({ message: "Meeting not found" });
       if (meeting.advisorId !== advisor.id) return res.status(403).json({ message: "Forbidden" });
-      const notes = await storage.getMeetingNotesByMeeting(req.params.id);
+      const notes = await storage.getMeetingNotesByMeeting(p(req.params.id));
       res.json(notes);
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -244,7 +249,7 @@ export function registerMeetingRoutes(app: Express) {
     try {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
-      const meeting = await storage.getMeeting(req.params.id);
+      const meeting = await storage.getMeeting(p(req.params.id));
       if (!meeting) return res.status(404).json({ message: "Meeting not found" });
       if (meeting.advisorId !== advisor.id) return res.status(403).json({ message: "Forbidden" });
 
@@ -310,7 +315,7 @@ export function registerMeetingRoutes(app: Express) {
 
   app.post("/api/meetings/:id/transcript", requireAuth, uploadLimiter, upload.single("file"), async (req, res) => {
     try {
-      const meeting = await storage.getMeeting((req.params.id as string));
+      const meeting = await storage.getMeeting(p(req.params.id));
       if (!meeting) return res.status(404).json({ message: "Meeting not found" });
       if (meeting.advisorId !== req.session.userId) return res.status(403).json({ message: "Access denied" });
 
@@ -343,7 +348,7 @@ export function registerMeetingRoutes(app: Express) {
 
       const summary = await summarizeTranscript(sanitizePromptInput(transcriptText), clientName);
 
-      const updated = await storage.updateMeeting((req.params.id as string), {
+      const updated = await storage.updateMeeting(p(req.params.id), {
         transcriptRaw: transcriptText,
         transcriptSummary: summary,
         notes: meeting.notes
@@ -363,7 +368,7 @@ export function registerMeetingRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(404).json({ message: "No advisor found" });
 
-      const client = await storage.getClient((req.params.clientId as string));
+      const client = await storage.getClient(p(req.params.clientId));
       if (!client) return res.status(404).json({ message: "Client not found" });
       if (client.advisorId !== advisor.id) return res.status(403).json({ message: "Not authorized for this client" });
 

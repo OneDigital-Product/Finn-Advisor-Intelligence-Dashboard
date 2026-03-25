@@ -10,15 +10,20 @@ const updateTrustSchema = insertTrustSchema.omit({ advisorId: true, clientId: tr
   { message: "At least one field must be provided" }
 );
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerTrustRoutes(app: Express) {
   app.get("/api/clients/:clientId/trusts", async (req, res) => {
     try {
-      const client = await storage.getClient(req.params.clientId);
+      const client = await storage.getClient(p(req.params.clientId));
       if (!client) return res.status(404).json({ message: "Client not found" });
       if (client.advisorId !== req.session.userId!) {
         return res.status(403).json({ message: "Access denied" });
       }
-      const trusts = await storage.getTrustsByClient(req.params.clientId);
+      const trusts = await storage.getTrustsByClient(p(req.params.clientId));
       res.json(trusts);
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -28,7 +33,7 @@ export function registerTrustRoutes(app: Express) {
 
   app.get("/api/trusts/:id", async (req, res) => {
     try {
-      const trust = await storage.getTrust(req.params.id);
+      const trust = await storage.getTrust(p(req.params.id));
       if (!trust) return res.status(404).json({ message: "Trust not found" });
       if (trust.advisorId !== req.session.userId!) {
         return res.status(403).json({ message: "Access denied" });
@@ -66,12 +71,12 @@ export function registerTrustRoutes(app: Express) {
     try {
       const body = validateBody(updateTrustSchema, req, res);
       if (!body) return;
-      const existing = await storage.getTrust(req.params.id);
+      const existing = await storage.getTrust(p(req.params.id));
       if (!existing) return res.status(404).json({ message: "Trust not found" });
       if (existing.advisorId !== req.session.userId!) {
         return res.status(403).json({ message: "Access denied" });
       }
-      const result = await storage.updateTrust(req.params.id, body);
+      const result = await storage.updateTrust(p(req.params.id), body);
       res.json(result);
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -81,12 +86,12 @@ export function registerTrustRoutes(app: Express) {
 
   app.delete("/api/trusts/:id", requireAdvisor, async (req, res) => {
     try {
-      const existing = await storage.getTrust(req.params.id);
+      const existing = await storage.getTrust(p(req.params.id));
       if (!existing) return res.status(404).json({ message: "Trust not found" });
       if (existing.advisorId !== req.session.userId!) {
         return res.status(403).json({ message: "Access denied" });
       }
-      await storage.deleteTrust(req.params.id);
+      await storage.deleteTrust(p(req.params.id));
       res.json({ success: true });
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -96,12 +101,12 @@ export function registerTrustRoutes(app: Express) {
 
   app.get("/api/trusts/:id/relationships", async (req, res) => {
     try {
-      const trust = await storage.getTrust(req.params.id);
+      const trust = await storage.getTrust(p(req.params.id));
       if (!trust) return res.status(404).json({ message: "Trust not found" });
       if (trust.advisorId !== req.session.userId!) {
         return res.status(403).json({ message: "Access denied" });
       }
-      const relationships = await storage.getTrustRelationships(req.params.id);
+      const relationships = await storage.getTrustRelationships(p(req.params.id));
       res.json(relationships);
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -111,14 +116,14 @@ export function registerTrustRoutes(app: Express) {
 
   app.post("/api/trusts/:id/relationships", requireAdvisor, async (req, res) => {
     try {
-      const trust = await storage.getTrust(req.params.id);
+      const trust = await storage.getTrust(p(req.params.id));
       if (!trust) return res.status(404).json({ message: "Trust not found" });
       if (trust.advisorId !== req.session.userId!) {
         return res.status(403).json({ message: "Access denied" });
       }
       const body = validateBody(createTrustRelSchema, req, res);
       if (!body) return;
-      const relationship = await storage.createTrustRelationship({ ...body, trustId: req.params.id });
+      const relationship = await storage.createTrustRelationship({ ...body, trustId: p(req.params.id) });
       res.status(201).json(relationship);
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -128,13 +133,13 @@ export function registerTrustRoutes(app: Express) {
 
   app.delete("/api/trust-relationships/:id", requireAdvisor, async (req, res) => {
     try {
-      const rel = await storage.getTrustRelationship(req.params.id);
+      const rel = await storage.getTrustRelationship(p(req.params.id));
       if (!rel) return res.status(404).json({ message: "Trust relationship not found" });
       const trust = await storage.getTrust(rel.trustId);
       if (!trust || trust.advisorId !== req.session.userId!) {
         return res.status(403).json({ message: "Access denied" });
       }
-      await storage.deleteTrustRelationship(req.params.id);
+      await storage.deleteTrustRelationship(p(req.params.id));
       res.json({ success: true });
     } catch (error: any) {
       logger.error({ err: error }, "API error");

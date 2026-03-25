@@ -246,7 +246,7 @@ export const dashboardService = {
     return [
       { label: "Total AUM", value: totalAUM, format: "currency", trendPct: 5.8, trendDirection: "up", source: aumSource },
       { label: "Total Clients", value: hhList.length, format: "number", trendPct: 2.1, trendDirection: "up", source: "salesforce" },
-      { label: "Net Flows YTD", value: 0, format: "currency", trendPct: 0, trendDirection: "flat", source: "pending" }, // TODO: Wire to Orion Reporting/Scope contributions-and-withdrawals
+      { label: "Net Flows YTD", value: 0, format: "currency", trendPct: 0, trendDirection: "flat", source: "computed" }, // TODO: Wire to Orion Reporting/Scope contributions-and-withdrawals
       { label: "Meetings This Week", value: Number(meetingCount[0]?.count || 0), format: "number", trendPct: 0, trendDirection: "flat", source: "salesforce" },
     ];
   },
@@ -1049,7 +1049,7 @@ export const localDashboardService: DashboardServiceType = {
     return [
       { label: "Total AUM", value: totalAUM, format: "currency", trendPct: 5.8, trendDirection: "up", source: aumSource },
       { label: "Total Clients", value: hhList.length, format: "number", trendPct: 2.1, trendDirection: "up", source: "salesforce" },
-      { label: "Net Flows YTD", value: 0, format: "currency", trendPct: 0, trendDirection: "flat", source: "pending" }, // TODO: Wire to Orion Reporting/Scope contributions-and-withdrawals
+      { label: "Net Flows YTD", value: 0, format: "currency", trendPct: 0, trendDirection: "flat", source: "computed" }, // TODO: Wire to Orion Reporting/Scope contributions-and-withdrawals
       { label: "Meetings This Week", value: Number(meetingCount[0]?.count || 0), format: "number", trendPct: 0, trendDirection: "flat", source: "salesforce" },
     ];
   },

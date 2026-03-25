@@ -19,6 +19,11 @@ import {
   mulesoftFetch,
 } from "../integrations/mulesoft/api";
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 /**
  * Detect if a user is a Salesforce UAT advisor (email ends with .uat).
  * These users get their data from MuleSoft → Salesforce instead of local DB.
@@ -574,6 +579,7 @@ export function registerClientRoutes(app: Express) {
     //   5. Merge everything into the unified client detail shape
     // -----------------------------------------------------------------------
     const userEmail = req.session.userEmail;
+    const sfUsername = userEmail ? getSalesforceUsername(userEmail) : userEmail;
     if (isSalesforceUser(userEmail) && isMulesoftEnabled()) {
       try {
         // Step 1: Get the household info from SF
@@ -586,7 +592,7 @@ export function registerClientRoutes(app: Express) {
         const cacheHit = _enrichedClientsCache
           && _enrichedClientsCache.userEmail === userEmail
           && (Date.now() - _enrichedClientsCache.ts) < ENRICHED_CLIENTS_TTL
-          ? _enrichedClientsCache.data.find((c: any) => c.id === req.params.id)
+          ? _enrichedClientsCache.data.find((c: any) => c.id === p(req.params.id))
           : null;
 
         if (cacheHit) {
@@ -617,7 +623,7 @@ export function registerClientRoutes(app: Express) {
             sfHouseholdResult = null;
           }
           sfHouseholdPage = sfHouseholdResult;
-          logger.info({ clientId: req.params.id }, "[Clients] Detail cache hit — skipped SF pagination");
+          logger.info({ clientId: p(req.params.id) }, "[Clients] Detail cache hit — skipped SF pagination");
         } else {
           // Cache miss — paginate through SF to find the household
           // (SF API has max 200 per page, we have 508 total)
@@ -637,7 +643,7 @@ export function registerClientRoutes(app: Express) {
             if (!sfHouseholdResult) sfHouseholdResult = page;
 
             sfHousehold = page.householdAccounts.find(
-              (h: any) => h.Id === req.params.id
+              (h: any) => h.Id === p(req.params.id)
             );
 
             // Capture the page where we found the household — its householdDetails are here
@@ -652,7 +658,7 @@ export function registerClientRoutes(app: Express) {
 
         if (!sfHousehold) {
           // Household ID not found in any SF page — fall through to local DB
-          throw new Error(`Household ${req.params.id} not found in Salesforce`);
+          throw new Error(`Household ${p(req.params.id)} not found in Salesforce`);
         }
 
         const householdName = sfHousehold.Name || "Unknown";
@@ -667,7 +673,7 @@ export function registerClientRoutes(app: Express) {
         for (const detail of (detailsPage?.householdDetails || [])) {
           if (detail.householdId) detailMap.set(detail.householdId, detail);
         }
-        const sfDetail = detailMap.get(req.params.id) || {};
+        const sfDetail = detailMap.get(p(req.params.id)) || {};
 
         // Step 2: Find matching Orion portfolio records by name
         // Orion has 35K+ records — we do fuzzy name matching
@@ -699,6 +705,8 @@ export function registerClientRoutes(app: Express) {
         let orionAccounts: any[] = [];
         let orionAssets: any[] = [];
         let orionReportData: any[] = [];
+        let portfolioData: any = null;
+        let taxData_raw: any = null;
 
         const orionNumericId = bestMatch?.id ? Number(bestMatch.id) : NaN;
         if (bestMatch && bestMatch.id && !isNaN(orionNumericId)) {
@@ -707,7 +715,7 @@ export function registerClientRoutes(app: Express) {
 
           // Use exact Postman-tested calculation structures for each Reporting Scope type
           // Each call matches the proven Postman request bodies exactly
-          const [accts, assets, perfData, allocData, portfolioData, taxData_raw] = await Promise.all([
+          const [accts, assets, perfData, allocData, portfolioData_, taxData_raw_] = await Promise.all([
             getOrionClientAccounts(bestMatch.id),
             getOrionClientAssets(bestMatch.id),
 
@@ -918,6 +926,8 @@ export function registerClientRoutes(app: Express) {
 
           orionAccounts = accts;
           orionAssets = assets;
+          portfolioData = portfolioData_;
+          taxData_raw = taxData_raw_;
           // Merge all reporting scope results into a single array for downstream parsing
           orionReportData = [
             ...(Array.isArray(perfData) ? perfData : [perfData]),
@@ -932,14 +942,14 @@ export function registerClientRoutes(app: Express) {
         try {
           const membersResult = await getLiveHouseholdMembers({
             username: sfUsername!,
-            householdId: req.params.id,
+            householdId: p(req.params.id),
           });
           if (membersResult?.members) {
             sfMembers = membersResult.members;
           }
         } catch {
           // Expected — SF validation is strict for many households
-          logger.info({ householdId: req.params.id }, "[Clients] SF members not accessible for this household");
+          logger.info({ householdId: p(req.params.id) }, "[Clients] SF members not accessible for this household");
         }
 
         const primaryMember = sfMembers[0];
@@ -955,7 +965,7 @@ export function registerClientRoutes(app: Express) {
         // Step 5: Build unified client detail response
         // Pull contact data from SF household fields first, then overlay member data
         const sfClient = {
-          id: req.params.id,
+          id: p(req.params.id),
           firstName: householdName.split(" ")[0] || householdName,
           lastName: householdName.split(" ").slice(1).join(" ") || "",
           email: primaryMember?.PersonEmail || sfHousehold.PersonEmail
@@ -971,7 +981,7 @@ export function registerClientRoutes(app: Express) {
           riskTolerance: sfHousehold.FinServ__InvestmentObjectives__c
             || sfHousehold.Risk_Tolerance__c || "moderate",
           advisorId: req.session.userId!,
-          sfHouseholdId: req.params.id,
+          sfHouseholdId: p(req.params.id),
           dateOfBirth: primaryMember?.PersonBirthdate || sfHousehold.PersonBirthdate || null,
           city: primaryMember?.PersonMailingCity || sfHousehold.BillingCity
             || sfHousehold.ShippingCity || "",
@@ -994,8 +1004,8 @@ export function registerClientRoutes(app: Express) {
           .filter((a) => (a.totalValue || 0) > 0)
           .map((a: any, i: number) => ({
             id: a.id || `orion-${i}`,
-            clientId: req.params.id,
-            householdId: req.params.id,
+            clientId: p(req.params.id),
+            householdId: p(req.params.id),
             accountNumber: a.accountNumber || "",
             accountType: a.accountType || a.name || "Investment Account",
             custodian: a.custodian || "Orion",
@@ -1072,7 +1082,7 @@ export function registerClientRoutes(app: Express) {
         // NOTE: reporting/scope endpoint currently returns 404 — performance will be empty.
         // The .catch() handlers above already return [] on failure.
         if (orionReportData.length === 0) {
-          logger.warn({ clientId: req.params.id }, "[Clients] Reporting/scope data unavailable (404) — returning empty performance");
+          logger.warn({ clientId: p(req.params.id) }, "[Clients] Reporting/scope data unavailable (404) — returning empty performance");
         }
         const performance: any[] = orionReportData
           .filter((r: any) => r.returnPct !== undefined || r.performance !== undefined || r.return !== undefined)
@@ -1214,7 +1224,7 @@ export function registerClientRoutes(app: Express) {
         const householdMembers = sfMembers.map((m: any) => ({
           id: m.Id,
           clientId: m.Id,
-          householdId: req.params.id,
+          householdId: p(req.params.id),
           firstName: m.FirstName || "",
           lastName: m.LastName || "",
           email: m.PersonEmail || "",
@@ -1233,7 +1243,7 @@ export function registerClientRoutes(app: Express) {
         // Map SF tasks — filter to this household where possible.
         // SF tasks may have WhatId (related account) or AccountId referencing the household.
         // If neither field is present, we fall back to all advisor-level tasks (known limitation).
-        const householdId = req.params.id;
+        const householdId = p(req.params.id);
         const allOpenTasks = sfHouseholdResult?.openTasks || [];
         const householdTasks = allOpenTasks.filter((t: any) =>
           t.WhatId === householdId || t.AccountId === householdId
@@ -1544,12 +1554,12 @@ export function registerClientRoutes(app: Express) {
           sfMemberCount: sfMembers.length,
         });
       } catch (err) {
-        logger.error({ err, clientId: req.params.id }, "[Clients] SF/Orion detail fetch failed, falling back to local DB");
+        logger.error({ err, clientId: p(req.params.id) }, "[Clients] SF/Orion detail fetch failed, falling back to local DB");
       }
     }
 
     try {
-      const client = await storage.getClient(req.params.id);
+      const client = await storage.getClient(p(req.params.id));
       if (!client) return res.status(404).json({ message: "Client not found" });
 
       if (req.session.userType! === "associate") {
@@ -1652,7 +1662,7 @@ export function registerClientRoutes(app: Express) {
         documentChecklist: checklistItems,
       });
     } catch (err) {
-      logger.error({ err, clientId: req.params.id }, "[Clients] Local DB client detail fetch failed");
+      logger.error({ err, clientId: p(req.params.id) }, "[Clients] Local DB client detail fetch failed");
       res.status(500).json({ message: "Failed to load client details" });
     }
   });
@@ -1661,12 +1671,12 @@ export function registerClientRoutes(app: Express) {
     try {
       const body = validateBody(updateClientSchema, req, res);
       if (!body) return;
-      const existing = await storage.getClient(req.params.id);
+      const existing = await storage.getClient(p(req.params.id));
       if (!existing) return res.status(404).json({ message: "Client not found" });
       if (existing.advisorId !== req.session.userId!) {
         return res.status(403).json({ message: "Access denied" });
       }
-      const result = await storage.updateClient(req.params.id, body);
+      const result = await storage.updateClient(p(req.params.id), body);
       res.json(result);
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -1676,12 +1686,12 @@ export function registerClientRoutes(app: Express) {
 
   app.delete("/api/clients/:id", requireAdvisor, async (req, res) => {
     try {
-      const existing = await storage.getClient(req.params.id);
+      const existing = await storage.getClient(p(req.params.id));
       if (!existing) return res.status(404).json({ message: "Client not found" });
       if (existing.advisorId !== req.session.userId!) {
         return res.status(403).json({ message: "Access denied" });
       }
-      await storage.updateClient(req.params.id, { status: "inactive" });
+      await storage.updateClient(p(req.params.id), { status: "inactive" });
       res.json({ success: true });
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -1691,7 +1701,7 @@ export function registerClientRoutes(app: Express) {
 
   app.get("/api/accounts/:accountId/holdings", async (req, res) => {
     try {
-      const holdings = await storage.getHoldingsByAccount(req.params.accountId);
+      const holdings = await storage.getHoldingsByAccount(p(req.params.accountId));
       res.json(holdings);
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -1701,7 +1711,7 @@ export function registerClientRoutes(app: Express) {
 
   app.get("/api/clients/:clientId/team", async (req, res) => {
     try {
-      const members = await storage.getClientTeamMembers(req.params.clientId);
+      const members = await storage.getClientTeamMembers(p(req.params.clientId));
       res.json(members.map(m => ({
         ...m,
         associate: { ...m.associate, passwordHash: undefined },
@@ -1716,12 +1726,12 @@ export function registerClientRoutes(app: Express) {
     try {
       const body = validateBody(addTeamMemberSchema, req, res);
       if (!body) return;
-      const existing = await storage.getClientTeamMembers((req.params.clientId as string));
+      const existing = await storage.getClientTeamMembers(p(req.params.clientId));
       if (existing.some(m => m.associateId === body.associateId)) {
         return res.status(400).json({ message: "Associate is already on this team" });
       }
       const member = await storage.addClientTeamMember({
-        clientId: (req.params.clientId as string),
+        clientId: p(req.params.clientId),
         associateId: body.associateId,
         role: body.role || "support",
         addedAt: new Date().toISOString().split("T")[0],
@@ -1735,7 +1745,7 @@ export function registerClientRoutes(app: Express) {
 
   app.delete("/api/clients/:clientId/team/:memberId", requireAdvisor, async (req, res) => {
     try {
-      await storage.removeClientTeamMember((req.params.memberId as string));
+      await storage.removeClientTeamMember(p(req.params.memberId));
       res.json({ success: true });
     } catch (error: any) {
       logger.error({ err: error }, "API error");
@@ -1787,7 +1797,7 @@ export function registerClientRoutes(app: Express) {
       if (body.phone !== undefined) update.phone = body.phone;
       if (body.active !== undefined) update.active = body.active;
       if (body.password) update.passwordHash = hashPassword(body.password);
-      const result = await storage.updateAssociate((req.params.id as string), update);
+      const result = await storage.updateAssociate(p(req.params.id), update);
       if (!result) return res.status(404).json({ message: "Associate not found" });
       const { passwordHash, ...safe } = result;
       res.json(safe);
@@ -1799,7 +1809,7 @@ export function registerClientRoutes(app: Express) {
 
   app.delete("/api/associates/:id", requireAdvisor, async (req, res) => {
     try {
-      await storage.deleteAssociate((req.params.id as string));
+      await storage.deleteAssociate(p(req.params.id));
       res.json({ success: true });
     } catch (error: any) {
       logger.error({ err: error }, "API error");

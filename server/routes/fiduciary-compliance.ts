@@ -57,6 +57,11 @@ const resolveSchema = z.object({
   resolutionNote: z.string().min(1, "Resolution note is required"),
 });
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 async function loadPersistedConfig() {
   try {
     const config = await storage.getFiduciaryRuleConfig();
@@ -238,7 +243,7 @@ export function registerFiduciaryComplianceRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ message: "Unauthorized" });
 
-      const log = await storage.getFiduciaryValidationLog(req.params.id);
+      const log = await storage.getFiduciaryValidationLog(p(req.params.id));
       if (!log) return res.status(404).json({ message: "Validation log not found" });
       if (log.advisorId && log.advisorId !== advisor.id) {
         return res.status(403).json({ message: "Not authorized to view this log" });
@@ -258,14 +263,14 @@ export function registerFiduciaryComplianceRoutes(app: Express) {
       const advisor = await getSessionAdvisor(req);
       if (!advisor) return res.status(401).json({ message: "Unauthorized" });
 
-      const log = await storage.getFiduciaryValidationLog(req.params.id);
+      const log = await storage.getFiduciaryValidationLog(p(req.params.id));
       if (!log) return res.status(404).json({ message: "Validation log not found" });
       if (log.advisorId && log.advisorId !== advisor.id) {
         return res.status(403).json({ message: "Not authorized to resolve this log" });
       }
 
       const resolved = await storage.resolveFiduciaryValidation(
-        req.params.id,
+        p(req.params.id),
         advisor.name,
         body.resolutionNote
       );

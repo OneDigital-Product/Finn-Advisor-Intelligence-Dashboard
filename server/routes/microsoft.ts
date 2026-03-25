@@ -25,6 +25,11 @@ async function requireMicrosoftToken(req: Request, res: Response, next: NextFunc
   }
 }
 
+/** Normalize Express param to string */
+function p(v: string | string[] | undefined): string {
+  return Array.isArray(v) ? v[0] : v || "";
+}
+
 export function registerMicrosoftRoutes(app: Express) {
   app.get("/api/integrations/microsoft/status", requireAuth, async (req, res) => {
     try {
@@ -86,7 +91,7 @@ export function registerMicrosoftRoutes(app: Express) {
   app.post("/api/integrations/microsoft/calendar/sync-meeting/:meetingId", requireAuth, requireAdvisor, requireMicrosoftToken, async (req, res) => {
     try {
       const accessToken = (req as any).microsoftAccessToken as string;
-      const { meetingId } = req.params;
+      const meetingId = p(req.params.meetingId);
       const result = await syncMeetingToOutlook(meetingId, accessToken);
       res.json(result);
     } catch (err: any) {
@@ -98,7 +103,7 @@ export function registerMicrosoftRoutes(app: Express) {
   app.post("/api/integrations/microsoft/calendar/cancel-event/:meetingId", requireAuth, requireAdvisor, requireMicrosoftToken, async (req, res) => {
     try {
       const accessToken = (req as any).microsoftAccessToken as string;
-      const { meetingId } = req.params;
+      const meetingId = p(req.params.meetingId);
       const result = await cancelOutlookEvent(meetingId, accessToken);
       res.json(result);
     } catch (err: any) {
