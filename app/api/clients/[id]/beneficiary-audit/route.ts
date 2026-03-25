@@ -79,7 +79,17 @@ export async function GET(
         }))
     );
 
-    const accountAuditResults = eligibleAccounts.map((acct) => {
+    const accountAuditResults: Array<{
+      accountId: string;
+      accountNumber: string | null;
+      accountType: string | null;
+      custodian: string | null;
+      balance: string | null;
+      hasBeneficiaryDoc: boolean;
+      lastReviewedDate: string | null;
+      designations: Array<Record<string, any>>;
+      conflicts: Array<{ type: string; severity: string; message: string }>;
+    }> = eligibleAccounts.map((acct) => {
       const type = (acct.accountType || "").toLowerCase();
       const conflicts: Array<{ type: string; severity: string; message: string }> = [];
 
@@ -183,7 +193,7 @@ export async function GET(
     if (sfDesignations.length > 0) {
       for (const audit of accountAuditResults) {
         const matchingDesignations = sfDesignations.filter(
-          (d: any) => d.FinancialAccountId === (accounts.find((a: any) => a.id === audit.accountId)?.sfAccountId)
+          (d: any) => d.FinancialAccountId === (accounts.find((a: any) => a.id === audit.accountId) as any)?.sfAccountId
         );
         if (matchingDesignations.length > 0) {
           audit.designations = [

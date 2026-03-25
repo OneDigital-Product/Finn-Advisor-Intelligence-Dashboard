@@ -778,7 +778,7 @@ export async function GET(request: Request, { params }: RouteContext) {
       topHoldingsByValue,
       sectorExposure,
       isLiveData: false,
-      _identity: { ...identity, dataPath: (liveSfId ? "local-db" : "local-db-uuid-skip") as const },
+      _identity: { ...identity, dataPath: liveSfId ? "local-db" as const : "local-db-uuid-skip" as const },
     }, { headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=300" } });
   } catch (err) {
     logger.error({ err: err }, `[Portfolio] Local DB fetch failed for ${id}`);

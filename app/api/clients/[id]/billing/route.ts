@@ -17,11 +17,11 @@ import { logger } from "@server/lib/logger";
  * Returns firm-level billing summary + client-specific billing instances.
  * Falls back to SF Revenue YTD when Orion billing is unavailable.
  */
-export async function GET(req: Request, { params }: { params: { id: string } }) {
-  const session = await requireAuth(req);
-  if (!session) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAuth();
+  if (auth.error) return auth.error;
 
-  const clientId = params.id;
+  const { id: clientId } = await params;
   const idError = validateId(clientId);
   if (idError) return NextResponse.json({ message: idError }, { status: 400 });
 

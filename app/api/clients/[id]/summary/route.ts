@@ -233,7 +233,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
 
     return NextResponse.json({
       ...buildResponse(mapped),
-      _identity: { ...identity, dataPath: (liveSfId ? "local-db" : "local-db-uuid-skip") as const },
+      _identity: { ...identity, dataPath: liveSfId ? "local-db" as const : "local-db-uuid-skip" as const },
     }, { headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=300" } });
   } catch (err: any) {
     logger.error({ err }, "[summary] DB error");
@@ -279,6 +279,8 @@ interface ClientSummaryInput {
   aumSource?: string;
   accountCount: number;
   isLiveData: boolean;
+  annualIncome?: number | null;
+  dateOfBirth?: string | null;
 }
 
 function buildResponse(c: ClientSummaryInput) {

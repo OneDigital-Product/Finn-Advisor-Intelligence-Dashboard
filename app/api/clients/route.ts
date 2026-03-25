@@ -70,9 +70,9 @@ export async function GET(request: Request) {
     // Track errors and data sources independently
     const _errors: string[] = [];
     const _dataSources: {
-      orion: "live" | "error" | "cached";
-      salesforce: "live" | "error";
-      fallback: "none" | "local-db";
+      orion: "live" | "error" | "cached" | "stale-cache";
+      salesforce: "live" | "error" | "stale-cache";
+      fallback: "none" | "local-db" | "stale-live-cache";
     } = { orion: "live", salesforce: "live", fallback: "none" };
 
     // -------------------------------------------------------------------
@@ -365,7 +365,7 @@ export async function GET(request: Request) {
     }
 
     // Serve live (or stale-live) data — never seed data for SF users
-    if (allClients.length > 0 || _dataSources.fallback !== "local-db") {
+    if (allClients.length > 0 || (_dataSources.fallback as string) !== "local-db") {
       // -------------------------------------------------------------------
       // Server-side search, sort, and paginate the full enriched list
       // -------------------------------------------------------------------
