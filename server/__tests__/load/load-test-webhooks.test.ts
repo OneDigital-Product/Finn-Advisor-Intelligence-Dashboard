@@ -1,4 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+
+// Skip autocannon load tests unless explicitly enabled (they need a real HTTP server)
+const SKIP_LOAD_TESTS = !process.env.RUN_LOAD_TESTS;
 import express from "express";
 import session from "express-session";
 import http from "http";
@@ -146,7 +149,7 @@ function buildRequestPayload() {
   };
 }
 
-describe("Load Test: Concurrent Cassidy Webhook Invocations (autocannon)", () => {
+describe.skipIf(SKIP_LOAD_TESTS)("Load Test: Concurrent Cassidy Webhook Invocations (autocannon)", () => {
   let app: express.Express;
   let server: http.Server;
   let port: number;

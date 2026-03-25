@@ -35,6 +35,7 @@ vi.mock("../storage", () => ({
     getHouseholds: vi.fn().mockResolvedValue([]),
     recordLoginEvent: vi.fn().mockResolvedValue(undefined),
     getClientsByAssociate: vi.fn().mockResolvedValue([]),
+    checkMeetingConflicts: vi.fn().mockResolvedValue([]),
   },
 }));
 vi.mock("../openai", () => ({
@@ -50,7 +51,7 @@ vi.mock("../db", () => ({
 }));
 vi.mock("../engines/onboarding-engine", () => ({ getActiveOnboardings: vi.fn().mockResolvedValue([]) }));
 vi.mock("drizzle-orm", () => ({ eq: vi.fn(), and: vi.fn(), desc: vi.fn(), gte: vi.fn(), lte: vi.fn(), sql: vi.fn() }));
-vi.mock("@shared/schema", () => ({ approvalItems: {}, investorProfiles: {}, reportArtifacts: {}, calculatorRuns: {}, clients: {}, insertMeetingSchema: {} }));
+vi.mock("@shared/schema", () => ({ approvalItems: {}, investorProfiles: {}, reportArtifacts: {}, calculatorRuns: {}, clients: {}, insertMeetingSchema: {}, insertClientSchema: { omit: () => ({ partial: () => ({ refine: () => ({}) }) }) } }));
 
 import { registerAuthRoutes } from "../routes/auth";
 import { registerMeetingRoutes } from "../routes/meetings";
@@ -189,6 +190,7 @@ describe("Meeting API Routes", () => {
 
   describe("POST /api/meetings/:id/notes", () => {
     it("should update meeting notes", async () => {
+      ms.getMeeting.mockResolvedValue(mockMeeting as any);
       ms.updateMeeting.mockResolvedValue({ ...mockMeeting, notes: "Updated" });
 
       const agent = request.agent(app);

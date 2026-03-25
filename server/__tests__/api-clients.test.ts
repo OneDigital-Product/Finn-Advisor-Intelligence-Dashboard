@@ -42,6 +42,7 @@ vi.mock("../storage", () => ({
     getFilteredAlerts: vi.fn().mockResolvedValue([]),
     getTasks: vi.fn().mockResolvedValue([]),
     getHouseholds: vi.fn().mockResolvedValue([]),
+    getAumByClient: vi.fn().mockResolvedValue(new Map()),
   },
 }));
 vi.mock("../openai", () => ({ isAIAvailable: () => false }));
@@ -50,7 +51,7 @@ vi.mock("../db", () => ({
 }));
 vi.mock("../engines/onboarding-engine", () => ({ getActiveOnboardings: vi.fn().mockResolvedValue([]) }));
 vi.mock("drizzle-orm", () => ({ eq: vi.fn(), and: vi.fn(), desc: vi.fn(), gte: vi.fn(), lte: vi.fn(), sql: vi.fn() }));
-vi.mock("@shared/schema", () => ({ approvalItems: {}, investorProfiles: {}, reportArtifacts: {}, calculatorRuns: {}, clients: {} }));
+vi.mock("@shared/schema", () => ({ approvalItems: {}, investorProfiles: {}, reportArtifacts: {}, calculatorRuns: {}, clients: {}, insertClientSchema: { omit: () => ({ partial: () => ({ refine: () => ({}) }) }) } }));
 
 import { registerAuthRoutes } from "../routes/auth";
 import { registerClientRoutes } from "../routes/clients";
@@ -110,6 +111,7 @@ describe("Client API Routes", () => {
     app = createApp();
     ms.getAdvisor.mockResolvedValue({ id: "advisor-1", name: "Test Advisor" });
     ms.getFirstAdvisor.mockResolvedValue({ id: "advisor-1" });
+    ms.getAumByClient.mockResolvedValue(new Map([["client-1", { totalAum: 500000, accountCount: 1 }]]));
   });
 
   describe("GET /api/clients", () => {

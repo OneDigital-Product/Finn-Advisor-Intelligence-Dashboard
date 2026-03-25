@@ -107,6 +107,7 @@ describe("Salesforce Integration API Routes", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.SALESFORCE_WEBHOOK_SECRET = "test-sf-webhook-secret";
     app = createApp();
   });
 
@@ -212,9 +213,16 @@ describe("Salesforce Integration API Routes", () => {
 
   describe("POST /api/integrations/salesforce/webhook", () => {
     it("should accept webhook payload", async () => {
+      const { createHmac } = await import("crypto");
+      const body = JSON.stringify({ type: "update", id: "sf-123" });
+      const signature = createHmac("sha256", "test-sf-webhook-secret").update(body).digest("hex");
       const agent = request.agent(app);
       await loginAsAdvisor(agent);
-      const res = await agent.post("/api/integrations/salesforce/webhook").send({ type: "update", id: "sf-123" });
+      const res = await agent
+        .post("/api/integrations/salesforce/webhook")
+        .set("x-sf-signature", signature)
+        .set("Content-Type", "application/json")
+        .send(body);
       expect(res.status).toBe(200);
       expect(res.body.received).toBe(true);
     });

@@ -167,6 +167,7 @@ describe("Zoom Integration API Routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(isZoomEnabled).mockReturnValue(true);
+    process.env.ZOOM_WEBHOOK_SECRET = "test-webhook-secret-for-ci";
     app = createApp();
   });
 

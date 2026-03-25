@@ -41,7 +41,7 @@ vi.mock("../db", () => ({
 }));
 vi.mock("../engines/onboarding-engine", () => ({ getActiveOnboardings: vi.fn().mockResolvedValue([]) }));
 vi.mock("drizzle-orm", () => ({ eq: vi.fn(), and: vi.fn(), desc: vi.fn(), gte: vi.fn(), lte: vi.fn(), sql: vi.fn() }));
-vi.mock("@shared/schema", () => ({ approvalItems: {}, investorProfiles: {}, reportArtifacts: {}, calculatorRuns: {}, clients: {}, insertMeetingSchema: {} }));
+vi.mock("@shared/schema", () => ({ approvalItems: {}, investorProfiles: {}, reportArtifacts: {}, calculatorRuns: {}, clients: {}, insertMeetingSchema: {}, insertClientSchema: { omit: () => ({ partial: () => ({ refine: () => ({}) }) }) } }));
 
 import { registerAuthRoutes } from "../routes/auth";
 import { registerClientRoutes } from "../routes/clients";

@@ -49,6 +49,8 @@ vi.mock("../storage", () => ({
     getAllAssociates: vi.fn(),
     getLatestAssessment: vi.fn(),
     getAssessmentHistory: vi.fn(),
+    getAumByClient: vi.fn().mockResolvedValue(new Map()),
+    checkMeetingConflicts: vi.fn().mockResolvedValue([]),
   },
 }));
 vi.mock("../openai", () => ({
@@ -88,7 +90,7 @@ vi.mock("../pdf/assessment-pdf", () => {
   return { AssessmentPDF: MockAssessmentPDF };
 });
 vi.mock("drizzle-orm", () => ({ eq: vi.fn(), and: vi.fn(), desc: vi.fn(), gte: vi.fn(), lte: vi.fn(), sql: vi.fn() }));
-vi.mock("@shared/schema", () => ({ approvalItems: {}, investorProfiles: {}, reportArtifacts: {}, calculatorRuns: {}, clients: {}, insertMeetingSchema: {} }));
+vi.mock("@shared/schema", () => ({ approvalItems: {}, investorProfiles: {}, reportArtifacts: {}, calculatorRuns: {}, clients: {}, insertMeetingSchema: {}, insertClientSchema: { omit: () => ({ partial: () => ({ refine: () => ({}) }) }) } }));
 
 import { registerAuthRoutes } from "../routes/auth";
 import { registerClientRoutes } from "../routes/clients";
