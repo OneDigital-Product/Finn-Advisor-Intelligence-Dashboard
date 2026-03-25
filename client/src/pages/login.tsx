@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,15 +9,7 @@ import { Serif } from "@/components/design/typography";
 const logoImg = "/logo_no_bg.png";
 
 export default function Login() {
-  const { login, user } = useAuth();
-  const router = useRouter();
-
-  // Redirect to dashboard if already authenticated
-  useEffect(() => {
-    if (user) {
-      router.push("/");
-    }
-  }, [user, router]);
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -30,8 +21,6 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email, password);
-      router.push("/");
-      return;
     } catch (err: any) {
       const msg = err.message || "Login failed";
       if (msg.includes("401")) {
