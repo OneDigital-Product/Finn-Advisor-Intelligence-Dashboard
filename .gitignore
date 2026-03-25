@@ -13,3 +13,4 @@ vite.config.ts.*
 # Playwright MCP logs
 .playwright-mcp/
 .claude/plans/
+pnpm-lock.yaml
