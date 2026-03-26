@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data: user, isLoading } = useQuery<User | null>({
     queryKey: ["/api/auth/me"],
     queryFn: getQueryFn({ on401: "returnNull" }),
-    staleTime: Infinity,
+    staleTime: 0,
     retry: false,
   });
 
