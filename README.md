@@ -57,7 +57,7 @@ Finn is a comprehensive advisor intelligence platform designed for wealth manage
 1. **MuleSoft EAPI** — OAuth2 client credentials proxy layer routing to Salesforce and Orion
 2. **Orion Advisor** — Portfolio accounts, holdings, performance, AUM, and market data
 3. **Salesforce FSC** — Households, members, opportunities, tasks, events, and cases
-4. **Local DB** — SQLite via Drizzle ORM for user settings, cached data, and application state
+4. **PostgreSQL** — Drizzle ORM with Vercel Postgres in production, local PostgreSQL for development
 
 ### Performance Optimizations
 
@@ -79,7 +79,7 @@ Finn is a comprehensive advisor intelligence platform designed for wealth manage
 | State | TanStack React Query v5, React Context |
 | Charts | Recharts 2.15 |
 | Drag & Drop | @dnd-kit/core + @dnd-kit/sortable |
-| Database | SQLite + Drizzle ORM |
+| Database | PostgreSQL + Drizzle ORM (Vercel Postgres in production) |
 | Auth | Session-based with bcrypt |
 | AI | OpenAI GPT-4 via Vercel AI SDK |
 | Integrations | MuleSoft EAPI, Orion Advisor, Salesforce FSC, Microsoft Graph, Cassidy AI |
@@ -220,6 +220,49 @@ Outlook calendar integration for meeting display on the dashboard.
 
 ### Cassidy AI
 Workflow orchestration for automated advisor tasks via webhook integration.
+
+---
+
+## Deployment
+
+### Vercel (Production)
+
+The app is deployed on Vercel with Vercel Postgres. Key configuration:
+
+- **Framework:** Next.js 16 (auto-detected)
+- **Install command:** `npm ci` (set via `vercel.json`)
+- **Build command:** `npm run build`
+- **Database:** Vercel Postgres with SSL
+
+### Production Database Setup
+
+```bash
+# Point at cloud DB
+export DATABASE_URL="postgres://default:PASSWORD@HOST/verceldb?sslmode=require"
+
+# Push schema
+npx drizzle-kit push
+
+# Create rate-limit tables (not in Drizzle schema)
+psql "$DATABASE_URL" -c "
+CREATE TABLE IF NOT EXISTS rate_limit_hits (
+  key VARCHAR(255) PRIMARY KEY, hits INTEGER NOT NULL DEFAULT 1, reset_at TIMESTAMPTZ NOT NULL
+);
+CREATE TABLE IF NOT EXISTS market_data_rate_limits (
+  key VARCHAR(255) PRIMARY KEY, hits INTEGER NOT NULL DEFAULT 1, reset_at TIMESTAMPTZ NOT NULL
+);"
+
+# Seed demo data + advisor accounts
+npx tsx server/seed.ts
+```
+
+### Seeded Login Accounts
+
+| Account | Email | Password |
+|---------|-------|----------|
+| Sarah Mitchell | sarah.mitchell@example.com | changeme123 |
+| Michael Gouldin | michael.gouldin@onedigital.com.uat | admin123 |
+| Dev Advisor | dev.advisor@example.com | changeme123 |
 
 ---
 

@@ -14,3 +14,4 @@ vite.config.ts.*
 .playwright-mcp/
 .claude/plans/
 pnpm-lock.yaml
+vercel-env-setup/
