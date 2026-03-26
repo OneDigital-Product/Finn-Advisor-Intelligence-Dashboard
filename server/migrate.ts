@@ -12,7 +12,8 @@ export async function runMigrations(): Promise<void> {
   const migrationPool = new pg.Pool({
     connectionString,
     max: 1,
-    connectionTimeoutMillis: 10000,
+    connectionTimeoutMillis: 15000,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
   });
 
   try {
