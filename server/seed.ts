@@ -1303,6 +1303,22 @@ async function seedAdditionalDemoData() {
   type Advisor = typeof advisors.$inferSelect;
   type Client = typeof clients.$inferSelect;
 
+  // Ensure Michael Gouldin exists (upsert — safe to re-run)
+  const existingMichael = await db.select().from(advisors).where(eq(advisors.email, "michael.gouldin@onedigital.com.uat")).limit(1);
+  if (existingMichael.length === 0) {
+    await db.insert(advisors).values({
+      name: "Michael Gouldin",
+      email: "michael.gouldin@onedigital.com.uat",
+      title: "Wealth Advisor",
+      phone: "(404) 555-0300",
+      onboardingCompleted: true,
+      passwordHash: hashPassword("admin123"),
+    });
+    logger.info("Michael Gouldin advisor account created.");
+  } else {
+    logger.info("Michael Gouldin advisor account already exists.");
+  }
+
   const allAdvisors = await db.select().from(advisors).limit(1);
   if (allAdvisors.length === 0) return;
   const advisor: Advisor = allAdvisors[0];
