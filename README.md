@@ -261,7 +261,6 @@ npx tsx server/seed.ts
 | Account | Email | Password |
 |---------|-------|----------|
 | Sarah Mitchell | sarah.mitchell@example.com | changeme123 |
-| Michael Gouldin | michael.gouldin@onedigital.com.uat | admin123 |
 | Dev Advisor | dev.advisor@example.com | changeme123 |
 
 ---
