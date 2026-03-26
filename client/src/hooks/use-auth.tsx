@@ -41,6 +41,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       queryClient.setQueryData(["/api/auth/me"], data);
       try { sessionStorage.setItem("od-was-auth", "1"); } catch {}
       queryClient.invalidateQueries();
+      // If we're on /login (auth route group), redirect to dashboard.
+      // The dashboard layout renders login inline when user is null,
+      // but after logout hard-redirects to /login, we need to navigate back.
+      if (typeof window !== "undefined" && window.location.pathname === "/login") {
+        window.location.href = "/";
+      }
     },
   });
 
