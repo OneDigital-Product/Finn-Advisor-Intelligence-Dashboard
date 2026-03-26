@@ -62,8 +62,12 @@ export async function getSessionAdvisor(session: AuthenticatedSession | SessionD
 /** Check if user email indicates a Salesforce-eligible account.
  *  UAT accounts end in `.uat`; production @onedigital.com accounts are also SF-eligible
  *  (their SF username is derived by appending `.uat` to the email). */
+/** Demo advisor accounts that should use local DB, not live MuleSoft/SF. */
+const DEMO_ADVISOR_EMAILS = new Set(["james.chen@onedigital.com"]);
+
 export function isSalesforceUser(email?: string): boolean {
   if (!email) return false;
+  if (DEMO_ADVISOR_EMAILS.has(email)) return false;
   return email.endsWith(".uat") || email.endsWith("@onedigital.com");
 }
 
