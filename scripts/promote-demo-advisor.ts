@@ -38,13 +38,55 @@ export async function promoteDemoAdvisor() {
   console.log("╚══════════════════════════════════════════════════════╝\n");
 
   // ─── Step 0: Resolve IDs ──────────────────────────────────────
-  const james = await queryOne(sql`SELECT id, password_hash FROM advisors WHERE email = 'james.chen@onedigital.com' LIMIT 1`);
-  if (!james) throw new Error("FATAL: james.chen@onedigital.com not found in advisors table.");
+  let james = await queryOne(sql`SELECT id, password_hash FROM advisors WHERE email = 'james.chen@onedigital.com' LIMIT 1`);
+
+  if (!james) {
+    // Path A: James exists as an associate — promote to advisor using same ID
+    const assoc = await queryOne(sql`SELECT id, name, email, role FROM associates WHERE email = 'james.chen@onedigital.com' LIMIT 1`);
+
+    if (assoc) {
+      console.log(`  James found in associates only (${assoc.id}, role: ${assoc.role}). Creating advisor row...`);
+      const hash = hashPassword("demo2026!");
+      await db.execute(sql`
+        INSERT INTO advisors (id, name, email, title, password_hash, onboarding_completed)
+        VALUES (${assoc.id}, ${assoc.name}, ${assoc.email}, 'Senior Wealth Advisor', ${hash}, true)
+        ON CONFLICT (id) DO UPDATE SET
+          password_hash = ${hash},
+          title = 'Senior Wealth Advisor',
+          onboarding_completed = true
+      `);
+      console.log(`  ✅ Step 0: Created advisor row for James Chen from associate record`);
+    } else {
+      // Path B: James doesn't exist anywhere — create from scratch
+      console.log("  James not found in advisors or associates. Creating from scratch...");
+      const hash = hashPassword("demo2026!");
+      await db.execute(sql`
+        INSERT INTO advisors (name, email, title, password_hash, onboarding_completed)
+        VALUES ('James Chen', 'james.chen@onedigital.com', 'Senior Wealth Advisor', ${hash}, true)
+      `);
+      console.log(`  ✅ Step 0: Created new advisor row for James Chen`);
+    }
+
+    // Re-fetch
+    james = await queryOne(sql`SELECT id, password_hash FROM advisors WHERE email = 'james.chen@onedigital.com' LIMIT 1`);
+    if (!james) throw new Error("FATAL: Failed to create advisor row for James Chen.");
+  }
+
   const JAMES_ADVISOR_ID = james.id;
 
   const michael = await queryOne(sql`SELECT id FROM advisors WHERE email = 'michael.gouldin@onedigital.com.uat' LIMIT 1`);
-  if (!michael) throw new Error("FATAL: michael.gouldin@onedigital.com.uat not found in advisors table.");
-  const MICHAEL_ID = michael.id;
+  if (!michael) {
+    console.log("  ⚠️  Michael Gouldin not found — creating internal test advisor...");
+    const mHash = hashPassword("admin123");
+    await db.execute(sql`
+      INSERT INTO advisors (name, email, title, password_hash, onboarding_completed)
+      VALUES ('Michael Gouldin', 'michael.gouldin@onedigital.com.uat', 'Wealth Advisor', ${mHash}, true)
+    `);
+    console.log("  ✅ Step 0: Created Michael Gouldin advisor row");
+  }
+  const michaelRefresh = await queryOne(sql`SELECT id FROM advisors WHERE email = 'michael.gouldin@onedigital.com.uat' LIMIT 1`);
+  if (!michaelRefresh) throw new Error("FATAL: Failed to create Michael Gouldin advisor row.");
+  const MICHAEL_ID = michaelRefresh.id;
 
   console.log(`  James advisor ID:   ${JAMES_ADVISOR_ID}`);
   console.log(`  Michael advisor ID: ${MICHAEL_ID}\n`);
