@@ -146,28 +146,57 @@ export async function promoteDemoAdvisor() {
     }
   }
 
-  // ─── Step 3: Reassign all demo clients from Michael → James ───
-  const clientCount = await queryVal(sql`SELECT count(*) AS cnt FROM clients WHERE advisor_id = ${MICHAEL_ID}`);
+  // ─── Step 3: Reassign synthetic demo clients to James ─────────
+  // Detect the current owner dynamically — could be Sarah, Michael, or anyone.
+  // Find all clients NOT already owned by James, that are synthetic (no SF link).
+  const nonJamesClients = await queryVal(sql`
+    SELECT count(*) AS cnt FROM clients
+    WHERE advisor_id != ${JAMES_ADVISOR_ID}
+      AND salesforce_contact_id IS NULL
+      AND synced_to_salesforce = false
+  `);
 
-  if (clientCount > 0) {
-    // Safety check: verify none are SF-linked
-    const sfLinked = await queryVal(sql`
-      SELECT count(*) AS cnt FROM clients
-      WHERE advisor_id = ${MICHAEL_ID} AND salesforce_contact_id IS NOT NULL
+  if (nonJamesClients > 0) {
+    // Identify which advisor(s) currently own them for logging
+    const currentOwners = await db.execute(sql`
+      SELECT a.name, a.email, count(*) AS cnt
+      FROM clients c JOIN advisors a ON c.advisor_id = a.id
+      WHERE c.advisor_id != ${JAMES_ADVISOR_ID}
+        AND c.salesforce_contact_id IS NULL
+        AND c.synced_to_salesforce = false
+      GROUP BY a.name, a.email
     `);
-    if (sfLinked > 0) {
-      throw new Error(`SAFETY ABORT: ${sfLinked} clients have Salesforce links. Will not move live data.`);
+    const owners = (currentOwners as any).rows ?? currentOwners;
+    for (const o of owners) {
+      console.log(`  📋 Step 3: Found ${o.cnt} synthetic clients owned by ${o.name} (${o.email})`);
     }
 
-    await db.execute(sql`UPDATE clients SET advisor_id = ${JAMES_ADVISOR_ID} WHERE advisor_id = ${MICHAEL_ID}`);
-    console.log(`  ✅ Step 3: Moved ${clientCount} clients from Michael → James`);
+    // Safety check: double-verify none are SF-linked
+    const sfLinked = await queryVal(sql`
+      SELECT count(*) AS cnt FROM clients
+      WHERE advisor_id != ${JAMES_ADVISOR_ID}
+        AND salesforce_contact_id IS NOT NULL
+        AND synced_to_salesforce = false
+    `);
+    if (sfLinked > 0) {
+      console.log(`  ⚠️  Step 3: Skipping ${sfLinked} clients with Salesforce contact IDs`);
+    }
+
+    await db.execute(sql`
+      UPDATE clients SET advisor_id = ${JAMES_ADVISOR_ID}
+      WHERE advisor_id != ${JAMES_ADVISOR_ID}
+        AND salesforce_contact_id IS NULL
+        AND synced_to_salesforce = false
+    `);
+    console.log(`  ✅ Step 3: Moved ${nonJamesClients} synthetic clients → James`);
     changes++;
   } else {
-    console.log("  ⏭️  Step 3: Michael has 0 clients — already moved or never assigned");
+    console.log("  ⏭️  Step 3: All synthetic clients already owned by James");
   }
 
-  // ─── Step 4: Reassign all advisor-scoped records ──────────────
-  // These tables have an advisor_id column that must match the new owner.
+  // ─── Step 4: Reassign advisor-scoped records ────────────────
+  // Find all advisor IDs that are NOT James, and move their records to James.
+  // Only move records that belong to clients James now owns.
   const advisorScopedTables = [
     "activities", "alerts", "aml_screening_results", "assessments",
     "behavioral_analyses", "calculator_runs", "cassidy_jobs",
@@ -184,19 +213,40 @@ export async function promoteDemoAdvisor() {
     "workflow_instances",
   ];
 
+  // Get the IDs of all clients James now owns
+  const jamesClientIds = await db.execute(sql`SELECT id FROM clients WHERE advisor_id = ${JAMES_ADVISOR_ID}`);
+  const clientIds = ((jamesClientIds as any).rows ?? jamesClientIds).map((r: any) => r.id);
+
   let totalMoved = 0;
   for (const table of advisorScopedTables) {
     try {
-      const result = await db.execute(
-        sql`UPDATE ${sql.raw(`"${table}"`)} SET advisor_id = ${JAMES_ADVISOR_ID} WHERE advisor_id = ${MICHAEL_ID}`
-      );
+      // For tables with both client_id and advisor_id: update where client belongs to James but advisor_id doesn't match
+      const hasClientId = await queryOne(sql`
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = ${table} AND column_name = 'client_id' AND table_schema = 'public'
+      `);
+
+      let result;
+      if (hasClientId && clientIds.length > 0) {
+        // Re-scope records whose client is owned by James but advisor_id is stale
+        result = await db.execute(
+          sql`UPDATE ${sql.raw(`"${table}"`)} SET advisor_id = ${JAMES_ADVISOR_ID}
+              WHERE advisor_id != ${JAMES_ADVISOR_ID}
+                AND client_id IN (SELECT id FROM clients WHERE advisor_id = ${JAMES_ADVISOR_ID})`
+        );
+      } else {
+        // Tables without client_id (like households): update any non-James advisor_id
+        result = await db.execute(
+          sql`UPDATE ${sql.raw(`"${table}"`)} SET advisor_id = ${JAMES_ADVISOR_ID}
+              WHERE advisor_id != ${JAMES_ADVISOR_ID}`
+        );
+      }
       const count = (result as any).rowCount ?? (result as any).changes ?? 0;
       if (count > 0) {
         console.log(`  ✅ Step 4: ${table} — ${count} records re-scoped`);
         totalMoved += count;
       }
     } catch (err: any) {
-      // Table might not have advisor_id or might not exist — skip silently
       if (err?.code !== '42703' && err?.code !== '42P01') {
         console.log(`  ⚠️  Step 4: ${table} — ${err.message}`);
       }
