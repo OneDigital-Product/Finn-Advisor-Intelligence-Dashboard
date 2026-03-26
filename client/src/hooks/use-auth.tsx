@@ -63,10 +63,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       queryClient.setQueryData(["/api/auth/me"], null);
       queryClient.removeQueries({ queryKey: ["/api/auth/me"] });
       queryClient.clear();
-      // Clear all persisted state to prevent cross-account bleed
       try { sessionStorage.removeItem("od-was-auth"); } catch {}
-      try { localStorage.removeItem("wm-query-cache"); } catch {}
-      try { localStorage.removeItem("onedigital-recent-clients"); } catch {}
+      // Defer localStorage cleanup so it runs AFTER PersistQueryClient's
+      // write-back cycle (which fires synchronously on cache mutations).
+      // Then hard-redirect to /login to force a full page reload — this
+      // guarantees a clean PersistQueryClientProvider mount with empty storage.
+      setTimeout(() => {
+        try { localStorage.removeItem("wm-query-cache"); } catch {}
+        try { localStorage.removeItem("onedigital-recent-clients"); } catch {}
+        window.location.href = "/login";
+      }, 100);
     },
   });
 
