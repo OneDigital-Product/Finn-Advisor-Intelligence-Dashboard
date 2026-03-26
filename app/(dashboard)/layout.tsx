@@ -133,6 +133,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setHydrated(true);
   }, []);
 
+  // Reset wasAuthenticated when user becomes null (after logout)
+  // Without this, the skeleton guard at line 146 never clears and login page never appears
+  useEffect(() => {
+    if (hydrated && user === null) {
+      wasAuthenticated.current = false;
+      try { sessionStorage.removeItem("od-was-auth"); } catch {}
+    }
+  }, [hydrated, user]);
+
   if (typeof window !== "undefined") {
     if (user) {
       wasAuthenticated.current = true;

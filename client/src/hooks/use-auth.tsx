@@ -61,6 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/auth/me"], null);
+      queryClient.removeQueries({ queryKey: ["/api/auth/me"] });
       queryClient.clear();
       try { sessionStorage.removeItem("od-was-auth"); } catch {}
     },
