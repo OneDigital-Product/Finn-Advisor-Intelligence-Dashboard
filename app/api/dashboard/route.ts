@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
-import { requireAdvisor, getSessionAdvisor } from "@lib/auth-helpers";
+import { requireAdvisor, getSessionAdvisor, isSalesforceUser } from "@lib/auth-helpers";
 import { storage } from "@server/storage";
 import { logger } from "@server/lib/logger";
 import { db } from "@server/db";
 import { approvalItems, investorProfiles, reportArtifacts, calculatorRuns, clients } from "@shared/schema";
 import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
 import { getActiveOnboardings } from "@server/engines/onboarding-engine";
+
+// Read-only access to the enriched clients cache populated by /api/clients
+const g = globalThis as any;
+function getEnrichedCache(): { data: any[]; totalAum: number; userEmail: string } | null {
+  return g._enrichedClientsCache ?? null;
+}
 
 export async function GET() {
   try {
@@ -41,7 +47,18 @@ export async function GET() {
       return { ...meeting, client: client ? { ...client, totalAum } : null };
     });
 
-    const totalAum = allHouseholds.reduce((sum, h) => sum + parseFloat(h.totalAum as string || "0"), 0);
+    // For SF users with 0 local clients, try the enriched cache from /api/clients
+    let enrichedFallback: { totalClients: number; totalAum: number } | null = null;
+    if (allClients.length === 0 && isSalesforceUser(advisor.email)) {
+      const cached = getEnrichedCache();
+      if (cached && cached.userEmail === advisor.email) {
+        enrichedFallback = { totalClients: cached.data.length, totalAum: cached.totalAum };
+        logger.info({ email: advisor.email, clients: cached.data.length }, "[Dashboard] Using enriched cache for SF user with 0 local clients");
+      }
+    }
+
+    const totalAum = enrichedFallback?.totalAum
+      ?? allHouseholds.reduce((sum, h) => sum + parseFloat(h.totalAum as string || "0"), 0);
     const clientsBySegment = { A: 0, B: 0, C: 0, D: 0 };
     allClients.forEach(c => {
       if (c.segment in clientsBySegment) clientsBySegment[c.segment as keyof typeof clientsBySegment]++;
@@ -126,7 +143,7 @@ export async function GET() {
       alerts: allAlerts.filter(a => !a.isRead),
       bookSnapshot: {
         totalAum,
-        totalClients: allClients.length,
+        totalClients: enrichedFallback?.totalClients ?? allClients.length,
         clientsBySegment,
         netFlowsMTD: 0,
         netFlowsQTD: 0,

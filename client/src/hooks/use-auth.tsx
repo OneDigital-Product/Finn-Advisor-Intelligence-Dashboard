@@ -63,7 +63,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       queryClient.setQueryData(["/api/auth/me"], null);
       queryClient.removeQueries({ queryKey: ["/api/auth/me"] });
       queryClient.clear();
+      // Clear all persisted state to prevent cross-account bleed
       try { sessionStorage.removeItem("od-was-auth"); } catch {}
+      try { localStorage.removeItem("wm-query-cache"); } catch {}
+      try { localStorage.removeItem("onedigital-recent-clients"); } catch {}
     },
   });
 
