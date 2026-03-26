@@ -47,6 +47,15 @@ export async function seedDatabase() {
     passwordHash: hashPassword(process.env.SEED_UAT_ADVISOR_PASSWORD || "changeme123"),
   });
 
+  await db.insert(advisors).values({
+    name: "Michael Gouldin",
+    email: "michael.gouldin@onedigital.com.uat",
+    title: "Wealth Advisor",
+    phone: "(404) 555-0300",
+    onboardingCompleted: true,
+    passwordHash: hashPassword("admin123"),
+  });
+
   const clientsData = [
     { firstName: "Robert", lastName: "Henderson", email: "robert.henderson@gmail.com", phone: "(404) 555-1001", segment: "A", riskTolerance: "moderate-aggressive", dateOfBirth: "1958-03-15", occupation: "Retired CEO", employer: "Henderson Industries (Retired)", address: "1245 Peachtree Rd NE", city: "Atlanta", state: "GA", zip: "30309", lastContactDate: "2026-02-20", nextReviewDate: "2026-03-15", referralSource: "CPA Referral", interests: "Golf, grandchildren, philanthropy", notes: "Key relationship. Wife Margaret active in planning. Concerned about estate tax changes." },
     { firstName: "Margaret", lastName: "Henderson", email: "margaret.henderson@gmail.com", phone: "(404) 555-1002", segment: "A", riskTolerance: "moderate", dateOfBirth: "1960-07-22", occupation: "Retired Nonprofit Director", employer: "Atlanta Community Foundation (Retired)", address: "1245 Peachtree Rd NE", city: "Atlanta", state: "GA", zip: "30309", lastContactDate: "2025-10-15", nextReviewDate: "2026-01-15", referralSource: "Spouse", interests: "Art collecting, volunteer work, travel" },
