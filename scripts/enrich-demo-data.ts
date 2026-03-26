@@ -4,6 +4,9 @@
  * Fills gaps in James Chen's demo profile so stakeholders can navigate
  * every product surface. Idempotent — safe to re-run.
  *
+ * All IDs are resolved dynamically from the target database at runtime.
+ * No hardcoded UUIDs — works against any environment (local or cloud).
+ *
  * Usage:
  *   DATABASE_URL="postgres://..." npx tsx -e \
  *     "import { enrichDemoData } from './scripts/enrich-demo-data'; \
@@ -14,23 +17,8 @@
 import { db } from "../server/db";
 import { sql } from "drizzle-orm";
 
-// ── Constants ──────────────────────────────────────────────────────
-const JAMES_ID = "9d694e23-c972-4094-8b50-f34c12d5a278";
-const ADVISOR_ID = "63924ff0-2f61-447e-856b-55e5ebf6872a"; // Michael Gouldin
-const LISA_ID = "a7c31558-7f93-42a8-a9d1-2a1e28d372ea";   // Lisa Chen (spouse)
-
-// Existing trust IDs (from seed)
-const FAMILY_TRUST_ID = "6480e522-f87a-42e9-81e9-c0e7c543b05b";
-const GRAT_ID = "d4de554e-0ca3-49e7-8179-85dbd1f2ca03";
-
-// Existing account IDs
-const INDIVIDUAL_ACCT = "9e29665d-87e0-46c2-ab2a-ccb1b3684370";
-const ROLLOVER_ACCT = "dc33d68b-ac3b-4313-8154-867aefff836c";
-
-// Existing social profile ID
-const SOCIAL_PROFILE_ID = "a7ebd6ce-d3b1-4a6b-883e-ec48a15a33a3";
-
-// Deterministic IDs for idempotency
+// ── Deterministic IDs for idempotency ─────────────────────────────
+// These are for NEW records only — they don't need to exist beforehand.
 const BIZ_TECHCORP_ID = "demo-biz-techcorp-001";
 const BIZ_REALESTATE_ID = "demo-biz-realestate-002";
 const FLP_ID = "demo-flp-chen-001";
@@ -49,9 +37,53 @@ async function rowExists(table: string, id: string): Promise<boolean> {
   return Array.isArray(rows) && rows.length > 0 && rows[0].exists === true;
 }
 
+async function queryOne<T = any>(query: ReturnType<typeof sql>): Promise<T | null> {
+  const result = await db.execute(query);
+  const rows = (result as any).rows ?? result;
+  return Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+}
+
 // ── Main ───────────────────────────────────────────────────────────
 export async function enrichDemoData() {
-  console.log("Starting demo data enrichment for James Chen...");
+  console.log("Starting demo data enrichment for James Chen...\n");
+
+  // ─── Step 0: Resolve all IDs dynamically ─────────────────────
+  console.log("Resolving IDs from target database...");
+
+  const james = await queryOne(sql`SELECT id FROM clients WHERE first_name = 'James' AND last_name = 'Chen' LIMIT 1`);
+  if (!james) throw new Error("FATAL: James Chen not found in clients table. Run the seed first.");
+  const JAMES_ID = james.id;
+  console.log(`  James Chen:      ${JAMES_ID}`);
+
+  const advisor = await queryOne(sql`SELECT id FROM advisors WHERE email = 'michael.gouldin@onedigital.com.uat' LIMIT 1`);
+  if (!advisor) throw new Error("FATAL: Michael Gouldin not found in advisors table. Run the seed first.");
+  const ADVISOR_ID = advisor.id;
+  console.log(`  Michael Gouldin: ${ADVISOR_ID}`);
+
+  const lisa = await queryOne(sql`SELECT id FROM clients WHERE first_name = 'Lisa' AND last_name = 'Chen' LIMIT 1`);
+  const LISA_ID = lisa?.id ?? null; // Optional — trust relationships will use name if missing
+  console.log(`  Lisa Chen:       ${LISA_ID ?? "(not found — will use name only)"}`);
+
+  // Resolve existing trusts by name (created by seed)
+  const familyTrust = await queryOne(sql`SELECT id FROM trusts WHERE client_id = ${JAMES_ID} AND name LIKE '%Family Trust%' LIMIT 1`);
+  const FAMILY_TRUST_ID = familyTrust?.id ?? null;
+  console.log(`  Family Trust:    ${FAMILY_TRUST_ID ?? "(not found — skipping trust relationships)"}`);
+
+  const grat = await queryOne(sql`SELECT id FROM trusts WHERE client_id = ${JAMES_ID} AND trust_type = 'grat' LIMIT 1`);
+  const GRAT_ID = grat?.id ?? null;
+  console.log(`  GRAT:            ${GRAT_ID ?? "(not found — skipping GRAT relationship)"}`);
+
+  // Resolve accounts by type
+  const rolloverAcct = await queryOne(sql`SELECT id FROM accounts WHERE client_id = ${JAMES_ID} AND account_type LIKE '%Rollover%' LIMIT 1`);
+  const ROLLOVER_ACCT = rolloverAcct?.id ?? null;
+  console.log(`  Rollover Acct:   ${ROLLOVER_ACCT ?? "(not found — skipping QCD)"}`);
+
+  // Resolve social profile
+  const socialProfile = await queryOne(sql`SELECT id FROM social_profiles WHERE client_id = ${JAMES_ID} LIMIT 1`);
+  const SOCIAL_PROFILE_ID = socialProfile?.id ?? null;
+  console.log(`  Social Profile:  ${SOCIAL_PROFILE_ID ?? "(not found — skipping social events)"}`);
+
+  console.log("");
   let added = 0;
 
   // ─── 1. Business Entities (0 → 2) ─────────────────────────────
@@ -107,24 +139,36 @@ export async function enrichDemoData() {
   }
 
   // ─── 2. Trust Relationships (0 → 4) ───────────────────────────
-  // Check by trust_id + role combo to avoid duplicates
-  const existingRels = await db.execute(sql`
-    SELECT count(*) AS cnt FROM trust_relationships WHERE trust_id IN (${FAMILY_TRUST_ID}, ${GRAT_ID})
-  `);
-  const relCount = Number((existingRels as any).rows?.[0]?.cnt ?? (existingRels as any)[0]?.cnt ?? 0);
-
-  if (relCount === 0) {
-    await db.execute(sql`
-      INSERT INTO trust_relationships (id, trust_id, person_name, person_client_id, role, generation, notes)
-      VALUES
-        ('demo-tr-001', ${FAMILY_TRUST_ID}, 'James Chen', ${JAMES_ID}, 'grantor', 0, 'Co-grantor and primary trustee'),
-        ('demo-tr-002', ${FAMILY_TRUST_ID}, 'Lisa Chen', ${LISA_ID}, 'co-trustee', 0, 'Co-grantor and co-trustee'),
-        ('demo-tr-003', ${FAMILY_TRUST_ID}, 'Emily Chen', NULL, 'beneficiary', 1, 'Daughter, age 14. Distribution at age 25 or upon completion of graduate degree.'),
-        ('demo-tr-004', ${GRAT_ID}, 'Emily Chen', NULL, 'remainder_beneficiary', 1, 'Remainder beneficiary of GRAT upon annuity term expiration in 2027.')
-      ON CONFLICT (id) DO NOTHING
+  if (FAMILY_TRUST_ID) {
+    const existingRels = await db.execute(sql`
+      SELECT count(*) AS cnt FROM trust_relationships WHERE trust_id = ${FAMILY_TRUST_ID}
     `);
-    console.log("  ✅ trust_relationships: 4 roles (grantor, co-trustee, 2 beneficiaries)");
-    added += 4;
+    const relCount = Number((existingRels as any).rows?.[0]?.cnt ?? (existingRels as any)[0]?.cnt ?? 0);
+
+    if (relCount === 0) {
+      await db.execute(sql`
+        INSERT INTO trust_relationships (id, trust_id, person_name, person_client_id, role, generation, notes)
+        VALUES
+          ('demo-tr-001', ${FAMILY_TRUST_ID}, 'James Chen', ${JAMES_ID}, 'grantor', 0, 'Co-grantor and primary trustee'),
+          ('demo-tr-002', ${FAMILY_TRUST_ID}, 'Lisa Chen', ${LISA_ID}, 'co-trustee', 0, 'Co-grantor and co-trustee'),
+          ('demo-tr-003', ${FAMILY_TRUST_ID}, 'Emily Chen', NULL, 'beneficiary', 1, 'Daughter, age 14. Distribution at age 25 or upon completion of graduate degree.')
+        ON CONFLICT (id) DO NOTHING
+      `);
+      added += 3;
+
+      if (GRAT_ID) {
+        await db.execute(sql`
+          INSERT INTO trust_relationships (id, trust_id, person_name, person_client_id, role, generation, notes)
+          VALUES ('demo-tr-004', ${GRAT_ID}, 'Emily Chen', NULL, 'remainder_beneficiary', 1, 'Remainder beneficiary of GRAT upon annuity term expiration in 2027.')
+          ON CONFLICT (id) DO NOTHING
+        `);
+        added++;
+      }
+
+      console.log(`  ✅ trust_relationships: ${GRAT_ID ? 4 : 3} roles added`);
+    }
+  } else {
+    console.log("  ⏭️  trust_relationships: skipped (no trusts found for James)");
   }
 
   // ─── 3. FLP Structure (0 → 1) ─────────────────────────────────
@@ -176,7 +220,7 @@ export async function enrichDemoData() {
   }
 
   // ─── 5. QCD Record (0 → 1) ────────────────────────────────────
-  if (!(await rowExists("qcd_records", QCD_ID))) {
+  if (ROLLOVER_ACCT && !(await rowExists("qcd_records", QCD_ID))) {
     await db.execute(sql`
       INSERT INTO qcd_records (id, client_id, advisor_id, ira_account_id, charity_name, amount, distribution_date, tax_year, rmd_satisfied, tax_savings_estimate, status, notes)
       VALUES (
@@ -194,45 +238,51 @@ export async function enrichDemoData() {
     `);
     console.log("  ✅ qcd_records: $25K QCD to Silicon Valley Community Foundation");
     added++;
+  } else if (!ROLLOVER_ACCT) {
+    console.log("  ⏭️  qcd_records: skipped (no rollover account found)");
   }
 
   // ─── 6. Social Events (0 → 2) ─────────────────────────────────
-  if (!(await rowExists("social_events", SOCIAL_EVENT_1_ID))) {
-    await db.execute(sql`
-      INSERT INTO social_events (id, social_profile_id, client_id, event_type, title, description, detected_at, source_url, is_read, outreach_prompt, outreach_generated)
-      VALUES (
-        ${SOCIAL_EVENT_1_ID}, ${SOCIAL_PROFILE_ID}, ${JAMES_ID},
-        'promotion',
-        'Promoted to Chief Technology Officer',
-        'James Chen has been promoted from VP of Engineering to CTO at TechCorp Solutions. This may indicate increased compensation, new equity grants, and potential changes in retirement planning needs.',
-        NOW() - INTERVAL '12 days',
-        'https://linkedin.com/in/jameschen/activity/promotion-2025',
-        false,
-        'Congratulations on the CTO promotion! This is a great opportunity to revisit your equity compensation strategy and explore whether the new role triggers any changes in your deferred compensation plan.',
-        true
-      )
-    `);
-    console.log("  ✅ social_events: CTO promotion detected");
-    added++;
-  }
+  if (SOCIAL_PROFILE_ID) {
+    if (!(await rowExists("social_events", SOCIAL_EVENT_1_ID))) {
+      await db.execute(sql`
+        INSERT INTO social_events (id, social_profile_id, client_id, event_type, title, description, detected_at, source_url, is_read, outreach_prompt, outreach_generated)
+        VALUES (
+          ${SOCIAL_EVENT_1_ID}, ${SOCIAL_PROFILE_ID}, ${JAMES_ID},
+          'promotion',
+          'Promoted to Chief Technology Officer',
+          'James Chen has been promoted from VP of Engineering to CTO at TechCorp Solutions. This may indicate increased compensation, new equity grants, and potential changes in retirement planning needs.',
+          NOW() - INTERVAL '12 days',
+          'https://linkedin.com/in/jameschen/activity/promotion-2025',
+          false,
+          'Congratulations on the CTO promotion! This is a great opportunity to revisit your equity compensation strategy and explore whether the new role triggers any changes in your deferred compensation plan.',
+          true
+        )
+      `);
+      console.log("  ✅ social_events: CTO promotion detected");
+      added++;
+    }
 
-  if (!(await rowExists("social_events", SOCIAL_EVENT_2_ID))) {
-    await db.execute(sql`
-      INSERT INTO social_events (id, social_profile_id, client_id, event_type, title, description, detected_at, source_url, is_read, outreach_prompt, outreach_generated)
-      VALUES (
-        ${SOCIAL_EVENT_2_ID}, ${SOCIAL_PROFILE_ID}, ${JAMES_ID},
-        'board_appointment',
-        'Appointed to Board of Bay Area Tech Alliance',
-        'James Chen has been appointed to the board of directors of the Bay Area Tech Alliance, a nonprofit industry consortium. This may create new philanthropic planning opportunities and affect his liability profile.',
-        NOW() - INTERVAL '5 days',
-        'https://linkedin.com/in/jameschen/activity/board-2025',
-        false,
-        'I noticed your board appointment at the Bay Area Tech Alliance — congratulations! Let us discuss whether you need additional D&O coverage and how this aligns with your philanthropic goals.',
-        true
-      )
-    `);
-    console.log("  ✅ social_events: Board appointment detected");
-    added++;
+    if (!(await rowExists("social_events", SOCIAL_EVENT_2_ID))) {
+      await db.execute(sql`
+        INSERT INTO social_events (id, social_profile_id, client_id, event_type, title, description, detected_at, source_url, is_read, outreach_prompt, outreach_generated)
+        VALUES (
+          ${SOCIAL_EVENT_2_ID}, ${SOCIAL_PROFILE_ID}, ${JAMES_ID},
+          'board_appointment',
+          'Appointed to Board of Bay Area Tech Alliance',
+          'James Chen has been appointed to the board of directors of the Bay Area Tech Alliance, a nonprofit industry consortium. This may create new philanthropic planning opportunities and affect his liability profile.',
+          NOW() - INTERVAL '5 days',
+          'https://linkedin.com/in/jameschen/activity/board-2025',
+          false,
+          'I noticed your board appointment at the Bay Area Tech Alliance — congratulations! Let us discuss whether you need additional D&O coverage and how this aligns with your philanthropic goals.',
+          true
+        )
+      `);
+      console.log("  ✅ social_events: Board appointment detected");
+      added++;
+    }
+  } else {
+    console.log("  ⏭️  social_events: skipped (no social profile found for James)");
   }
 
   // ─── 7. Pending Profile Update (0 → 1) ────────────────────────
