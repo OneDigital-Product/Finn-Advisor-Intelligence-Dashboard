@@ -39,6 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/auth/me"], data);
+      try { sessionStorage.setItem("od-was-auth", "1"); } catch {}
       queryClient.invalidateQueries();
     },
   });

@@ -45,24 +45,34 @@ async function queryOne<T = any>(query: ReturnType<typeof sql>): Promise<T | nul
 
 // ── Main ───────────────────────────────────────────────────────────
 export async function enrichDemoData() {
-  console.log("Starting demo data enrichment for James Chen...\n");
+  console.log("Starting demo data enrichment for demo client...\n");
 
   // ─── Step 0: Resolve all IDs dynamically ─────────────────────
   console.log("Resolving IDs from target database...");
 
-  const james = await queryOne(sql`SELECT id FROM clients WHERE first_name = 'James' AND last_name = 'Chen' LIMIT 1`);
-  if (!james) throw new Error("FATAL: James Chen not found in clients table. Run the seed first.");
-  const JAMES_ID = james.id;
-  console.log(`  James Chen:      ${JAMES_ID}`);
+  // Look up the demo client — may be "James Chen" (pre-rename) or "Marcus Tanaka" (post-rename)
+  let demoClient = await queryOne(sql`SELECT id, first_name, last_name FROM clients WHERE first_name = 'Marcus' AND last_name = 'Tanaka' LIMIT 1`);
+  if (!demoClient) {
+    demoClient = await queryOne(sql`SELECT id, first_name, last_name FROM clients WHERE first_name = 'James' AND last_name = 'Chen' LIMIT 1`);
+  }
+  if (!demoClient) throw new Error("FATAL: Demo client (Marcus Tanaka or James Chen) not found. Run the seed first.");
+  const JAMES_ID = demoClient.id;
+  console.log(`  Demo client:     ${demoClient.first_name} ${demoClient.last_name} (${JAMES_ID})`);
 
-  const advisor = await queryOne(sql`SELECT id FROM advisors WHERE email = 'michael.gouldin@onedigital.com.uat' LIMIT 1`);
-  if (!advisor) throw new Error("FATAL: Michael Gouldin not found in advisors table. Run the seed first.");
+  // Look up the demo advisor — may be James Chen advisor (post-promotion) or Michael (pre-promotion)
+  let advisor = await queryOne(sql`SELECT id FROM advisors WHERE email = 'james.chen@onedigital.com' LIMIT 1`);
+  if (!advisor) {
+    advisor = await queryOne(sql`SELECT id FROM advisors WHERE email = 'michael.gouldin@onedigital.com.uat' LIMIT 1`);
+  }
+  if (!advisor) throw new Error("FATAL: Demo advisor not found. Run the seed first.");
   const ADVISOR_ID = advisor.id;
-  console.log(`  Michael Gouldin: ${ADVISOR_ID}`);
+  console.log(`  Demo advisor:    ${ADVISOR_ID}`);
 
-  const lisa = await queryOne(sql`SELECT id FROM clients WHERE first_name = 'Lisa' AND last_name = 'Chen' LIMIT 1`);
-  const LISA_ID = lisa?.id ?? null; // Optional — trust relationships will use name if missing
-  console.log(`  Lisa Chen:       ${LISA_ID ?? "(not found — will use name only)"}`);
+  // Spouse — may be Lisa Chen (pre-rename) or Lisa Tanaka (post-rename)
+  let lisa = await queryOne(sql`SELECT id FROM clients WHERE first_name = 'Lisa' AND last_name = 'Tanaka' LIMIT 1`);
+  if (!lisa) lisa = await queryOne(sql`SELECT id FROM clients WHERE first_name = 'Lisa' AND last_name = 'Chen' LIMIT 1`);
+  const LISA_ID = lisa?.id ?? null;
+  console.log(`  Spouse:          ${LISA_ID ?? "(not found — will use name only)"}`);
 
   // Resolve existing trusts by name (created by seed)
   const familyTrust = await queryOne(sql`SELECT id FROM trusts WHERE client_id = ${JAMES_ID} AND name LIKE '%Family Trust%' LIMIT 1`);
