@@ -11,9 +11,13 @@
  * and from useDevSettings (admin toggle).
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDevSettings } from "@/hooks/use-dev-settings";
 import { useDiagnosticContext } from "@/contexts/diagnostic-context";
+import {
+  useDataSources,
+  type DataSourceStatus,
+} from "@/components/design/data-source-badge";
 import {
   X, Database, ChevronDown, ChevronRight, AlertCircle,
   ExternalLink, Lightbulb, Server, MapPin, Loader2,
@@ -233,11 +237,168 @@ function PipelineTrace({ hops }: { hops: PipelineHop[] }) {
   );
 }
 
+/* ── Integration Status Helpers (migrated from ApiStatusBar) ── */
+
+function isMulesoftConnected(ds?: DataSourceStatus): boolean {
+  if (ds?.mulesoft?.connected !== undefined) return ds.mulesoft.connected;
+  const ms = ds?.integrations?.mulesoft;
+  if (ms) return (ms.token as any)?.status === "ok" || ms.enabled === true;
+  return false;
+}
+
+function isOrionConnected(ds?: DataSourceStatus): boolean {
+  if (ds?.orion?.connected !== undefined) return ds.orion.connected;
+  return ds?.integrations?.orion?.status === "ok";
+}
+
+function isSalesforceConnected(ds?: DataSourceStatus): boolean {
+  if (ds?.salesforce?.connected !== undefined) return ds.salesforce.connected;
+  return ds?.integrations?.salesforce?.status === "ok";
+}
+
+const PLATFORMS = [
+  {
+    code: "SF", name: "Salesforce FSC",
+    detail: "FinancialAccount, Household, Opportunity, Task, Event, Case",
+    color: "#00A1E0", bg: "rgba(0,161,224,0.15)",
+    getStatus: isSalesforceConnected,
+  },
+  {
+    code: "OR", name: "Orion Advisor",
+    detail: "Portfolio, Holdings, Performance, AUM, Alpha, Sharpe",
+    color: "#00B4E6", bg: "rgba(0,180,230,0.15)",
+    getStatus: isOrionConnected,
+  },
+  {
+    code: "MS", name: "MuleSoft EAPI",
+    detail: "OAuth2 Proxy Layer",
+    color: "#F47D20", bg: "rgba(244,125,32,0.12)",
+    getStatus: isMulesoftConnected,
+  },
+];
+
+/* ── Integration Status Section ── */
+function IntegrationStatusSection({ ds }: { ds?: DataSourceStatus }) {
+  const [clock, setClock] = useState("");
+  const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => {
+    const update = () => {
+      const now = new Date();
+      const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+      const ampm = h >= 12 ? "PM" : "AM";
+      const hh = h % 12 || 12;
+      setClock(`${String(hh).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")} ${ampm} EST`);
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const handleSync = () => {
+    setSyncing(true);
+    setTimeout(() => setSyncing(false), 1800);
+  };
+
+  return (
+    <div style={{ padding: "8px 14px", borderBottom: "1px solid rgba(71,85,105,0.3)" }}>
+      {/* Platform badges */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {PLATFORMS.map((p) => {
+          const live = p.getStatus(ds);
+          return (
+            <div key={p.code} style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "5px 8px",
+              borderRadius: 6,
+              background: live ? `${p.color}08` : "transparent",
+              border: `1px solid ${live ? p.color + "30" : "rgba(45,55,72,0.3)"}`,
+            }}>
+              {/* Badge code */}
+              <span style={{
+                fontSize: 9, fontWeight: 700,
+                fontFamily: "'JetBrains Mono', monospace",
+                letterSpacing: "0.08em", padding: "2px 6px",
+                borderRadius: 3, textTransform: "uppercase",
+                background: p.bg, color: p.color,
+                flexShrink: 0,
+              }}>
+                {p.code}
+              </span>
+
+              {/* Info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 10, fontWeight: 500, color: "#C7D0DD", lineHeight: 1.2 }}>
+                  {p.name}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 1 }}>
+                  <div style={{
+                    width: 5, height: 5, borderRadius: "50%",
+                    background: live ? "#8EB935" : "#FFC60B",
+                    boxShadow: live ? "0 0 6px rgba(142,185,53,0.5)" : "none",
+                  }} />
+                  <span style={{
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 8.5, color: live ? "#8EB935" : "#FFC60B",
+                    letterSpacing: "0.05em",
+                  }}>
+                    {live ? "Live" : "Offline"}
+                  </span>
+                  <span style={{
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 8, color: "#64748B", letterSpacing: "0.03em",
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  }}>
+                    · {p.detail}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Clock + Sync row */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        marginTop: 8, paddingTop: 6,
+        borderTop: "1px solid rgba(71,85,105,0.2)",
+      }}>
+        <span style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 9, color: "#64748B", letterSpacing: "0.1em",
+        }}>
+          {clock}
+        </span>
+        <button
+          onClick={handleSync}
+          style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: 8, fontWeight: 500,
+            letterSpacing: "0.12em", textTransform: "uppercase",
+            color: "#4FB3CD",
+            background: "rgba(79,179,205,0.08)",
+            border: "1px solid rgba(79,179,205,0.2)",
+            padding: "2px 8px", borderRadius: 3,
+            cursor: "pointer",
+            opacity: syncing ? 0.6 : 1,
+            transition: "all .15s",
+          }}
+        >
+          ↻ {syncing ? "Syncing…" : "Force Sync"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ── Main Global Panel ── */
 export function GlobalDiagnosticPanel() {
   const { settings } = useDevSettings();
   const { pageData } = useDiagnosticContext();
+  const { data: dsStatus } = useDataSources();
   const [collapsed, setCollapsed] = useState(false);
+  const [integrationExpanded, setIntegrationExpanded] = useState(true);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [expandedField, setExpandedField] = useState<string | null>(null);
 
@@ -317,28 +478,33 @@ export function GlobalDiagnosticPanel() {
         )}
       </div>
 
-      {/* ── Connection Status ── */}
-      {!collapsed && dataSources && (
-        <div style={{ padding: "8px 14px", display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {Object.entries(dataSources).map(([key, status]) => (
-            <div key={key} style={{
-              fontSize: 10, fontWeight: 600, padding: "3px 10px",
-              borderRadius: 4, textTransform: "capitalize",
-              display: "flex", alignItems: "center", gap: 5,
-              background: status === "live" ? "rgba(142,185,53,0.15)" :
-                          status === "error" ? "rgba(239,68,68,0.15)" :
-                          "rgba(148,163,184,0.1)",
-              color: status === "live" ? "#8EB935" :
-                     status === "error" ? "#EF4444" : "#94A3B8",
-            }}>
-              <span style={{
-                width: 5, height: 5, borderRadius: "50%",
-                background: status === "live" ? "#8EB935" : status === "error" ? "#EF4444" : "#94A3B8",
-                boxShadow: status === "live" ? "0 0 6px rgba(142,185,53,0.6)" : "none",
-              }} />
-              {key}: {status}
+      {/* ── Integration Status (migrated from ApiStatusBar) ── */}
+      {!collapsed && (
+        <div>
+          <div
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "7px 14px", cursor: "pointer",
+              background: integrationExpanded ? "rgba(255,255,255,0.03)" : "transparent",
+              borderBottom: "1px solid rgba(71,85,105,0.2)",
+            }}
+            onClick={() => setIntegrationExpanded(!integrationExpanded)}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {integrationExpanded
+                ? <ChevronDown size={12} style={{ color: "#4FB3CD" }} />
+                : <ChevronRight size={12} style={{ color: "#4FB3CD" }} />
+              }
+              <Wifi size={12} style={{ color: "#4FB3CD" }} />
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#4FB3CD", letterSpacing: ".03em" }}>
+                Integrations
+              </span>
             </div>
-          ))}
+            <span style={{ fontSize: 9, color: "#64748B", fontFamily: "'JetBrains Mono', monospace" }}>
+              {PLATFORMS.filter(p => p.getStatus(dsStatus)).length}/{PLATFORMS.length} live
+            </span>
+          </div>
+          {integrationExpanded && <IntegrationStatusSection ds={dsStatus} />}
         </div>
       )}
 

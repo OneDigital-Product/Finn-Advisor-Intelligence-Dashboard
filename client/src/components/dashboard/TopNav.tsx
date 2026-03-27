@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { useAllClients } from "@/hooks/use-all-clients";
 import { AnimatedLogo } from "@/components/AnimatedLogo";
@@ -228,11 +227,7 @@ function HouseholdSearch() {
 
 /* ── Top Nav ── */
 export function TopNav({ isLiveData }: TopNavProps) {
-  const { user } = useAuth();
   const router = useRouter();
-  const initials = user?.name
-    ? user.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
-    : "??";
 
   return (
     <>
@@ -309,16 +304,6 @@ export function TopNav({ isLiveData }: TopNavProps) {
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M8 2v12M2 8h12"/></svg>
             New
           </button>
-          <div style={{
-            width: 32, height: 32, borderRadius: "50%",
-            background: OD.deepBlue, border: `2px solid ${OD.medBlue}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 11, fontWeight: 700, color: OD.lightBlue,
-            fontFamily: "'Oswald', sans-serif", letterSpacing: "0.05em",
-            cursor: "pointer",
-          }}>
-            {initials}
-          </div>
         </div>
       </div>
     </>

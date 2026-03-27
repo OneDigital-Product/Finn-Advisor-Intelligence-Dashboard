@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 
 import { useNavPageTabs, NavRail } from "@/components/app-sidebar";
 import { useDiagnosticContext } from "@/contexts/diagnostic-context";
-import { ApiStatusBar } from "@/components/dashboard/ApiStatusBar";
 import { TopNav } from "@/components/dashboard/TopNav";
 import { PageTabs } from "@/components/dashboard/PageTabs";
 import WallStreetHero from "@/components/dashboard/WallStreetHero";
@@ -19,6 +18,9 @@ import { OpenOpportunitiesPipeline } from "@/components/dashboard/OpenOpportunit
 import { RecentlyClosedOpportunities } from "@/components/dashboard/RecentlyClosedOpportunities";
 import { UrgencyStrip } from "@/components/dashboard/UrgencyStrip";
 import { NeedsAttention } from "@/components/dashboard/NeedsAttention";
+import { ContinueWorking } from "@/components/dashboard/ContinueWorking";
+import { MyDayActionQueue } from "@/components/dashboard/MyDayActionQueue";
+import { useRecentClients } from "@/hooks/use-recent-clients";
 import { P } from "@/styles/tokens";
 
 /* ── Inline SVG Icons (used by non-My-Day tabs) ── */
@@ -160,6 +162,7 @@ export default function Dashboard() {
   }, [router]);
 
   const { setTabs } = useNavPageTabs();
+  const { recents } = useRecentClients();
 
   // ── MY DAY QUERIES (4 total) ──────────────────────────────────
 
@@ -315,7 +318,6 @@ export default function Dashboard() {
     }}>
       {/* Chrome */}
       <TopNav isLiveData={isLiveData} />
-      <ApiStatusBar />
       <NavRail />
 
       {/* ═══ TAB: MY DAY ═══ */}
@@ -345,6 +347,16 @@ export default function Dashboard() {
             staleOpps={urgency.staleOpps}
             meetingsToday={urgency.meetingsToday}
           />
+
+          {/* SECTION 2.5: CONTINUE WORKING (recent clients shortcut — hidden when empty) */}
+          {recents.length > 0 && (
+            <MyDaySection
+              title="Continue Working"
+              icon={<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="8" cy="8" r="6.5"/><path d="M8 4v4l2.5 1.5"/></svg>}
+            >
+              <ContinueWorking />
+            </MyDaySection>
+          )}
 
           {/* SECTION 3: TODAY'S SCHEDULE */}
           <MyDaySection
@@ -379,64 +391,12 @@ export default function Dashboard() {
               </button>
             }
           >
-            {/* Ranked tasks from /api/myday */}
-            {(myDay?.tasks || []).slice(0, 5).map((task: any) => (
-              <div key={task.id} style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "8px 0", borderBottom: `1px solid ${P.odBorder}40`,
-              }}>
-                <input
-                  type="checkbox"
-                  style={{ accentColor: P.odGreen, width: 14, height: 14, cursor: "pointer" }}
-                />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: P.odT1 }}>{task.subject}</div>
-                  <div style={{ fontSize: 10, color: P.odT3 }}>{task.relatedTo}{task.dueDate ? ` · Due: ${task.dueDate}` : ""}</div>
-                </div>
-                <span style={{
-                  fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
-                  padding: "2px 6px", borderRadius: 4,
-                  background: task.rank === 1 ? "#E53E3E20" : task.rank === 2 ? P.odYellow + "20" : P.odBorder,
-                  color: task.rank === 1 ? "#E53E3E" : task.rank === 2 ? P.odYellow : P.odT3,
-                }}>
-                  {task.rankLabel}
-                </span>
-                <span style={{
-                  fontSize: 9, fontWeight: 600, color: P.odT3,
-                  padding: "2px 6px", borderRadius: 4, border: `1px solid ${P.odBorder}`,
-                }}>
-                  {task.source === "salesforce" ? "SF" : "App"}
-                </span>
-              </div>
-            ))}
-
-            {/* NBA suggested actions (below ranked tasks) */}
-            {(nbaData?.actions || []).slice(0, 3).map((action: any) => (
-              <div key={action.id} style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "8px 0", borderBottom: `1px solid ${P.odBorder}40`,
-              }}>
-                <span style={{ fontSize: 14, color: P.odLBlue }}>●</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: P.odT1 }}>
-                    {action.title || action.actionType?.replace(/_/g, " ")}
-                  </div>
-                  <div style={{ fontSize: 10, color: P.odT3 }}>{action.clientName}</div>
-                </div>
-                <div style={{ display: "flex", gap: 4 }}>
-                  <button onClick={() => completeNbaMutation.mutate(action.id)}
-                    style={{ fontSize: 10, fontWeight: 600, color: P.odGreen, background: "none", border: "none", cursor: "pointer", padding: "2px 6px" }}>Done</button>
-                  <button onClick={() => dismissNbaMutation.mutate(action.id)}
-                    style={{ fontSize: 10, fontWeight: 600, color: P.odT3, background: "none", border: "none", cursor: "pointer", padding: "2px 6px" }}>Skip</button>
-                </div>
-              </div>
-            ))}
-
-            {(myDay?.tasks?.length === 0 && (!nbaData?.actions || nbaData.actions.length === 0)) && (
-              <div style={{ padding: "12px 0", color: P.odT3, fontSize: 13, fontStyle: "italic" }}>
-                No pending tasks right now.
-              </div>
-            )}
+            <MyDayActionQueue
+              tasks={myDay?.tasks || []}
+              nbaActions={nbaData?.actions || []}
+              onCompleteNba={(id) => completeNbaMutation.mutate(id)}
+              onDismissNba={(id) => dismissNbaMutation.mutate(id)}
+            />
           </MyDaySection>
 
           {/* SECTION 5: NEEDS ATTENTION */}

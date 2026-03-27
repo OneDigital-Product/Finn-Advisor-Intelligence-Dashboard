@@ -8,6 +8,7 @@ export interface RecentClient {
   id: string;
   name: string;
   segment?: string;
+  viewedAt?: number; // Unix ms — Date.now() at time of visit
 }
 
 function readRecents(): RecentClient[] {
@@ -49,7 +50,8 @@ export function useRecentClients() {
   const addRecent = useCallback((client: RecentClient) => {
     const current = readRecents();
     const filtered = current.filter(c => c.id !== client.id);
-    const updated = [client, ...filtered].slice(0, MAX_RECENT);
+    const stamped = { ...client, viewedAt: Date.now() };
+    const updated = [stamped, ...filtered].slice(0, MAX_RECENT);
     writeRecents(updated);
   }, []);
 
