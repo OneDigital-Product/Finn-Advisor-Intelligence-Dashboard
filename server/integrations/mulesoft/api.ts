@@ -1446,7 +1446,7 @@ export interface CalendarEvent {
   location?: string | null;
   isAllDay: boolean;
   organizer?: string | null;
-  attendees?: string[];
+  attendees?: Array<{ name: string; email: string }>;
   bodyPreview?: string;
   webLink?: string | null;
   clientName?: string | null;
@@ -1503,9 +1503,13 @@ export async function getCalendarEvents(params: {
       if (now >= startDate && now <= endDate) status = "in-progress";
       else if (now > endDate) status = "completed";
 
-      const attendeeList = (e.attendees || []).map((a: any) =>
-        typeof a === "string" ? a : (a.emailAddress?.name || a.name || a.emailAddress?.address || "")
-      ).filter(Boolean);
+      const attendeeList = (e.attendees || []).map((a: any) => {
+        if (typeof a === "string") return { name: a, email: "" };
+        return {
+          name: a.emailAddress?.name || a.name || "",
+          email: (a.emailAddress?.address || "").toLowerCase().trim(),
+        };
+      }).filter((att: any) => att.name || att.email);
 
       return {
         id: e.id || e.iCalUId || crypto.randomUUID(),

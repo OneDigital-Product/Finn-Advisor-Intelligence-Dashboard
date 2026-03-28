@@ -14,11 +14,13 @@
  */
 
 import { logger } from "./logger";
+import { sseEventBus } from "./sse-event-bus";
 import { isMulesoftEnabled } from "@server/integrations/mulesoft/client";
 import { isSalesforceUser, getSalesforceUsername } from "@lib/auth-helpers";
 import {
   getHouseholds as getLiveHouseholds,
   getClientsValue as getOrionClientsValue,
+  getHouseholdMembers,
 } from "@server/integrations/mulesoft/api";
 import { backfillFromEnrichedClients, linkLocalClientsToHouseholds } from "@server/lib/client-identity";
 
@@ -302,6 +304,15 @@ export async function warmEnrichedCache(userEmail: string): Promise<EnrichedClie
           total_ms: t5 - t0,
         },
       }, "[Enriched Cache] Cache warmed successfully");
+
+      // Notify connected clients that household data is fresh
+      try {
+        sseEventBus.broadcast("signals:household_updated", {
+          clientCount: allClients.length,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (_) { /* SSE broadcast is best-effort */ }
+
       return result;
 
     } catch (err) {
@@ -396,5 +407,202 @@ export async function resolveClientFast(id: string, userEmail: string): Promise<
       return result.data.find((c: any) => c.id === id) || null;
     }
     return null;
+  }
+}
+
+// ── Bounded Member-Email Index ──
+// Fetches member emails for top-100 households by AUM.
+// Background-only, 30-min TTL, max 5 concurrent.
+
+interface MemberEmailEntry {
+  email: string;
+  clientId: string;
+  name: string;
+  aum: number;
+  segment: string;
+}
+
+interface MemberEmailSnapshot {
+  data: MemberEmailEntry[];
+  warmedAt: number;
+  userEmail: string;
+  householdsScanned: number;
+  membersFound: number;
+}
+
+const MEMBER_EMAIL_TTL = 30 * 60 * 1000; // 30 minutes
+const MEMBER_WARM_CONCURRENCY = 5;
+const MEMBER_WARM_HOUSEHOLD_COUNT = 100;
+const MEMBER_WARM_FAILURE_THRESHOLD = 20; // >20 failures = abort
+
+let _memberEmailCache: MemberEmailSnapshot | null = null;
+let _memberWarmingInFlight = false;
+let _memberWarmDisabled = false;
+
+export function getMemberEmailIndex(): MemberEmailEntry[] {
+  return _memberEmailCache?.data || [];
+}
+
+export function isMemberEmailIndexValid(userEmail: string): boolean {
+  return !!(
+    _memberEmailCache &&
+    _memberEmailCache.userEmail === userEmail &&
+    Date.now() - _memberEmailCache.warmedAt < MEMBER_EMAIL_TTL
+  );
+}
+
+/**
+ * Warm the bounded member-email index for the top 100 households by AUM.
+ *
+ * Requires the enriched cache to be warm first (needs household IDs).
+ * Runs at most 5 concurrent getHouseholdMembers() calls.
+ * Aborts if >20 calls fail. Fire-and-forget safe.
+ */
+export async function warmMemberEmailIndex(userEmail: string): Promise<void> {
+  // Already valid
+  if (isMemberEmailIndexValid(userEmail)) return;
+
+  // Disabled for this session (too many failures)
+  if (_memberWarmDisabled) return;
+
+  // Already in flight
+  if (_memberWarmingInFlight) return;
+
+  // Enriched cache must be warm
+  if (!isCacheValid(userEmail)) return;
+
+  // Must be a SF user
+  if (!isSalesforceUser(userEmail) || !isMulesoftEnabled()) return;
+
+  _memberWarmingInFlight = true;
+  const t0 = Date.now();
+  const sfUsername = getSalesforceUsername(userEmail);
+
+  try {
+    const cache = getCache()!;
+    // Select top 100 by AUM
+    const sorted = [...cache.data]
+      .sort((a: any, b: any) => (b.totalAum || 0) - (a.totalAum || 0))
+      .slice(0, MEMBER_WARM_HOUSEHOLD_COUNT);
+
+    logger.info({
+      households: sorted.length,
+      topAum: sorted[0]?.totalAum,
+      bottomAum: sorted[sorted.length - 1]?.totalAum,
+    }, "[Member Email Index] Starting bounded warm");
+
+    // Fetch members with concurrency pool
+    const entries: MemberEmailEntry[] = [];
+    let failures = 0;
+    let totalMembers = 0;
+
+    const queue = [...sorted];
+    const inflight: Promise<void>[] = [];
+
+    const processOne = async (household: any) => {
+      try {
+        // Check enriched cache is still valid mid-warm
+        if (!isCacheValid(userEmail)) {
+          failures = MEMBER_WARM_FAILURE_THRESHOLD + 1; // force abort
+          return;
+        }
+
+        const result = await getHouseholdMembers({
+          username: sfUsername,
+          householdId: household.id,
+        });
+
+        for (const member of (result.members || [])) {
+          const email = (member.PersonEmail || "").toLowerCase().trim();
+          if (email) {
+            entries.push({
+              email,
+              clientId: household.id,
+              name: [household.firstName, household.lastName].filter(Boolean).join(" "),
+              aum: household.totalAum || 0,
+              segment: household.segment || "",
+            });
+            totalMembers++;
+          }
+        }
+      } catch {
+        failures++;
+      }
+    };
+
+    // Process with bounded concurrency
+    for (const household of queue) {
+      if (failures > MEMBER_WARM_FAILURE_THRESHOLD) {
+        logger.warn({ failures, scanned: sorted.length - queue.length },
+          "[Member Email Index] Aborting — too many failures");
+        _memberWarmDisabled = true;
+        return;
+      }
+
+      if (inflight.length >= MEMBER_WARM_CONCURRENCY) {
+        await Promise.race(inflight);
+        // Remove settled promises
+        for (let i = inflight.length - 1; i >= 0; i--) {
+          const settled = await Promise.race([inflight[i].then(() => true), Promise.resolve(false)]);
+          if (settled) inflight.splice(i, 1);
+        }
+      }
+
+      const p = processOne(household);
+      inflight.push(p);
+    }
+
+    // Wait for remaining
+    await Promise.all(inflight);
+
+    if (failures > MEMBER_WARM_FAILURE_THRESHOLD) {
+      _memberWarmDisabled = true;
+      return;
+    }
+
+    // Deduplicate: exclude emails that map to multiple households
+    const emailToHouseholds = new Map<string, Set<string>>();
+    for (const entry of entries) {
+      if (!emailToHouseholds.has(entry.email)) {
+        emailToHouseholds.set(entry.email, new Set());
+      }
+      emailToHouseholds.get(entry.email)!.add(entry.clientId);
+    }
+
+    const deduped = entries.filter(e => {
+      const households = emailToHouseholds.get(e.email);
+      return households && households.size === 1;
+    });
+
+    // Remove duplicate entries for same email+household (multiple members, same email)
+    const seen = new Set<string>();
+    const unique = deduped.filter(e => {
+      const key = `${e.email}:${e.clientId}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    _memberEmailCache = {
+      data: unique,
+      warmedAt: Date.now(),
+      userEmail,
+      householdsScanned: sorted.length,
+      membersFound: totalMembers,
+    };
+
+    logger.info({
+      householdsScanned: sorted.length,
+      membersFound: totalMembers,
+      uniqueEmails: unique.length,
+      failures,
+      elapsed_ms: Date.now() - t0,
+    }, "[Member Email Index] Bounded warm complete");
+
+  } catch (err) {
+    logger.error({ err: String(err), elapsed_ms: Date.now() - t0 },
+      "[Member Email Index] Warm failed");
+  } finally {
+    _memberWarmingInFlight = false;
   }
 }

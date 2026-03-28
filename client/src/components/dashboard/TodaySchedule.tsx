@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import NextLink from "next/link";
 import { Video, Phone, Building, Calendar } from "lucide-react";
@@ -76,9 +76,10 @@ interface TodayScheduleProps {
   sfEvents?: any[];
   prepContexts?: any[];
   aiAvailable?: boolean;
+  emailIndex?: Array<{ email: string; clientId: string; name: string; aum: number; segment: string }>;
 }
 
-export function TodaySchedule({ sfEvents, prepContexts, aiAvailable }: TodayScheduleProps = {}) {
+export function TodaySchedule({ sfEvents, prepContexts, aiAvailable, emailIndex }: TodayScheduleProps = {}) {
   // Brief state: which event is expanded, the brief text, loading/error state
   const [briefState, setBriefState] = useState<{
     eventId: string | null;
@@ -91,8 +92,25 @@ export function TodaySchedule({ sfEvents, prepContexts, aiAvailable }: TodaySche
   const now = Date.now();
   const imminentWindow = 60 * 60 * 1000; // 60 minutes
 
-  const fetchBrief = useCallback(async (eventId: string) => {
-    const ctx = (prepContexts || []).find((p: any) => p.eventId === eventId && p.matchConfidence === "exact");
+  const fetchBrief = useCallback(async (eventId: string, outlookFallbackCtx?: any) => {
+    // Try server-side prepContext (SF Events), then client-side fallback (Outlook)
+    let ctx = (prepContexts || []).find((p: any) => p.eventId === eventId && p.matchConfidence === "exact");
+    if (!ctx && outlookFallbackCtx) {
+      ctx = {
+        eventId,
+        eventSubject: outlookFallbackCtx.subject || "",
+        eventStartTime: outlookFallbackCtx.start || "",
+        clientId: outlookFallbackCtx.clientContext?.clientId || null,
+        clientName: (emailIndex || []).find((e: any) => e.clientId === outlookFallbackCtx.clientContext?.clientId)?.name || null,
+        matchConfidence: "exact",
+        aum: outlookFallbackCtx.clientContext?.aum || null,
+        segment: outlookFallbackCtx.clientContext?.segment || null,
+        status: null, serviceModel: null, reviewFrequency: null,
+        lastReview: null, nextReview: null,
+        matchedTasks: [], matchedCases: [], matchedRecentWin: null,
+        _taskCountIsPartial: true, _caseCountIsPartial: true,
+      };
+    }
     if (!ctx) return;
 
     // Toggle: if already expanded for this event, collapse
@@ -118,7 +136,7 @@ export function TodaySchedule({ sfEvents, prepContexts, aiAvailable }: TodaySche
     } catch {
       setBriefState({ eventId, brief: null, loading: false, error: true });
     }
-  }, [prepContexts, briefState.eventId, briefState.brief]);
+  }, [prepContexts, emailIndex, briefState.eventId, briefState.brief]);
   // Live Outlook calendar events via MuleSoft
   const { data: outlookData, isLoading } = useQuery<{ events: any[]; calendarOwner?: { entraId: string; label: string | null } }>({
     queryKey: ["/api/calendar/live"],
@@ -133,6 +151,44 @@ export function TodaySchedule({ sfEvents, prepContexts, aiAvailable }: TodaySche
   // Dedupe SF events against Outlook events
   const dedupedSfEvents = (sfEvents || []).filter(evt => !isDuplicate(evt, outlookEvents));
   const hasBothSources = outlookEvents.length > 0 && dedupedSfEvents.length > 0;
+
+  // ── Outlook email → household matching (client-side, exact only) ──
+  const enrichedOutlookEvents = useMemo(() => {
+    if (!emailIndex || emailIndex.length === 0) return outlookEvents;
+    const emailMap = new Map(emailIndex.map(e => [e.email, e]));
+    return outlookEvents.map((evt: any) => {
+      if (!evt.attendees || evt.attendees.length === 0) return evt;
+      const matchedIds = new Set<string>();
+      let matchedCtx: any = null;
+      for (const att of evt.attendees) {
+        const em = typeof att === "string" ? "" : (att.email || "").toLowerCase().trim();
+        if (!em) continue;
+        const hit = emailMap.get(em);
+        if (hit) { matchedIds.add(hit.clientId); matchedCtx = hit; }
+      }
+      if (matchedIds.size === 1 && matchedCtx) {
+        return { ...evt, clientContext: { clientId: matchedCtx.clientId, aum: matchedCtx.aum, segment: matchedCtx.segment } };
+      }
+      return evt;
+    });
+  }, [outlookEvents, emailIndex]);
+
+  // ── V3.0 Outlook coverage instrumentation ──
+  useMemo(() => {
+    if (!outlookEvents.length) return;
+    const withEmail = outlookEvents.filter((e: any) =>
+      e.attendees?.some((a: any) => typeof a !== "string" && a.email)
+    ).length;
+    const matched = enrichedOutlookEvents.filter((e: any) => e.clientContext).length;
+    const unmatchedWithEmail = withEmail - matched;
+    console.info("[Outlook Match]", {
+      totalEvents: outlookEvents.length,
+      withAttendeeEmail: withEmail,
+      matched,
+      unmatchedWithEmail,
+      indexSize: emailIndex?.length ?? 0,
+    });
+  }, [outlookEvents, enrichedOutlookEvents, emailIndex]);
 
   if (isLoading) {
     return <Skeleton className="h-48 w-full" style={{ borderRadius: 8 }} />;
@@ -170,13 +226,13 @@ export function TodaySchedule({ sfEvents, prepContexts, aiAvailable }: TodaySche
           </div>
         )}
 
-        {/* Outlook events */}
-        {outlookEvents.map((evt: any, idx: number) => {
+        {/* Outlook events (enriched with household context when matched) */}
+        {enrichedOutlookEvents.map((evt: any, idx: number) => {
           const isNow = evt.status === "in-progress";
           const isPast = evt.status === "completed";
           return (
+            <div key={evt.id || `outlook-${idx}`}>
             <div
-              key={evt.id || `outlook-${idx}`}
               style={{
                 display: "flex", alignItems: "center", gap: 14,
                 padding: "12px 16px", borderRadius: 6, marginBottom: 4,
@@ -211,7 +267,7 @@ export function TodaySchedule({ sfEvents, prepContexts, aiAvailable }: TodaySche
                 </div>
                 {evt.attendees && evt.attendees.length > 0 && (
                   <div style={{ fontSize: 11, color: OD.text3, marginTop: 2 }}>
-                    {evt.attendees.slice(0, 3).join(", ")}
+                    {evt.attendees.slice(0, 3).map((a: any) => typeof a === "string" ? a : a.name || a.email).join(", ")}
                     {evt.attendees.length > 3 && ` +${evt.attendees.length - 3}`}
                   </div>
                 )}
@@ -221,7 +277,62 @@ export function TodaySchedule({ sfEvents, prepContexts, aiAvailable }: TodaySche
                     <span style={{ fontSize: 11, color: OD.text3 }}>{evt.location || evt.meetingType}</span>
                   </div>
                 )}
+                {/* Client context for matched Outlook events */}
+                {evt.clientContext && (
+                  <div style={{ fontSize: 11, color: OD.text3, marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>
+                    {evt.clientContext.aum > 0 && `$${(evt.clientContext.aum / 1_000_000).toFixed(1)}M`}
+                    {evt.clientContext.aum > 0 && evt.clientContext.segment && " · "}
+                    {evt.clientContext.segment && `Tier ${evt.clientContext.segment}`}
+                  </div>
+                )}
               </div>
+              {/* Prep link for matched Outlook events */}
+              {evt.clientContext?.clientId && (
+                <NextLink
+                  href={`/clients/${evt.clientContext.clientId}?tab=prep&from=myday&signal=meeting-prep&signalId=${evt.id}`}
+                  style={{
+                    fontSize: 10, fontWeight: 600, color: OD.lightBlue,
+                    textDecoration: "none", flexShrink: 0,
+                  }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  Prep →
+                </NextLink>
+              )}
+              {/* Brief toggle for imminent matched Outlook events */}
+              {(() => {
+                if (!aiAvailable) return null;
+                if (!evt.clientContext?.clientId) return null;
+                const evtStart = new Date(evt.start).getTime();
+                if (isNaN(evtStart) || evtStart - now > imminentWindow) return null;
+                // Check if this is the first imminent matched event across ALL events (Outlook + SF)
+                // Only show Brief if no SF event already has it
+                const sfHasImminent = dedupedSfEvents.some((e: any) =>
+                  e.clientContext?.clientId && new Date(e.startTime).getTime() - now <= imminentWindow
+                );
+                if (sfHasImminent) return null;
+                const isFirstImminentOutlook = enrichedOutlookEvents.findIndex((e: any) =>
+                  e.clientContext?.clientId && new Date(e.start).getTime() - now <= imminentWindow
+                ) === idx;
+                if (!isFirstImminentOutlook) return null;
+
+                const isExpanded = briefState.eventId === evt.id && briefState.brief;
+                const isBriefLoading = briefState.eventId === evt.id && briefState.loading;
+                const isBriefError = briefState.eventId === evt.id && briefState.error;
+
+                return (
+                  <button
+                    onClick={e => { e.stopPropagation(); fetchBrief(evt.id, evt); }}
+                    style={{
+                      fontSize: 10, fontWeight: 600, background: "none", border: "none",
+                      cursor: "pointer", flexShrink: 0, padding: 0,
+                      color: isBriefError ? OD.text3 : OD.lightBlue,
+                    }}
+                  >
+                    {isBriefLoading ? "Generating..." : isBriefError ? "Brief unavailable" : isExpanded ? "Brief ▴" : "Brief ▾"}
+                  </button>
+                );
+              })()}
               {hasBothSources && <SourcePill label="Outlook" />}
               {evt.webLink && (
                 <a href={evt.webLink} target="_blank" rel="noopener noreferrer"
@@ -231,6 +342,21 @@ export function TodaySchedule({ sfEvents, prepContexts, aiAvailable }: TodaySche
                 </a>
               )}
             </div>
+            {/* Expanded brief area for matched Outlook events */}
+            {briefState.eventId === evt.id && briefState.brief && (
+              <div style={{
+                margin: "0 16px 8px 67px",
+                padding: "10px 14px",
+                background: "var(--color-surface-raised)",
+                borderRadius: 4,
+                fontSize: 12,
+                lineHeight: 1.5,
+                color: OD.text2,
+              }}>
+                {briefState.brief}
+              </div>
+            )}
+          </div>
           );
         })}
 
@@ -285,7 +411,7 @@ export function TodaySchedule({ sfEvents, prepContexts, aiAvailable }: TodaySche
             </div>
             {evt.clientContext?.clientId && (
               <NextLink
-                href={`/clients/${evt.clientContext.clientId}?tab=prep`}
+                href={`/clients/${evt.clientContext.clientId}?tab=prep&from=myday&signal=meeting-prep&signalId=${evt.id}`}
                 style={{
                   fontSize: 10, fontWeight: 600, color: "var(--color-brand-secondary)",
                   textDecoration: "none", flexShrink: 0,

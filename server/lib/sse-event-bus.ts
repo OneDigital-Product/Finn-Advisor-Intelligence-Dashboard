@@ -4,6 +4,7 @@ import { logger } from "./logger";
 export type SSEEventType =
   | "cassidy:job_completed"
   | "signals:proactive_scan_complete"
+  | "signals:household_updated"
   | "alert:new"
   | "approval:new"
   | "approval:status_changed"

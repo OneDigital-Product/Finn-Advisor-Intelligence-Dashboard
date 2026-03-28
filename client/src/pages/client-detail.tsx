@@ -32,6 +32,7 @@ import { useClientData } from "./client-detail/use-client-data";
 import { DataSourceDiagnostic, type FieldDiag } from "@/components/data-source-diagnostic";
 import { resolveClientDiagnosticFields, type FieldResolverInput } from "@/lib/diagnostic-field-resolver";
 import { ClientTabs } from "./client-detail/client-tabs";
+import { ContextBanner } from "./client-detail/context-banner";
 import { useProactiveSignals } from "@/hooks/use-proactive-signals";
 import { ProactiveSignalsBanner } from "@/components/cassidy/proactive-signals-banner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -450,9 +451,14 @@ export default function ClientDetail({ params: propParams }: { params?: { id?: s
             </div>
             <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap" }}>
               {client.email && (
-                <span style={{ display: "flex", alignItems: "center", gap: 5, padding: "0 12px", borderRight: "1px solid rgba(255,255,255,0.1)", fontSize: 11.5, color: P.odT3 }}>
+                <a href={`mailto:${client.email}`} style={{ display: "flex", alignItems: "center", gap: 5, padding: "0 12px", borderRight: "1px solid rgba(255,255,255,0.1)", fontSize: 11.5, color: P.odT3, textDecoration: "none" }}>
                   <Mail style={{ width: 11, height: 11 }} /> {client.email}
-                </span>
+                </a>
+              )}
+              {client.phone && (
+                <a href={`tel:${client.phone}`} style={{ display: "flex", alignItems: "center", gap: 5, padding: "0 12px", borderRight: "1px solid rgba(255,255,255,0.1)", fontSize: 11.5, color: P.odT3, textDecoration: "none" }}>
+                  <Phone style={{ width: 11, height: 11 }} /> {client.phone}
+                </a>
               )}
               {(client.address || client.city) && (
                 <span style={{ display: "flex", alignItems: "center", gap: 5, padding: "0 12px", borderRight: "1px solid rgba(255,255,255,0.1)", fontSize: 11.5, color: P.odT3 }}>
@@ -568,6 +574,19 @@ export default function ClientDetail({ params: propParams }: { params?: { id?: s
               return "—";
             })(), colorClass: P.odGreen, hasIncomeTooltip: true },
             { label: "Allocation · Orion", isAlloc: true },
+            { label: "Cash · Orion", value: (() => {
+              const ca = cd.allocationBar?.find((s: any) => s.label === "CA" || s.label === "Cash");
+              if (!ca) return cd.portfolioLoading ? "…" : "—";
+              const cashValue = cd.totalAum > 0 ? (ca.pct / 100) * cd.totalAum : 0;
+              const pct = ca.pct.toFixed(1);
+              return cashValue > 0 ? `${formatCurrency(cashValue)} (${pct}%)` : `${pct}%`;
+            })(), colorClass: (() => {
+              const ca = cd.allocationBar?.find((s: any) => s.label === "CA" || s.label === "Cash");
+              if (!ca) return P.odT3;
+              if (ca.pct > 20) return P.odYellow;
+              if (ca.pct >= 5) return P.odGreen;
+              return P.odT2;
+            })() },
           ].map((item, i) => (
             <div key={`fin-${i}`} style={{
               flex: 1, padding: "14px 24px", display: "flex", flexDirection: "column", gap: 5, minWidth: 160,
@@ -618,13 +637,19 @@ export default function ClientDetail({ params: propParams }: { params?: { id?: s
           {/* ── Activity cluster ── */}
           {[
             { label: "Open Tasks · SFDC", value: cd.openTaskCount > 0 ? String(cd.openTaskCount) : (cd.detailLoading ? "…" : "0"), colorClass: cd.openTaskCount > 0 ? P.odOrange : P.odT1 },
-            { label: "Stale Opps · SFDC", value: cd.staleOppCount > 0 ? String(cd.staleOppCount) : (cd.detailLoading ? "…" : "0"), colorClass: cd.staleOppCount > 0 ? P.odOrange : P.odT1 },
+            { label: "Stale Opps · SFDC", value: cd.staleOppCount > 0 ? String(cd.staleOppCount) : (cd.detailLoading ? "…" : "0"), colorClass: cd.staleOppCount > 0 ? P.odOrange : P.odT1, isStaleOpps: true },
           ].map((item, i) => (
             <div key={`act-${i}`} style={{
               flex: 1, padding: "14px 24px", display: "flex", flexDirection: "column", gap: 5, minWidth: 160,
               borderRight: "1px solid rgba(255,255,255,0.06)",
-              cursor: "default", transition: "background .2s", position: "relative",
-            }}>
+              cursor: (item as any).isStaleOpps && cd.staleOppCount > 0 ? "pointer" : "default",
+              transition: "background .2s", position: "relative",
+            }}
+            onClick={(item as any).isStaleOpps && cd.staleOppCount > 0 ? () => {
+              // Trigger Tier 3 load to get stale opportunity details, then navigate to a relevant section
+              cd.requestDetail?.();
+            } : undefined}
+            >
               <span style={{
                 fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 300,
                 letterSpacing: ".2em", textTransform: "uppercase", color: P.odT3,
@@ -634,6 +659,27 @@ export default function ClientDetail({ params: propParams }: { params?: { id?: s
                 fontWeight: 600, fontSize: 15,
                 color: item.colorClass || P.odT1,
               }}>{item.value}</span>
+              {/* Stale opp detail dropdown */}
+              {(item as any).isStaleOpps && cd.staleOpportunities?.length > 0 && (
+                <div style={{
+                  position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20,
+                  background: P.odSurf, border: `1px solid ${P.odBorder2}`, borderRadius: 6,
+                  padding: 8, maxHeight: 200, overflowY: "auto",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                }}>
+                  {cd.staleOpportunities.slice(0, 5).map((opp: any, j: number) => (
+                    <div key={opp.id || j} style={{
+                      padding: "6px 8px", borderBottom: j < Math.min(cd.staleOpportunities.length, 5) - 1 ? `1px solid ${P.odBorder}` : "none",
+                    }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: P.odT1 }}>{opp.name || opp.Name || "Opportunity"}</div>
+                      <div style={{ fontSize: 10, color: P.odT3, fontFamily: "'JetBrains Mono', monospace" }}>
+                        {opp.stageName || opp.StageName || "—"} · {opp.amount || opp.Amount ? formatCurrency(opp.amount || opp.Amount) : "—"}
+                        {opp.daysStale ? ` · ${opp.daysStale}d stale` : ""}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
 
@@ -646,9 +692,27 @@ export default function ClientDetail({ params: propParams }: { params?: { id?: s
               ? [{ label: "Net Worth", value: formatCurrency(cd.totalNetWorth), colorClass: P.odGreen }]
               : []),
             { label: "DOB · SFDC", value: client.dateOfBirth ? new Date(client.dateOfBirth).toLocaleDateString() : "—", mono: true },
-            { label: "Household · SFDC", value: String(cd.householdMembers?.length || 0), colorClass: P.odLBlue },
-            // P&C Coverage hidden — no backend data source connected yet
-            // TODO: Re-enable when insurance integration provides real coverage data
+            { label: "Household · SFDC", value: (() => {
+              const m = cd.householdMembers;
+              if (!m || m.length === 0) return "0";
+              const primary = m.find((h: any) => h.relationship === "primary") || m[0];
+              const name = primary ? `${primary.firstName || ""} ${primary.lastName || ""}`.trim() : "";
+              if (m.length === 1) return name || "1";
+              return name ? `${name} & ${m.length - 1} more` : String(m.length);
+            })(), colorClass: P.odLBlue },
+            { label: "Next Review", value: client.nextReview ? new Date(client.nextReview).toLocaleDateString() : "—", mono: true, colorClass: (() => {
+              if (!client.nextReview) return P.odT3;
+              const days = Math.ceil((new Date(client.nextReview).getTime() - Date.now()) / 86_400_000);
+              if (days < 0 || days < 7) return P.odOrange;
+              if (days <= 30) return P.odYellow;
+              return P.odGreen;
+            })() },
+            { label: "Last Review", value: client.lastReview ? (() => {
+              const days = Math.floor((Date.now() - new Date(client.lastReview).getTime()) / 86_400_000);
+              if (days < 30) return `${days}d ago`;
+              if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+              return `${Math.floor(days / 365)}y ago`;
+            })() : "Never", mono: true },
           ].map((item, i) => (
             <div key={`prof-${i}`} style={{
               flex: 1, padding: "14px 24px", display: "flex", flexDirection: "column", gap: 5,
@@ -770,6 +834,7 @@ export default function ClientDetail({ params: propParams }: { params?: { id?: s
           />
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
+          <ContextBanner navigationContext={cd.navigationContext} />
           <ClientTabs
             activeSection={cd.activeSection}
             clientId={cd.clientId}

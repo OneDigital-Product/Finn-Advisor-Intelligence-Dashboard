@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { P } from "@/styles/tokens";
 
 /* ── Types ── */
@@ -8,10 +9,12 @@ interface RankedTask {
   id: string;
   subject: string;
   relatedTo?: string;
+  clientId?: string | null;
   dueDate?: string;
   rank: number;
   rankLabel?: string;
   source?: string;
+  priority?: string;
 }
 
 interface MyDayActionQueueProps {
@@ -30,6 +33,7 @@ function rankStyle(rank: number): { bg: string; fg: string } {
 
 /* ── Component ── */
 export function MyDayActionQueue({ tasks }: MyDayActionQueueProps) {
+  const router = useRouter();
   const [expanded, setExpanded] = useState(false);
 
   const visibleTasks = expanded ? tasks : tasks.slice(0, INITIAL_TASKS);
@@ -55,8 +59,11 @@ export function MyDayActionQueue({ tasks }: MyDayActionQueueProps) {
             borderBottom: `1px solid ${P.odBorder}60`,
             borderRadius: 6,
             transition: "background .15s ease",
-            cursor: "default",
+            cursor: task.clientId ? "pointer" : "default",
           }}
+          onClick={task.clientId ? () => {
+            router.push(`/clients/${task.clientId}?from=myday&signal=task&signalId=${task.id}`);
+          } : undefined}
           onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(79,179,205,0.05)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >

@@ -27,7 +27,8 @@ import {
   getHouseholds as getLiveHouseholds,
   getClientsValue as getOrionClientsValue,
 } from "@server/integrations/mulesoft/api";
-import { getCache, isCacheValid, warmEnrichedCache } from "@server/lib/enriched-clients-cache";
+import { getCache, isCacheValid, warmEnrichedCache, getMemberEmailIndex, isMemberEmailIndexValid, warmMemberEmailIndex } from "@server/lib/enriched-clients-cache";
+import { computeHouseholdSignals, extractReviewsDueSoon, extractNeglectedHouseholds, extractBottomHealthScores } from "@server/lib/household-signals";
 import { isAIAvailable } from "@server/openai";
 
 // ── Task ranking helpers ─────────────────────────────────────────
@@ -39,6 +40,7 @@ interface RankedTask {
   priority: string;
   dueDate: string | null;
   relatedTo: string;
+  clientId: string | null;  // resolved from cache name-match when available
   source: "salesforce" | "local";
   rank: number;       // 1 = overdue, 2 = today, 3 = meeting-tied, 4 = this week
   rankLabel: string;
@@ -85,6 +87,7 @@ function rankTasks(
         priority: t.Priority || t.priority || "Normal",
         dueDate,
         relatedTo: t.What?.Name || t.relatedTo || "",
+        clientId: null as string | null,  // resolved post-rank when cache is available
         source: "salesforce" as const,
         rank,
         rankLabel,
@@ -168,6 +171,7 @@ export async function GET() {
             status: c.Status,
             priority: c.Priority,
             accountName: c.Account?.Name || "",
+            clientId: null as string | null,  // resolved when cache is available
             createdDate: c.CreatedDate,
           }));
 
@@ -224,63 +228,114 @@ export async function GET() {
             accountName: o.Account?.Name || "",
           }));
 
-          // ── Full-book intelligence (from enriched clients cache) ──
+          // ── Full-book intelligence via shared signal catalog ──
           let _fullBookAvailable = false;
           let reviewsDueSoon: any[] = [];
           let neglectedHouseholds: any[] = [];
+          let bottomHealthScores: any[] = [];
 
           const userEmail = advisor.email;
           if (isCacheValid(userEmail)) {
             _fullBookAvailable = true;
             const cacheData = getCache()!.data;
-            const todayMs = now.getTime();
-            const thirtyDaysMs = 30 * 86_400_000;
-            const ninetyDaysMs = 90 * 86_400_000;
 
-            // Review Due Soon: nextReview within 30 days (including past-due)
-            const reviewCandidates: any[] = [];
-            for (const c of cacheData) {
-              if (!c.nextReview) continue;
-              const reviewDate = new Date(c.nextReview);
-              if (isNaN(reviewDate.getTime())) continue;
-              const daysUntil = Math.ceil((reviewDate.getTime() - todayMs) / 86_400_000);
-              if (daysUntil <= 30) {
-                reviewCandidates.push({
-                  clientId: c.id,
-                  clientName: [c.firstName, c.lastName].filter(Boolean).join(" "),
-                  segment: c.segment || "",
-                  nextReviewDate: c.nextReview,
-                  daysUntil,
-                });
-              }
-            }
-            reviewsDueSoon = reviewCandidates
-              .sort((a, b) => a.daysUntil - b.daysUntil)
-              .slice(0, 3);
+            // Compute signals for every client in the book
+            const allSignals = cacheData.map((c: any) => computeHouseholdSignals(c));
 
-            // Neglected Households: lastReview > 90 days ago
-            const neglectedCandidates: any[] = [];
-            for (const c of cacheData) {
-              if (!c.lastReview) continue;
-              const lastDate = new Date(c.lastReview);
-              if (isNaN(lastDate.getTime())) continue;
-              const daysSince = Math.floor((todayMs - lastDate.getTime()) / 86_400_000);
-              if (daysSince > 90) {
-                neglectedCandidates.push({
-                  clientId: c.id,
-                  clientName: [c.firstName, c.lastName].filter(Boolean).join(" "),
-                  segment: c.segment || "",
-                  lastReviewDate: c.lastReview,
-                  daysSinceReview: daysSince,
-                });
-              }
+            // Extract book-level intelligence from shared signal contract
+            reviewsDueSoon = extractReviewsDueSoon(allSignals, 3);
+            neglectedHouseholds = extractNeglectedHouseholds(allSignals, 3);
+            bottomHealthScores = extractBottomHealthScores(allSignals, 3);
+
+            // Resolve clientId for tasks and cases via cache name-match
+            // (same pattern used by prepContexts at line ~338)
+            const _norm = (s: string) => (s || "").trim().replace(/\s+/g, " ").toLowerCase();
+            for (const task of rankedTasks) {
+              if (!task.relatedTo) continue;
+              const target = _norm(task.relatedTo);
+              const hit = cacheData.find((c: any) =>
+                _norm((c.firstName || "") + " " + (c.lastName || "")) === target
+              );
+              if (hit) task.clientId = hit.id;
             }
-            neglectedHouseholds = neglectedCandidates
-              .sort((a, b) => b.daysSinceReview - a.daysSinceReview)
-              .slice(0, 3);
+            for (const caseItem of topCases) {
+              if (!caseItem.accountName) continue;
+              const target = _norm(caseItem.accountName);
+              const hit = cacheData.find((c: any) =>
+                _norm((c.firstName || "") + " " + (c.lastName || "")) === target
+              );
+              if (hit) caseItem.clientId = hit.id;
+            }
           } else {
-            // Cache cold — trigger background warming for next request
-            warmEnrichedCache(advisor.email).catch(() => {});
+            // Cache cold — trigger background warming, then chain member-email warming
+            warmEnrichedCache(advisor.email)
+              .then(() => warmMemberEmailIndex(advisor.email))
+              .catch(() => {});
+          }
+
+          // ── Email → household reverse index for Outlook matching ──
+          // Source priority: member person-account emails first (canonical in FSC orgs),
+          // then cache/household emails as fallback (for Person Account orgs).
+          let _emailIndex: any[] = [];
+          let _memberEmailsAvailable = false;
+          if (_fullBookAvailable) {
+            const seen = new Set<string>();
+            const dupes = new Set<string>();
+            const cacheDataForIndex = getCache()!.data;
+            let memberEmailCount = 0;
+            let cacheEmailCount = 0;
+
+            // Step 1: Member emails as primary source
+            if (isMemberEmailIndexValid(userEmail)) {
+              _memberEmailsAvailable = true;
+              const memberEntries = getMemberEmailIndex();
+              for (const me of memberEntries) {
+                if (seen.has(me.email)) { dupes.add(me.email); continue; }
+                seen.add(me.email);
+                _emailIndex.push(me);
+                memberEmailCount++;
+              }
+            }
+
+            // Step 2: Cache/household emails as fallback (fills gaps only)
+            for (const c of cacheDataForIndex) {
+              if (!c.email) continue;
+              const em = c.email.toLowerCase().trim();
+              if (!em) continue;
+              if (seen.has(em)) continue; // Already covered by member email — skip
+              if (dupes.has(em)) continue;
+              seen.add(em);
+              _emailIndex.push({
+                email: em,
+                clientId: c.id,
+                name: [c.firstName, c.lastName].filter(Boolean).join(" "),
+                aum: c.totalAum || 0,
+                segment: c.segment || "",
+              });
+              cacheEmailCount++;
+            }
+
+            // Remove ambiguous duplicates
+            if (dupes.size > 0) {
+              _emailIndex = _emailIndex.filter((e: any) => !dupes.has(e.email));
+              memberEmailCount = _emailIndex.filter((e: any) => !cacheDataForIndex.some((c: any) => c.id === e.clientId && c.email)).length;
+              cacheEmailCount = _emailIndex.length - memberEmailCount;
+            }
+
+            logger.info({
+              source: _memberEmailsAvailable ? "member" : "cache",
+              memberEmails: memberEmailCount,
+              cacheEmails: cacheEmailCount,
+              totalIndexSize: _emailIndex.length,
+              duplicatesExcluded: dupes.size,
+              _memberEmailsAvailable,
+              _fullBookAvailable,
+            }, "[MyDay] Email index coverage");
+
+            // If member index not yet warm, trigger background warming
+            if (!_memberEmailsAvailable) {
+              warmMemberEmailIndex(userEmail).catch(() => {});
+            }
           }
 
           // ── SF Event client resolution + prep context (cache-backed) ──
@@ -406,13 +461,46 @@ export async function GET() {
               ].filter(Boolean).length,
             },
 
-            // Full-book intelligence (cache-backed)
+            // Full-book intelligence (cache-backed, via shared signal catalog)
             _fullBookAvailable,
+            _memberEmailsAvailable,
             reviewsDueSoon,
             neglectedHouseholds,
+            bottomHealthScores,
+
+            // Pending workflow gates
+            pendingGates: await (async () => {
+              try {
+                const gates = await storage.getWorkflowGatesByOwner(advisor.id, "pending");
+                const enriched = await Promise.all(
+                  gates.slice(0, 3).map(async (gate: any) => {
+                    const instance = await storage.getWorkflowInstance(gate.instanceId);
+                    const def = instance ? await storage.getWorkflowDefinition_v2(instance.definitionId) : null;
+                    const client = instance?.clientId ? await storage.getClient(instance.clientId) : null;
+                    return {
+                      gateId: gate.id,
+                      gateName: gate.gateName || gate.stepName || "Approval",
+                      workflowName: def?.name || "Workflow",
+                      clientName: client ? `${client.firstName} ${client.lastName}` : null,
+                      clientId: instance?.clientId || null,
+                      createdAt: gate.createdAt,
+                      expiresAt: gate.expiresAt || null,
+                      actions: gate.actions || [
+                        { label: "Approve", value: "approved" },
+                        { label: "Reject", value: "rejected", destructive: true },
+                      ],
+                    };
+                  })
+                );
+                return enriched;
+              } catch { return []; }
+            })(),
 
             // Prep contexts (hidden — for future AI summarization)
             prepContexts,
+
+            // Email → household index for Outlook matching
+            _emailIndex,
 
             // Metadata
             _aiAvailable: isAIAvailable(),
@@ -519,9 +607,13 @@ export async function GET() {
       },
 
       _fullBookAvailable: false,
+      _memberEmailsAvailable: false,
       reviewsDueSoon: [],
       neglectedHouseholds: [],
+      bottomHealthScores: [],
+      pendingGates: [],
       prepContexts: [],
+      _emailIndex: [],
 
       _aiAvailable: isAIAvailable(),
       isLiveData: false,

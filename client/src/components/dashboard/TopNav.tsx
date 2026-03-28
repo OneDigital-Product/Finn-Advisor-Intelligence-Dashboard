@@ -240,7 +240,7 @@ export function TopNav({ isLiveData }: TopNavProps) {
       }}>
         {/* Left — Logo + Brand + Advisor Intelligence + LIVE badge */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-          <NextLink href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }} data-testid="link-home">
+          <NextLink href="/?tab=My+Day" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }} data-testid="link-home">
             <AnimatedLogo size={26} animation="random" interval={300_000} />
             <div style={{
               fontFamily: "'Oswald', sans-serif", fontSize: 16, fontWeight: 600,

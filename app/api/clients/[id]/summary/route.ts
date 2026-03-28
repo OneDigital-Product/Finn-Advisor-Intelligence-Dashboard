@@ -7,6 +7,7 @@ import { logger } from "@server/lib/logger";
 import { resolveClientIdentity } from "@server/lib/client-identity";
 import { resolvePhone } from "@server/lib/resolve-phone";
 import { getCachedClient, resolveClientFast, isCacheValid } from "@server/lib/enriched-clients-cache";
+import { computeHouseholdSignals } from "@server/lib/household-signals";
 
 /** Derive a simple A / B / C tier from AUM. */
 function aumTier(aum: number): "A" | "B" | "C" {
@@ -49,8 +50,12 @@ export async function GET(_request: Request, { params }: RouteContext) {
       const hit = await resolveClientFast(id, userEmail!);
 
       if (hit) {
+        const signals = computeHouseholdSignals(hit);
         return NextResponse.json({
           ...buildResponse(hit),
+          healthScore: signals.healthScore,
+          healthScorePartial: signals.healthScorePartial,
+          reviewStatus: signals.reviewStatus,
           _identity: { ...identity, dataPath: isCacheValid(userEmail!) ? "cache-hit" as const : "fast-resolve" as const },
         }, { headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=300" } });
       }
@@ -111,8 +116,12 @@ export async function GET(_request: Request, { params }: RouteContext) {
       isLiveData: false as const,
     };
 
+    const signals = computeHouseholdSignals(mapped);
     return NextResponse.json({
       ...buildResponse(mapped),
+      healthScore: signals.healthScore,
+      healthScorePartial: signals.healthScorePartial,
+      reviewStatus: signals.reviewStatus,
       _identity: { ...identity, dataPath: liveSfId ? "local-db" as const : "local-db-uuid-skip" as const },
     }, { headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=300" } });
   } catch (err: any) {

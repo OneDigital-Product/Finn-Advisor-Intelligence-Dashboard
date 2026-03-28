@@ -21,6 +21,23 @@ export { generateWithdrawalAnalysis } from "./23-withdrawal-analysis";
 
 export { generateClientInsightsDashboard } from "./24-client-insights-dashboard";
 
+export { generateClientInsights } from "./06-client-insight-generation";
+
+export { generateDiagnosticAnalysis } from "./11-diagnostic-analysis";
+
+export { generateFinancialAssessment } from "./15-financial-assessment";
+
+export { generateLifeEventDetection } from "./16-life-event-detection";
+
+export { generateDocumentParsing } from "./08-document-parsing";
+export type { V33DocumentParsingInput, V33DocumentParsingResult, V33ParsedAccount, V33ParsedHolding, V33ParsedBeneficiary } from "./08-document-parsing";
+
+export { generateNaturalLanguageQuery } from "./09-natural-language-query";
+export type { V33NaturalLanguageQueryInput, V33QueryResult } from "./09-natural-language-query";
+
+export { generateDocumentClassification } from "./12-document-classification";
+export type { V33DocumentClassificationInput, V33DocumentClassificationResult } from "./12-document-classification";
+
 export type {
   V33MeetingPrepResult,
   V33MeetingSummaryResult,
@@ -85,4 +102,14 @@ export type {
   V33ClientInsightsDashboardCompliance,
   V33ClientInsightsDashboardKeyMetric,
   V33EvidenceCitation,
+  V33ClientInsightInput,
+  V33ClientInsightResult,
+  V33InsightItem,
+  V33DiagnosticInput,
+  V33DiagnosticResult,
+  V33FinancialAssessmentInput,
+  V33FinancialAssessmentResult,
+  V33LifeEventInput,
+  V33LifeEventResult,
+  V33DetectedLifeEvent,
 } from "./types";

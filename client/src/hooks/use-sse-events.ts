@@ -4,6 +4,7 @@ import { queryClient } from "@/lib/queryClient";
 type SSEEventType =
   | "cassidy:job_completed"
   | "signals:proactive_scan_complete"
+  | "signals:household_updated"
   | "alert:new"
   | "approval:new"
   | "approval:status_changed"
@@ -31,6 +32,9 @@ const EVENT_HANDLERS: Record<string, () => void> = {
   "signals:proactive_scan_complete": () => {
     invalidateByPrefix("/api/cassidy/signals");
   },
+  "signals:household_updated": () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/myday"] });
+  },
   "alert:new": () => {
     invalidateByPrefix("/api/alerts");
   },
@@ -51,6 +55,7 @@ const EVENT_HANDLERS: Record<string, () => void> = {
   },
   "workflow:gate_created": () => {
     invalidateByPrefix("/api/workflow-automations");
+    queryClient.invalidateQueries({ queryKey: ["/api/myday"] });
   },
   "workflow:status_changed": () => {
     invalidateByPrefix("/api/workflow-automations");

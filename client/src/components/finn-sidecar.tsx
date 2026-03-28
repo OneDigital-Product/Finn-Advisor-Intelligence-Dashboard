@@ -44,7 +44,25 @@ function getPageContext(location: string, clients: any[] | undefined): PageConte
     ctx.clientId = clientMatch[1];
     if (clients) {
       const c = clients.find((cl: any) => String(cl.id) === ctx.clientId);
-      if (c) ctx.clientName = `${c.firstName} ${c.lastName}`.trim() || null;
+      if (c) {
+        ctx.clientName = `${c.firstName} ${c.lastName}`.trim() || null;
+        // V3.2: enrich with client data from the list cache
+        ctx.segment = c.segment || null;
+        ctx.aum = c.totalAum || null;
+        ctx.healthScore = c.healthScore ?? null;
+        ctx.healthScorePartial = c.healthScorePartial ?? undefined;
+        ctx.reviewStatus = c.reviewStatus || null;
+        ctx.lastReview = c.lastReview || null;
+        ctx.nextReview = c.nextReview || null;
+        ctx.serviceModel = c.serviceModel || null;
+        ctx.accountCount = c.accountCount ?? null;
+      }
+    }
+    // Read navigation context from URL if present
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      ctx.navigationSignal = params.get("signal");
+      ctx.activeTab = params.get("tab");
     }
     return ctx;
   }
@@ -94,7 +112,25 @@ function getSuggestedPrompts(ctx: PageContext): { label: string; icon: typeof Za
 
   if (s === "Client Detail") {
     const name = ctx.clientName || "this client";
+    const contextActions: { label: string; icon: typeof Zap }[] = [];
+
+    // V3.2: context-aware actions based on navigation signal + client state
+    if (ctx.navigationSignal === "task") {
+      contextActions.push({ label: `Help me complete the pending task for ${name}`, icon: Zap });
+    } else if (ctx.navigationSignal === "case") {
+      contextActions.push({ label: `Brief me on ${name}'s open case`, icon: AlertCircle });
+    } else if (ctx.navigationSignal === "meeting-prep") {
+      contextActions.push({ label: `Generate meeting prep for ${name}`, icon: FileText });
+    }
+    if (ctx.reviewStatus === "overdue") {
+      contextActions.push({ label: `Draft a review scheduling email for ${name}`, icon: Mail });
+    }
+    if (ctx.healthScore != null && ctx.healthScore < 50) {
+      contextActions.push({ label: `What's driving ${name}'s low health score?`, icon: BarChart3 });
+    }
+
     return [
+      ...contextActions.slice(0, 2), // max 2 context-specific actions
       { label: `Summarize ${name}`, icon: Zap },
       { label: `Any compliance flags for ${name}?`, icon: AlertCircle },
       { label: `Draft a check-in email for ${name}`, icon: Mail },
@@ -251,7 +287,7 @@ export function FinnSidecar() {
       }
     }
 
-    const pageContext = { route: pageCtx.route, section: pageCtx.section, clientId: pageCtx.clientId, clientName: pageCtx.clientName };
+    const pageContext = { ...pageCtx };
 
     if (selectedFinnMode !== "conversation") {
       await submitFinnMode(request, selectedFinnMode, pageCtx.clientName || undefined, conversationId, pageContext);

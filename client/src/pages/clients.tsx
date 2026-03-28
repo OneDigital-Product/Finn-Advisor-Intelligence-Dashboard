@@ -905,7 +905,7 @@ const ClientRow = React.memo(function ClientRow({ client, expanded, onToggle }: 
 // ---------------------------------------------------------------------------
 // Detail card (inside expanded panel)
 // ---------------------------------------------------------------------------
-function DetailCard({ src, label, value, color, mono }: { src: string; label: string; value: string; color?: string; mono?: boolean }) {
+function DetailCard({ src, label, value, color, mono, link }: { src: string; label: string; value: string; color?: string; mono?: boolean; link?: string }) {
   const isOrion = src === "Orion";
   return (
     <div style={{ padding: "14px 20px", borderRight: `1px solid ${OD.border2}` }}>
@@ -923,15 +923,28 @@ function DetailCard({ src, label, value, color, mono }: { src: string; label: st
       }}>
         {label}
       </div>
-      <div style={{
-        fontFamily: mono ? "'Inter', sans-serif" : "'Oswald', sans-serif",
-        fontWeight: mono ? 500 : 600,
-        fontSize: mono ? 13 : 18,
-        color: value === "—" ? OD.t4 : (color || OD.t1),
-        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-      }}>
-        {value}
-      </div>
+      {link && value !== "—" ? (
+        <a href={link} style={{
+          fontFamily: mono ? "'Inter', sans-serif" : "'Oswald', sans-serif",
+          fontWeight: mono ? 500 : 600,
+          fontSize: mono ? 13 : 18,
+          color: OD.lblue,
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          textDecoration: "none", display: "block",
+        }}>
+          {value}
+        </a>
+      ) : (
+        <div style={{
+          fontFamily: mono ? "'Inter', sans-serif" : "'Oswald', sans-serif",
+          fontWeight: mono ? 500 : 600,
+          fontSize: mono ? 13 : 18,
+          color: value === "—" ? OD.t4 : (color || OD.t1),
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        }}>
+          {value}
+        </div>
+      )}
     </div>
   );
 }
@@ -1011,7 +1024,7 @@ function ClientPreviewPanel({ client, clientId }: { client: any; clientId: strin
 
       {/* Detail cards — 2-column grid for sheet width */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderBottom: `1px solid ${OD.border2}` }}>
-        <DetailCard src="SFDC" label="Email" value={preview.members?.list?.[0]?.email || client.email || "—"} mono />
+        <DetailCard src="SFDC" label="Email" value={preview.members?.list?.[0]?.email || client.email || "—"} mono link={(() => { const e = preview.members?.list?.[0]?.email || client.email; return e ? `mailto:${e}` : undefined; })()} />
         <DetailCard src="SFDC" label="Phone" value={
           (() => {
             const m = preview.members?.list?.[0];
@@ -1020,8 +1033,18 @@ function ClientPreviewPanel({ client, clientId }: { client: any; clientId: strin
             const typeLabel = m?.phoneType ? ` · ${m.phoneType}` : "";
             return phone + typeLabel;
           })()
-        } />
-        <DetailCard src="SFDC" label="Members" value={preview.members?.count ? `${preview.members.count} member${preview.members.count > 1 ? "s" : ""}` : "—"} />
+        } link={(() => { const p = preview.members?.list?.[0]?.phone || client.phone; return p ? `tel:${p}` : undefined; })()} />
+        <DetailCard src="SFDC" label="Household" value={(() => {
+          const list = preview.members?.list;
+          if (!list || list.length === 0) return preview.members?.count ? `${preview.members.count} member${preview.members.count > 1 ? "s" : ""}` : "—";
+          const shown = list.slice(0, 3).map((m: any) => {
+            const n = `${m.firstName || ""} ${m.lastName || ""}`.trim();
+            const rel = m.relationship ? ` (${m.relationship})` : "";
+            return n + rel;
+          });
+          const overflow = list.length > 3 ? ` +${list.length - 3} more` : "";
+          return shown.join(", ") + overflow;
+        })()} mono />
         <DetailCard src="Orion" label="Holdings" value={preview.holdings?.count ? `${preview.holdings.count} positions` : "—"} />
         <DetailCard src="Orion" label="Top Holding" value={
           (() => {

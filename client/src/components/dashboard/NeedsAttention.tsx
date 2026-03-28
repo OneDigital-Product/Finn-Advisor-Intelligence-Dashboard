@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { P } from "@/styles/tokens";
 
@@ -12,6 +13,7 @@ interface NeedsAttentionProps {
     status: string;
     priority: string;
     accountName: string;
+    clientId?: string | null;
     createdDate: string;
   }>;
   /** Whether to show the "See all alerts" link */
@@ -27,6 +29,7 @@ interface NeedsAttentionProps {
  * Shows top 3 by default, "Show more" for 4-5.
  */
 export function NeedsAttention({ cases, onSeeAll }: NeedsAttentionProps) {
+  const router = useRouter();
   const [expanded, setExpanded] = useState(false);
 
   // Reminders query — returns flat PendingReminder[] from local DB
@@ -47,6 +50,7 @@ export function NeedsAttention({ cases, onSeeAll }: NeedsAttentionProps) {
     const merged: Array<{
       id: string;
       type: "case" | "reminder";
+      clientId?: string;
       title: string;
       subtitle: string;
       severity: "critical" | "high" | "medium" | "low";
@@ -68,6 +72,7 @@ export function NeedsAttention({ cases, onSeeAll }: NeedsAttentionProps) {
       merged.push({
         id: `case-${c.id}`,
         type: "case",
+        clientId: c.clientId || undefined,
         title: c.subject,
         subtitle: (c.accountName || c.status) + ageStr,
         severity: c.priority?.toLowerCase() === "high" ? "high" : "medium",
@@ -83,6 +88,7 @@ export function NeedsAttention({ cases, onSeeAll }: NeedsAttentionProps) {
       merged.push({
         id: `reminder-exp-${r.profileId || r.clientId}`,
         type: "reminder",
+        clientId: r.clientId || undefined,
         title: r.clientName || "Client",
         subtitle: `${r.profileType || "Profile"} review — expired`,
         severity: "high",
@@ -93,6 +99,7 @@ export function NeedsAttention({ cases, onSeeAll }: NeedsAttentionProps) {
       merged.push({
         id: `reminder-soon-${r.profileId || r.clientId}`,
         type: "reminder",
+        clientId: r.clientId || undefined,
         title: r.clientName || "Client",
         subtitle: `${r.profileType || "Profile"} review — expires in ${r.daysUntilExpiration} days`,
         severity: "medium",
@@ -144,8 +151,11 @@ export function NeedsAttention({ cases, onSeeAll }: NeedsAttentionProps) {
             borderBottom: `1px solid ${P.odBorder}`,
             borderRadius: 6,
             transition: "background .15s ease",
-            cursor: "default",
+            cursor: item.clientId ? "pointer" : "default",
           }}
+          onClick={item.clientId ? () => {
+            router.push(`/clients/${item.clientId}?from=myday&signal=${item.type === "case" ? "case" : "profile-reminder"}&signalId=${item.id}`);
+          } : undefined}
           onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(79,179,205,0.05)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         >

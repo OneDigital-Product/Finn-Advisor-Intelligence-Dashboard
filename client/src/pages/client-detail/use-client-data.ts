@@ -226,6 +226,36 @@ export function useClientData(propParams?: { id?: string }) {
     return "overview";
   });
 
+  // Navigation context from My Day (V3.0: store only, V3.1: render context banner)
+  const [navigationContext] = useState<{
+    from: string | null;
+    signal: string | null;
+    signalId: string | null;
+  } | null>(() => {
+    if (typeof window === "undefined") return null;
+    const params = new URLSearchParams(window.location.search);
+    const from = params.get("from");
+    if (!from) return null;
+    return {
+      from,
+      signal: params.get("signal"),
+      signalId: params.get("signalId"),
+    };
+  });
+
+  // Clean context params from URL after reading (prevent stale context on refresh)
+  useEffect(() => {
+    if (navigationContext && typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("from");
+      url.searchParams.delete("signal");
+      url.searchParams.delete("signalId");
+      // Preserve ?tab= — it drives section selection separately
+      window.history.replaceState({}, "", url.toString());
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Sections that require the monolithic endpoint's data
   const DETAIL_SECTIONS = new Set([
     "meetings", "compliance", "estate", "philanthropy", "philanthropy-giving",
@@ -462,6 +492,7 @@ export function useClientData(propParams?: { id?: string }) {
     removeTeamMemberMutation,
     activeSection,
     handleSectionChange,
+    navigationContext,
     suggestedTasks,
     setSuggestedTasks,
     selectedAccountId,

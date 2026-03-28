@@ -24,6 +24,19 @@ export interface PageContext {
   section: string;
   clientId: string | null;
   clientName: string | null;
+  // V3.2 enrichment
+  segment?: string | null;
+  aum?: number | null;
+  healthScore?: number | null;
+  healthScorePartial?: boolean;
+  reviewStatus?: string | null;
+  lastReview?: string | null;
+  nextReview?: string | null;
+  serviceModel?: string | null;
+  navigationSignal?: string | null;
+  activeTab?: string | null;
+  accountCount?: number | null;
+  householdMemberCount?: number | null;
 }
 
 interface SubmitPromptParams {

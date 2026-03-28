@@ -54,7 +54,7 @@ export function ContinueWorking() {
             onClick={() => {
               // Refresh viewedAt timestamp immediately on re-click
               addRecent({ id: client.id, name: client.name, segment: client.segment });
-              router.push(`/clients/${client.id}`);
+              router.push(`/clients/${client.id}?from=myday&signal=continue-working`);
             }}
             style={{
               display: "flex",

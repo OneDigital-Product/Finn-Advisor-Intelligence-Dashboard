@@ -3,7 +3,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { useNavPageTabs, NavRail } from "@/components/app-sidebar";
 import { useDiagnosticContext } from "@/contexts/diagnostic-context";
@@ -18,6 +18,7 @@ import { OpenOpportunitiesPipeline } from "@/components/dashboard/OpenOpportunit
 import { RecentlyClosedOpportunities } from "@/components/dashboard/RecentlyClosedOpportunities";
 import { UrgencyStrip } from "@/components/dashboard/UrgencyStrip";
 import { NeedsAttention } from "@/components/dashboard/NeedsAttention";
+import { PendingApprovals } from "@/components/dashboard/PendingApprovals";
 import { ContinueWorking } from "@/components/dashboard/ContinueWorking";
 import { MyDayActionQueue } from "@/components/dashboard/MyDayActionQueue";
 import { useRecentClients } from "@/hooks/use-recent-clients";
@@ -35,9 +36,6 @@ function SvgCheckmark() {
 }
 function SvgChart() {
   return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="1" y="8" width="3" height="6" rx="0.5"/><rect x="6" y="4" width="3" height="10" rx="0.5"/><rect x="11" y="1" width="3" height="13" rx="0.5"/></svg>;
-}
-function SvgZap() {
-  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M9 1L4 9h4l-1 6 5-8H8l1-6z"/></svg>;
 }
 function SvgCal() {
   return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M5 3V1M11 3V1M2 7h12"/></svg>;
@@ -87,7 +85,16 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("My Day");
+
+  // Sync tab from URL param (e.g. /?tab=My+Day from nav sidebar)
+  useEffect(() => {
+    const urlTab = searchParams?.get("tab");
+    if (urlTab && urlTab !== activeTab) {
+      setActiveTab(urlTab);
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleTabChange = useCallback((label: string) => {
     if (label === "Clients") { router.push("/clients"); return; }
@@ -127,28 +134,6 @@ export default function Dashboard() {
   });
 
   // ── NBA mutations (shared between My Day and Action Queue tab) ──
-
-  const completeNbaMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await apiRequest("PATCH", `/api/engagement/actions/${id}/complete`);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/engagement/actions"] });
-      toast({ title: "Action completed" });
-    },
-  });
-
-  const dismissNbaMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await apiRequest("PATCH", `/api/engagement/actions/${id}/dismiss`);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/engagement/actions"] });
-      toast({ title: "Action dismissed" });
-    },
-  });
 
   // ── Diagnostic Context ──
   const { setPageDiagnostics, clearPageDiagnostics } = useDiagnosticContext();
@@ -357,6 +342,24 @@ export default function Dashboard() {
                 />
               </div>
 
+              {/* Pending Approvals — workflow gates */}
+              {(myDay?.pendingGates?.length || 0) > 0 && (
+                <div style={{
+                  background: P.odSurf,
+                  border: `1px solid ${P.odBorder2}`,
+                  borderRadius: 6,
+                  padding: "12px 16px",
+                }}>
+                  <div style={{
+                    fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                    textTransform: "uppercase", color: P.odT1,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    marginBottom: 8,
+                  }}>Pending Approvals</div>
+                  <PendingApprovals gates={myDay.pendingGates} />
+                </div>
+              )}
+
               {/* Reviews Due Soon — full-book, cache-backed */}
               {myDay?._fullBookAvailable && (myDay?.reviewsDueSoon?.length || 0) > 0 && (
                 <div style={{
@@ -430,7 +433,7 @@ export default function Dashboard() {
                     style={{ fontSize: 10, color: P.odLBlue, background: "none", border: "none", cursor: "pointer" }}
                   >See all meetings →</button>
                 </div>
-                <TodaySchedule sfEvents={myDay?.sfEvents} prepContexts={myDay?.prepContexts} aiAvailable={myDay?._aiAvailable} />
+                <TodaySchedule sfEvents={myDay?.sfEvents} prepContexts={myDay?.prepContexts} aiAvailable={myDay?._aiAvailable} emailIndex={myDay?._emailIndex} />
               </div>
 
               {/* Action Queue */}
@@ -698,29 +701,6 @@ export default function Dashboard() {
           >
             <ActionQueue liveTasks={clientStats?.openTasksList} />
           </SectionCard>
-          {(nbaData?.actions?.length ?? 0) > 0 && (
-            <SectionCard title="Next Best Actions" icon={<SvgZap />} dataTag="app">
-              <div>
-                {nbaData!.actions.map((action: any) => (
-                  <div key={action.id} style={{
-                    display: "flex", alignItems: "flex-start", gap: 12,
-                    padding: "10px 0", borderBottom: `1px solid rgba(45,55,72,0.25)`,
-                  }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: P.odT1 }}>{action.title || action.actionType?.replace(/_/g, " ")}</div>
-                      <div style={{ fontSize: 11, color: P.odT3 }}>{action.clientName}</div>
-                    </div>
-                    <div style={{ display: "flex", gap: 4 }}>
-                      <button onClick={() => completeNbaMutation.mutate(action.id)}
-                        style={{ fontSize: 10, fontWeight: 600, color: P.odGreen, background: "none", border: "none", cursor: "pointer", padding: "2px 6px" }}>Done</button>
-                      <button onClick={() => dismissNbaMutation.mutate(action.id)}
-                        style={{ fontSize: 10, fontWeight: 600, color: P.odT3, background: "none", border: "none", cursor: "pointer", padding: "2px 6px" }}>Skip</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </SectionCard>
-          )}
         </div>
       )}
 

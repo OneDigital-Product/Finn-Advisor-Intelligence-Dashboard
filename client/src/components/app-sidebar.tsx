@@ -220,7 +220,7 @@ export function NavRail({ children }: { children?: ReactNode }) {
                       const a = isActive(n.id); const h = hov === n.id;
                       return (
                         <button key={n.id}
-                          onClick={(e) => { e.stopPropagation(); triggerLogoAnimation("pulse"); router.push(n.id); setOpenGroup(null); }}
+                          onClick={(e) => { e.stopPropagation(); triggerLogoAnimation("pulse"); router.push(n.id === "/" ? "/?tab=My+Day" : n.id); setOpenGroup(null); }}
                           onMouseEnter={() => setHov(n.id)} onMouseLeave={() => setHov(null)}
                           style={{
                             display: "flex", alignItems: "center", gap: 10, width: "100%",

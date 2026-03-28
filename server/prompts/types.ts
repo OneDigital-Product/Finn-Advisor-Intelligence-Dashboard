@@ -661,3 +661,161 @@ export interface V33ClientInsightsDashboardResult {
   keyMetrics: V33ClientInsightsDashboardKeyMetric[];
   evidenceCitations: V33EvidenceCitation[];
 }
+
+// ── Agent 06: Client Insight Generation ──
+
+export interface V33ClientInsightInput {
+  clientId: string;
+  clientName: string;
+  totalAum: number;
+  accountCount: number;
+  segment?: string;
+  riskTolerance?: string;
+  age?: number;
+  topHoldings?: Array<{ ticker: string; name: string; marketValue: number; weight: number }>;
+  recentActivities?: string[];
+  pendingTasks?: number;
+  lastContact?: string;
+  financialGoals?: Array<{ name: string; targetAmount: number; currentAmount: number; targetDate: string }>;
+}
+
+export interface V33InsightItem {
+  insightId: string;
+  title: string;
+  description: string;
+  planningDomain: string;
+  insightType: "alert" | "opportunity" | "risk" | "behavioral" | "informational";
+  tier: 1 | 2 | 3 | 4;
+  urgency: "critical" | "high" | "medium" | "low";
+  daysToAddress: number | null;
+  dollarImpact: number | null;
+  impactStatement: string;
+  confidence: number;
+  recommendedAction: string;
+  actionOwner: string;
+}
+
+export interface V33ClientInsightResult {
+  advisorNarrative: string;
+  clientSummary: string;
+  totalInsights: number;
+  tier1Count: number;
+  tier2Count: number;
+  estimatedTotalImpact: number;
+  insights: V33InsightItem[];
+  behavioralProfile: {
+    engagementTrend: "increasing" | "stable" | "declining";
+    anxietyLevel: "none" | "moderate" | "elevated";
+    recommendedTone: string;
+  };
+  actionChecklist: Array<{ action: string; owner: string; timeline: string }>;
+}
+
+// ── Agent 11: Diagnostic Analysis ──
+
+export interface V33DiagnosticInput {
+  advisorId: string;
+  advisorName: string;
+  clientCount: number;
+  totalAum: number;
+  dataCompleteness: { field: string; populatedPct: number }[];
+  integrationStatus: { system: string; status: string; lastSync: string }[];
+  recentErrors?: string[];
+}
+
+export interface V33DiagnosticResult {
+  advisorNarrative: string;
+  clientSummary: string;
+  overallHealthScore: number;
+  dataQualityScore: number;
+  integrationScore: number;
+  findings: Array<{
+    findingId: string;
+    category: "data_quality" | "integration" | "practice" | "compliance";
+    severity: "critical" | "warning" | "info";
+    title: string;
+    description: string;
+    recommendation: string;
+    effort: "low" | "medium" | "high";
+  }>;
+  recommendations: Array<{ priority: number; action: string; impact: string; effort: string }>;
+}
+
+// ── Agent 15: Financial Assessment ──
+
+export interface V33FinancialAssessmentInput {
+  clientId: string;
+  clientName: string;
+  age: number;
+  filingStatus: string;
+  annualIncome: number;
+  annualExpenses?: number;
+  totalAssets: number;
+  totalLiabilities?: number;
+  retirementAccounts?: number;
+  taxableAccounts?: number;
+  riskTolerance: string;
+  currentInsurance?: { type: string; coverage: number; premium: number }[];
+  estateDocuments?: { type: string; lastUpdated: string }[];
+  financialGoals?: Array<{ name: string; amount: number; timelineYears: number }>;
+}
+
+export interface V33FinancialAssessmentResult {
+  advisorNarrative: string;
+  clientSummary: string;
+  overallScore: number;
+  domainScores: Array<{
+    domain: string;
+    score: number;
+    status: "strong" | "adequate" | "needs_attention" | "critical";
+    topFinding: string;
+  }>;
+  gaps: Array<{
+    gapId: string;
+    domain: string;
+    severity: "critical" | "high" | "medium" | "low";
+    title: string;
+    description: string;
+    estimatedImpact: number | null;
+    recommendation: string;
+  }>;
+  netWorthSummary: { totalAssets: number; totalLiabilities: number; netWorth: number };
+  keyMetrics: Array<{ label: string; value: string; status: "positive" | "negative" | "neutral"; context: string }>;
+}
+
+// ── Agent 16: Life Event Detection ──
+
+export interface V33LifeEventInput {
+  clientId: string;
+  clientName: string;
+  transcript: string;
+  clientContext?: {
+    age?: number;
+    maritalStatus?: string;
+    dependents?: number;
+    employmentStatus?: string;
+    totalAum?: number;
+  };
+}
+
+export interface V33DetectedLifeEvent {
+  eventId: string;
+  eventCategory: "family" | "career" | "financial" | "health" | "education" | "legal" | "housing";
+  eventType: string;
+  description: string;
+  confidence: number;
+  urgency: "critical" | "high" | "medium" | "low";
+  evidenceQuote: string;
+  planningDomainsAffected: string[];
+  recommendedActions: Array<{ action: string; domain: string; timeline: string; owner: string }>;
+}
+
+export interface V33LifeEventResult {
+  advisorNarrative: string;
+  clientSummary: string;
+  totalEventsDetected: number;
+  criticalEventCount: number;
+  events: V33DetectedLifeEvent[];
+  immediateActions: Array<{ action: string; owner: string; deadline: string }>;
+  planningDomainImpacts: Array<{ domain: string; impactLevel: "high" | "medium" | "low"; description: string }>;
+}
