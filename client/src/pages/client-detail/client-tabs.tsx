@@ -13,6 +13,7 @@ import { PortfolioSection } from "./portfolio-section";
 // Lazy loaded: All other tab sections. Each becomes its own code chunk,
 // loaded on first visit. Saves ~400-600KB from the initial bundle.
 // ---------------------------------------------------------------------------
+const PrepSection = React.lazy(() => import("./prep-section").then(m => ({ default: m.PrepSection })));
 const ComplianceTab = React.lazy(() => import("@/components/compliance-tab"));
 const ClientReportsSection = React.lazy(() => import("@/components/client-reports-section").then(m => ({ default: m.ClientReportsSection })));
 const MeetingsSection = React.lazy(() => import("./meetings-section").then(m => ({ default: m.MeetingsSection })));
@@ -154,6 +155,12 @@ export function ClientTabs({
               suggestedTasks={suggestedTasks}
               onSuggestedTaskAdded={(st: any) => setSuggestedTasks(prev => prev.filter(t => t.title !== st.title))}
             />
+          </div>
+        )}
+
+        {activeSection === "prep" && (
+          <div className="space-y-6">
+            <PrepSection clientId={clientId} />
           </div>
         )}
 

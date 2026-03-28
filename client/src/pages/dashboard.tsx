@@ -77,73 +77,7 @@ function SectionCard({ title, icon, dataTag, action, actionColor, children }: {
   );
 }
 
-/* ── My Day Section Header (minimal, single-column) ── */
-function MyDaySection({ title, icon, badge, badgeColor, action, children }: {
-  title: string; icon?: React.ReactNode; badge?: string;
-  badgeColor?: string; action?: React.ReactNode; children: React.ReactNode;
-}) {
-  return (
-    <div style={{ marginBottom: 24 }}>
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        paddingBottom: 8,
-        borderBottom: `1px solid ${P.odBorder}`,
-        marginBottom: 12,
-      }}>
-        {icon}
-        <span style={{
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          color: P.odT2,
-        }}>
-          {title}
-        </span>
-        {badge && (
-          <span style={{
-            fontSize: 10,
-            fontWeight: 700,
-            padding: "2px 8px",
-            borderRadius: 10,
-            background: (badgeColor || P.odOrange) + "20",
-            color: badgeColor || P.odOrange,
-          }}>
-            {badge}
-          </span>
-        )}
-        {action && <div style={{ marginLeft: "auto" }}>{action}</div>}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-/* ── Quick Link ── */
-function QuickLink({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        fontSize: 11,
-        fontWeight: 600,
-        color: P.odLBlue,
-        background: "none",
-        border: `1px solid ${P.odBorder}`,
-        borderRadius: 6,
-        padding: "6px 14px",
-        cursor: "pointer",
-        transition: "border-color 0.2s",
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.borderColor = P.odLBlue)}
-      onMouseLeave={(e) => (e.currentTarget.style.borderColor = P.odBorder)}
-    >
-      {label} →
-    </button>
-  );
-}
+/* MyDaySection + QuickLink removed — three-column layout uses inline module containers */
 
 // ═══════════════════════════════════════════════════════════════════
 // DASHBOARD
@@ -164,25 +98,16 @@ export default function Dashboard() {
   const { setTabs } = useNavPageTabs();
   const { recents } = useRecentClients();
 
-  // ── MY DAY QUERIES (4 total) ──────────────────────────────────
+  // ── MY DAY QUERIES ──────────────────────────────────────────
 
-  // 1. /api/myday — hero, urgency, ranked tasks, cases
+  // 1. /api/myday — hero, urgency, ranked tasks, cases, revenue progress, SF events, recent wins
   const { data: myDay, isLoading: myDayLoading } = useQuery<any>({
     queryKey: ["/api/myday"],
     staleTime: 30_000,
   });
 
-  // 2. /api/calendar/live — today's schedule (Outlook + SF)
+  // 2. /api/calendar/live — today's schedule (Outlook)
   // (consumed by TodaySchedule component directly)
-
-  // 3. /api/insights/dashboard — needs attention section
-  // (consumed by NeedsAttention component directly)
-
-  // 4. /api/engagement/actions — NBA for action queue
-  const { data: nbaData } = useQuery<{ actions: any[] }>({
-    queryKey: ["/api/engagement/actions"],
-    enabled: !!user,
-  });
 
   // ── QUERIES FOR OTHER TABS (only fetched when those tabs are active) ──
 
@@ -238,7 +163,7 @@ export default function Dashboard() {
         pageLabel: "My Day",
         fields: [
           { field: "Total AUM", source: myDay.isLiveData ? "orion" : "computed", value: myDay.totalAum, orionField: "portfolio.totalMarketValue", uiLocation: "Hero", apiEndpoint: "/api/myday", apiSource: "MuleSoft → Orion" },
-          { field: "Active Clients", source: myDay.isLiveData ? "salesforce" : "computed", value: myDay.activeClientCount, sfField: "Account", uiLocation: "Hero", apiEndpoint: "/api/myday", apiSource: "MuleSoft → Salesforce" },
+          { field: "Clients", source: myDay.isLiveData ? "salesforce" : "computed", value: myDay.clientCount, sfField: "Account", uiLocation: "Hero", apiEndpoint: "/api/myday", apiSource: "MuleSoft → Salesforce" },
           { field: "Open Cases", source: "salesforce", value: myDay.urgency?.openCases, uiLocation: "Urgency Strip", apiEndpoint: "/api/myday" },
           { field: "Overdue Tasks", source: "salesforce", value: myDay.urgency?.overdueTasks, uiLocation: "Urgency Strip", apiEndpoint: "/api/myday" },
         ],
@@ -272,8 +197,8 @@ export default function Dashboard() {
 
   const isLiveData = myDay?.isLiveData ?? false;
   const totalAum = myDay?.totalAum || 0;
-  const activeClients = myDay?.activeClientCount || myDay?.clientCount || 0;
-  const urgency = myDay?.urgency || { openCases: 0, overdueTasks: 0, staleOpps: 0, meetingsToday: 0 };
+  const clientCount = myDay?.clientCount || 0;
+  const urgency = myDay?.urgency || { openCases: 0, overdueTasks: 0, staleOpps: 0 };
 
   // Badge counts for tabs
   const openTaskCount = myDay?.urgency?.overdueTasks || clientStats?.openTasks || 0;
@@ -281,7 +206,7 @@ export default function Dashboard() {
 
   const pageTabs = [
     { label: "My Day" },
-    { label: "Portfolio Monitor", badge: activeClients || clientStats?.clientCount || 0, badgeColor: "blue" as const },
+    { label: "Portfolio Monitor", badge: clientCount || clientStats?.clientCount || 0, badgeColor: "blue" as const },
     { label: "Action Queue", badge: openTaskCount, badgeColor: "orange" as const },
     { label: "Alerts", badge: unreadAlerts, badgeColor: "orange" as const },
     { label: "Clients" },
@@ -293,7 +218,7 @@ export default function Dashboard() {
     setTabs(<PageTabs tabs={pageTabs} activeTab={activeTab} onTabChange={handleTabChange} />);
     return () => setTabs(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, activeClients, openTaskCount, unreadAlerts]);
+  }, [activeTab, clientCount, openTaskCount, unreadAlerts]);
 
   // Clear legacy widget order from localStorage on first load
   useEffect(() => {
@@ -322,116 +247,437 @@ export default function Dashboard() {
 
       {/* ═══ TAB: MY DAY ═══ */}
       {activeTab === "My Day" && (
-        <div style={{
-          maxWidth: 960,
-          margin: "0 auto",
-          padding: "0 24px 48px",
-        }}>
-          {/* SECTION 1: HERO */}
+        <div style={{ padding: "0 24px 48px" }}>
+          {/* HERO — full-width masthead */}
           <WallStreetHero
             greeting={greeting}
             firstName={firstName}
             lastName={lastName}
             totalAum={totalAum}
-            activeClients={activeClients}
-            meetingsToday={urgency.meetingsToday}
+            activeClients={clientCount}
+            meetingsToday={myDay?.briefing?.meetingsToday || 0}
             urgentCategories={myDay?.briefing?.urgentCategories || 0}
             isLiveData={isLiveData}
             isLoading={myDayLoading}
           />
 
-          {/* SECTION 2: URGENCY STRIP */}
-          <UrgencyStrip
-            openCases={urgency.openCases}
-            overdueTasks={urgency.overdueTasks}
-            staleOpps={urgency.staleOpps}
-            meetingsToday={urgency.meetingsToday}
-          />
-
-          {/* SECTION 2.5: CONTINUE WORKING (recent clients shortcut — hidden when empty) */}
-          {recents.length > 0 && (
-            <MyDaySection
-              title="Continue Working"
-              icon={<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="8" cy="8" r="6.5"/><path d="M8 4v4l2.5 1.5"/></svg>}
-            >
-              <ContinueWorking />
-            </MyDaySection>
-          )}
-
-          {/* SECTION 3: TODAY'S SCHEDULE */}
-          <MyDaySection
-            title="Today's Schedule"
-            icon={<SvgCal />}
-            badge={urgency.meetingsToday > 0 ? `${urgency.meetingsToday} today` : undefined}
-            badgeColor={P.odLBlue}
-            action={
-              <button
-                onClick={() => handleTabChange("Action Queue")}
-                style={{ fontSize: 11, color: P.odLBlue, background: "none", border: "none", cursor: "pointer" }}
-              >
-                See all meetings →
-              </button>
-            }
-          >
-            <TodaySchedule />
-          </MyDaySection>
-
-          {/* SECTION 4: ACTION QUEUE */}
-          <MyDaySection
-            title="Action Queue"
-            icon={<SvgCheck />}
-            badge={myDay?.tasks?.length > 0 ? `${myDay.tasks.length} pending` : undefined}
-            badgeColor={P.odYellow}
-            action={
-              <button
-                onClick={() => handleTabChange("Action Queue")}
-                style={{ fontSize: 11, color: P.odLBlue, background: "none", border: "none", cursor: "pointer" }}
-              >
-                See all tasks →
-              </button>
-            }
-          >
-            <MyDayActionQueue
-              tasks={myDay?.tasks || []}
-              nbaActions={nbaData?.actions || []}
-              onCompleteNba={(id) => completeNbaMutation.mutate(id)}
-              onDismissNba={(id) => dismissNbaMutation.mutate(id)}
-            />
-          </MyDaySection>
-
-          {/* SECTION 5: NEEDS ATTENTION */}
-          <MyDaySection
-            title="Needs Attention"
-            icon={<SvgAlert />}
-            action={
-              <button
-                onClick={() => handleTabChange("Alerts")}
-                style={{ fontSize: 11, color: P.odLBlue, background: "none", border: "none", cursor: "pointer" }}
-              >
-                See all alerts →
-              </button>
-            }
-          >
-            <NeedsAttention
-              cases={myDay?.cases || []}
-              onSeeAll={() => handleTabChange("Alerts")}
-            />
-          </MyDaySection>
-
-          {/* SECTION 6: QUICK LINKS */}
+          {/* THREE-COLUMN WORKSPACE */}
           <div style={{
-            display: "flex",
-            gap: 10,
-            flexWrap: "wrap",
-            paddingTop: 16,
-            borderTop: `1px solid ${P.odBorder}`,
+            display: "grid",
+            gridTemplateColumns: "240px 1fr 240px",
+            gap: 24,
+            marginTop: 12,
           }}>
-            <QuickLink label="All meetings" onClick={() => handleTabChange("Action Queue")} />
-            <QuickLink label="All tasks" onClick={() => handleTabChange("Action Queue")} />
-            <QuickLink label="Opportunities" onClick={() => handleTabChange("Opportunities")} />
-            <QuickLink label="Reports" onClick={() => handleTabChange("Reports")} />
-            <QuickLink label="Portfolio" onClick={() => handleTabChange("Portfolio Monitor")} />
+
+            {/* ── LEFT RAIL ── */}
+            <div style={{ minWidth: 0 }}>
+              {/* Urgency Bar */}
+              <div style={{
+                background: P.odSurf,
+                border: `1px solid ${P.odBorder2}`,
+                borderRadius: 6,
+                padding: "12px 16px",
+                marginBottom: 20,
+              }}>
+                <div style={{
+                  fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                  textTransform: "uppercase", color: P.odT1, marginBottom: 8,
+                  fontFamily: "'JetBrains Mono', monospace",
+                }}>Urgency</div>
+                <UrgencyStrip
+                  openCases={urgency.openCases}
+                  overdueTasks={urgency.overdueTasks}
+                  staleOpps={urgency.staleOpps}
+                />
+              </div>
+
+              {/* Stale Opportunities — top 3 most idle */}
+              {(myDay?.staleOppDetails?.length || 0) > 0 && (
+                <div style={{
+                  background: P.odSurf,
+                  border: `1px solid ${P.odBorder2}`,
+                  borderRadius: 6,
+                  padding: "12px 16px",
+                  marginBottom: 16,
+                }}>
+                  <div style={{
+                    fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                    textTransform: "uppercase", color: P.odT1, marginBottom: 8,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                  }}>
+                    <span>Stale Opportunities</span>
+                    <span style={{
+                      fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 3,
+                      border: `1px solid ${P.odBorder}`, color: P.odT3,
+                    }}>SF</span>
+                  </div>
+                  {myDay.staleOppDetails.map((opp: any, idx: number) => (
+                    <div key={opp.id} style={{
+                      padding: "8px 0",
+                      borderBottom: idx < myDay.staleOppDetails.length - 1 ? `1px solid ${P.odBorder}` : "none",
+                    }}>
+                      <div style={{
+                        fontSize: 13, fontWeight: 600, color: P.odT1,
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      }}>{opp.name}</div>
+                      <div style={{ fontSize: 10, color: P.odT4, fontFamily: "'DM Mono', monospace", marginTop: 2 }}>
+                        {opp.accountName}
+                        {opp.daysIdle != null ? ` · ${opp.daysIdle}d idle` : " · No activity date"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Needs Attention */}
+              <div style={{
+                background: P.odSurf,
+                border: `1px solid ${P.odBorder2}`,
+                borderRadius: 6,
+                padding: "12px 16px",
+              }}>
+                <div style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  marginBottom: 8,
+                }}>
+                  <div style={{
+                    fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                    textTransform: "uppercase", color: P.odT1,
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}>Needs Attention</div>
+                  <button
+                    onClick={() => handleTabChange("Alerts")}
+                    style={{ fontSize: 10, color: P.odLBlue, background: "none", border: "none", cursor: "pointer" }}
+                  >See all →</button>
+                </div>
+                <NeedsAttention
+                  cases={myDay?.cases || []}
+                  onSeeAll={() => handleTabChange("Alerts")}
+                />
+              </div>
+
+              {/* Reviews Due Soon — full-book, cache-backed */}
+              {myDay?._fullBookAvailable && (myDay?.reviewsDueSoon?.length || 0) > 0 && (
+                <div style={{
+                  background: P.odSurf,
+                  border: `1px solid ${P.odBorder2}`,
+                  borderRadius: 6,
+                  padding: "12px 16px",
+                  marginTop: 16,
+                }}>
+                  <div style={{
+                    fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                    textTransform: "uppercase", color: P.odT1, marginBottom: 8,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                  }}>
+                    <span>Reviews Due</span>
+                    <span style={{
+                      fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 3,
+                      border: `1px solid ${P.odBorder}`, color: P.odT3,
+                    }}>SF</span>
+                  </div>
+                  {myDay.reviewsDueSoon.map((r: any, idx: number) => (
+                    <div key={r.clientId} style={{
+                      padding: "8px 0",
+                      borderBottom: idx < myDay.reviewsDueSoon.length - 1 ? `1px solid ${P.odBorder}` : "none",
+                    }}>
+                      <div style={{
+                        fontSize: 13, fontWeight: 600, color: P.odT1,
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      }}>{r.clientName}</div>
+                      <div style={{ fontSize: 10, color: P.odT4, fontFamily: "'DM Mono', monospace", marginTop: 2 }}>
+                        {r.daysUntil < 0 ? `${Math.abs(r.daysUntil)}d overdue` : r.daysUntil === 0 ? "Due today" : `Due in ${r.daysUntil}d`}
+                        {r.segment ? ` · Tier ${r.segment}` : ""}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* ── CENTER WORKBENCH ── */}
+            <div style={{ minWidth: 0 }}>
+              {/* Today's Schedule */}
+              <div style={{
+                background: P.odSurf,
+                border: `1px solid ${P.odBorder2}`,
+                borderRadius: 6,
+                padding: "12px 20px",
+                marginBottom: 16,
+              }}>
+                <div style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  marginBottom: 8,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <SvgCal />
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
+                      textTransform: "uppercase", color: P.odT1,
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}>Today's Schedule</span>
+                    {(myDay?.briefing?.meetingsToday || 0) > 0 && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 10,
+                        background: P.odLBlue + "20", color: P.odLBlue,
+                      }}>{myDay.briefing.meetingsToday} today</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleTabChange("Action Queue")}
+                    style={{ fontSize: 10, color: P.odLBlue, background: "none", border: "none", cursor: "pointer" }}
+                  >See all meetings →</button>
+                </div>
+                <TodaySchedule sfEvents={myDay?.sfEvents} prepContexts={myDay?.prepContexts} aiAvailable={myDay?._aiAvailable} />
+              </div>
+
+              {/* Action Queue */}
+              <div style={{
+                background: P.odSurf,
+                border: `1px solid ${P.odBorder2}`,
+                borderRadius: 6,
+                padding: "12px 20px",
+              }}>
+                <div style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  marginBottom: 8,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <SvgCheck />
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
+                      textTransform: "uppercase", color: P.odT1,
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}>Action Queue</span>
+                    {(myDay?.tasks?.length || 0) > 0 && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 10,
+                        background: P.odYellow + "20", color: P.odYellow,
+                      }}>{myDay.tasks.length} pending</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleTabChange("Action Queue")}
+                    style={{ fontSize: 10, color: P.odLBlue, background: "none", border: "none", cursor: "pointer" }}
+                  >See all tasks →</button>
+                </div>
+                <MyDayActionQueue tasks={myDay?.tasks || []} />
+              </div>
+            </div>
+
+            {/* ── RIGHT RAIL ── */}
+            <div style={{ minWidth: 0 }}>
+              {/* Continue Working */}
+              {recents.length > 0 && (
+                <div style={{
+                  background: P.odSurf,
+                  border: `1px solid ${P.odBorder2}`,
+                  borderRadius: 6,
+                  padding: "12px 16px",
+                  marginBottom: 16,
+                }}>
+                  <div style={{
+                    fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                    textTransform: "uppercase", color: P.odT3, marginBottom: 6,
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}>Continue Working</div>
+                  <ContinueWorking />
+                </div>
+              )}
+
+              {/* Revenue Progress */}
+              <div style={{
+                background: P.odSurf,
+                border: `1px solid ${P.odBorder2}`,
+                borderRadius: 6,
+                padding: "12px 16px",
+                marginBottom: 16,
+              }}>
+                <div style={{
+                  fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                  textTransform: "uppercase", color: P.odT1, marginBottom: 10,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                }}>
+                  <span>Revenue Progress</span>
+                  <span style={{
+                    fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 3,
+                    border: `1px solid ${P.odBorder}`, color: P.odT3,
+                  }}>SF</span>
+                </div>
+                {(() => {
+                  const rp = myDay?.revenueProgress;
+                  if (!rp || (rp.ytdRecurringGoal === 0 && rp.ytdRecurringWon === 0)) {
+                    return <div style={{ fontSize: 12, color: P.odT4, fontStyle: "italic" }}>No revenue data available.</div>;
+                  }
+                  // If goal is below a sensible annual threshold, treat as "not set"
+                  const goalIsValid = rp.ytdRecurringGoal >= 1000;
+                  return (
+                    <div>
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontSize: 10, color: P.odT3, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>YTD Recurring Won</div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: P.odT1, fontFamily: "'JetBrains Mono', monospace" }}>
+                          ${rp.ytdRecurringWon >= 1e6 ? `${(rp.ytdRecurringWon / 1e6).toFixed(1)}M` : rp.ytdRecurringWon >= 1e3 ? `${(rp.ytdRecurringWon / 1e3).toFixed(0)}K` : rp.ytdRecurringWon.toFixed(0)}
+                        </div>
+                      </div>
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontSize: 10, color: P.odT3, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>YTD Goal</div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: P.odT2, fontFamily: "'JetBrains Mono', monospace" }}>
+                          {goalIsValid
+                            ? `$${rp.ytdRecurringGoal >= 1e6 ? `${(rp.ytdRecurringGoal / 1e6).toFixed(1)}M` : rp.ytdRecurringGoal >= 1e3 ? `${(rp.ytdRecurringGoal / 1e3).toFixed(0)}K` : rp.ytdRecurringGoal.toFixed(0)}`
+                            : "Goal not set"
+                          }
+                        </div>
+                      </div>
+                      {goalIsValid && (
+                        <div>
+                          <div style={{ fontSize: 10, color: P.odT3, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>% to Goal</div>
+                          <div style={{
+                            fontSize: 16, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+                            color: rp.pctToGoal >= 100 ? P.odGreen : rp.pctToGoal >= 70 ? P.odLBlue : rp.pctToGoal >= 40 ? P.odYellow : P.odT3,
+                          }}>
+                            {rp.pctToGoal.toFixed(0)}%
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+                {/* Non-recurring revenue — only when data exists */}
+                {(() => {
+                  const nr = myDay?.nonRecurringRevenue;
+                  if (!nr || (nr.ytdWon === 0 && nr.ytdGoal < 1000)) return null;
+                  const nrGoalValid = nr.ytdGoal >= 1000;
+                  return (
+                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${P.odBorder}` }}>
+                      <div style={{ fontSize: 10, color: P.odT3, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 4 }}>Non-Recurring</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: P.odT1, fontFamily: "'JetBrains Mono', monospace" }}>
+                        ${nr.ytdWon >= 1e6 ? `${(nr.ytdWon / 1e6).toFixed(1)}M` : nr.ytdWon >= 1e3 ? `${(nr.ytdWon / 1e3).toFixed(0)}K` : nr.ytdWon.toFixed(0)} won
+                      </div>
+                      <div style={{ fontSize: 12, color: P.odT2, fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>
+                        {nrGoalValid
+                          ? `Goal: $${nr.ytdGoal >= 1e6 ? `${(nr.ytdGoal / 1e6).toFixed(1)}M` : nr.ytdGoal >= 1e3 ? `${(nr.ytdGoal / 1e3).toFixed(0)}K` : nr.ytdGoal.toFixed(0)}`
+                          : "Goal not set"
+                        }
+                        {nrGoalValid && (
+                          <span style={{
+                            marginLeft: 8,
+                            fontWeight: 700,
+                            color: nr.pctToGoal >= 100 ? P.odGreen : nr.pctToGoal >= 70 ? P.odLBlue : nr.pctToGoal >= 40 ? P.odYellow : P.odT3,
+                          }}>
+                            {nr.pctToGoal.toFixed(0)}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Recent Wins — placeholder */}
+              <div style={{
+                background: P.odSurf,
+                border: `1px solid ${P.odBorder2}`,
+                borderRadius: 6,
+                padding: "12px 16px",
+              }}>
+                <div style={{
+                  fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                  textTransform: "uppercase", color: P.odT1, marginBottom: 8,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                }}>
+                  <span>Recent Wins</span>
+                  <span style={{
+                    fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 3,
+                    border: `1px solid ${P.odBorder}`, color: P.odT3,
+                  }}>SF</span>
+                </div>
+                {(() => {
+                  const wins = myDay?.recentWins || [];
+                  if (wins.length === 0) {
+                    return <div style={{ fontSize: 12, color: P.odT4, fontStyle: "italic" }}>No recent wins.</div>;
+                  }
+                  return wins.map((w: any) => (
+                    <div key={w.id} style={{
+                      padding: "8px 0",
+                      borderBottom: `1px solid ${P.odBorder}`,
+                    }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: P.odT1 }}>{w.name}</div>
+                      <div style={{ fontSize: 10, color: P.odT4, fontFamily: "'DM Mono', monospace" }}>
+                        {w.accountName}{w.amount > 0 ? ` · $${w.amount >= 1e6 ? `${(w.amount / 1e6).toFixed(1)}M` : w.amount >= 1e3 ? `${(w.amount / 1e3).toFixed(0)}K` : w.amount.toFixed(0)}` : ""}{w.closeDate ? ` · ${w.closeDate}` : ""}
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+
+              {/* Neglected Households — full-book, cache-backed */}
+              {myDay?._fullBookAvailable && (myDay?.neglectedHouseholds?.length || 0) > 0 && (
+                <div style={{
+                  background: P.odSurf,
+                  border: `1px solid ${P.odBorder2}`,
+                  borderRadius: 6,
+                  padding: "12px 16px",
+                  marginTop: 16,
+                }}>
+                  <div style={{
+                    fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                    textTransform: "uppercase", color: P.odT1, marginBottom: 8,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                  }}>
+                    <span>Review Aging</span>
+                    <span style={{
+                      fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 3,
+                      border: `1px solid ${P.odBorder}`, color: P.odT3,
+                    }}>SF</span>
+                  </div>
+                  {myDay.neglectedHouseholds.map((h: any, idx: number) => (
+                    <div key={h.clientId} style={{
+                      padding: "8px 0",
+                      borderBottom: idx < myDay.neglectedHouseholds.length - 1 ? `1px solid ${P.odBorder}` : "none",
+                    }}>
+                      <div style={{
+                        fontSize: 13, fontWeight: 600, color: P.odT1,
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      }}>{h.clientName}</div>
+                      <div style={{ fontSize: 10, color: P.odT4, fontFamily: "'DM Mono', monospace", marginTop: 2 }}>
+                        {h.daysSinceReview}d since last review
+                        {h.segment ? ` · Tier ${h.segment}` : ""}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Provenance footer — spans all 3 columns */}
+            <div style={{
+              gridColumn: "1 / -1",
+              marginTop: 8,
+              paddingTop: 12,
+              borderTop: `1px solid ${P.odBorder2}`,
+              fontSize: 10,
+              color: P.odT4,
+              fontFamily: "'JetBrains Mono', monospace",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}>
+            <span>
+              Sources: {isLiveData ? "Salesforce · Orion · Outlook" : "Local data"}
+            </span>
+            {myDay?.generatedAt && (
+              <span>
+                Last updated {new Date(myDay.generatedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+              </span>
+            )}
           </div>
+
+          </div>{/* end three-column grid */}
         </div>
       )}
 

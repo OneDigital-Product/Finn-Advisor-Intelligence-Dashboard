@@ -1,10 +1,17 @@
 "use client";
 
-import { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { useRecentClients, RecentClient } from "@/hooks/use-recent-clients";
+import { queryClient } from "@/lib/queryClient";
 import { P } from "@/styles/tokens";
+
+/* ── Compact currency formatter ── */
+function fmtAum(n: number): string {
+  if (n >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
+  if (n >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
+  if (n >= 1e3) return `$${(n / 1e3).toFixed(0)}K`;
+  return `$${n.toLocaleString()}`;
+}
 
 /* ── Config ── */
 const MAX_VISIBLE = 3;
@@ -28,28 +35,6 @@ export function ContinueWorking() {
   const router = useRouter();
   const { recents, addRecent } = useRecentClients();
 
-  // Tap into the meetings cache (TodaySchedule already populates this key with staleTime: Infinity)
-  const { data: meetingsData } = useQuery<any>({
-    queryKey: ["/api/meetings"],
-    staleTime: Infinity,      // never refetch — ride TodaySchedule's cache
-    enabled: recents.length > 0,
-  });
-
-  // Build a set of client IDs that have a meeting today
-  const meetingClientIds = useMemo(() => {
-    const ids = new Set<string>();
-    if (!meetingsData) return ids;
-    const meetings: any[] = Array.isArray(meetingsData) ? meetingsData : meetingsData?.meetings || [];
-    const today = new Date().toISOString().slice(0, 10);
-    for (const m of meetings) {
-      const mDate = (m.startTime || "").slice(0, 10);
-      if (mDate === today && m.clientId) {
-        ids.add(m.clientId);
-      }
-    }
-    return ids;
-  }, [meetingsData]);
-
   const visible = recents.slice(0, MAX_VISIBLE);
 
   // Don't render section if no recents
@@ -58,8 +43,10 @@ export function ContinueWorking() {
   return (
     <div>
       {visible.map((client: RecentClient, i: number) => {
-        const hasMeeting = meetingClientIds.has(client.id);
         const ago = timeAgo(client.viewedAt);
+        // Opportunistic AUM from existing summary cache — no fetch triggered
+        const cachedSummary = queryClient.getQueryData<any>(["/api/clients", client.id, "summary"]);
+        const aum = cachedSummary?.aum || cachedSummary?.client?.totalAum;
 
         return (
           <button
@@ -74,69 +61,63 @@ export function ContinueWorking() {
               alignItems: "center",
               gap: 10,
               width: "100%",
-              padding: "10px 12px",
+              padding: "12px 14px",
               marginBottom: i < visible.length - 1 ? 2 : 0,
               background: "transparent",
-              border: `1px solid transparent`,
+              border: "none",
               borderRadius: 6,
               cursor: "pointer",
               textAlign: "left",
               fontFamily: "inherit",
-              transition: "all .12s ease",
+              transition: "background .15s ease",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(79,179,205,0.04)";
-              e.currentTarget.style.borderColor = P.odBorder;
+              e.currentTarget.style.background = "rgba(79,179,205,0.05)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.borderColor = "transparent";
             }}
           >
-            {/* Name */}
+            {/* Two-line layout for narrow right rail */}
             <div style={{ flex: 1, minWidth: 0 }}>
+              {/* Line 1: Name */}
               <div style={{
                 fontSize: 13, fontWeight: 600, color: P.odT1,
                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
               }}>
                 {client.name}
               </div>
+              {/* Line 2: AUM + Tier + Time ago */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
+                {aum > 0 && (
+                  <span style={{
+                    fontSize: 11, color: P.odT3,
+                    fontFamily: "'JetBrains Mono', monospace", fontWeight: 500,
+                  }}>
+                    {fmtAum(aum)}
+                  </span>
+                )}
+                {client.segment && (
+                  <span style={{
+                    fontSize: 9, fontWeight: 600,
+                    padding: "1px 5px", borderRadius: 3,
+                    border: `1px solid ${P.odBorder}`,
+                    color: P.odT3,
+                    textTransform: "uppercase", letterSpacing: "0.04em",
+                  }}>
+                    Tier {client.segment}
+                  </span>
+                )}
+                {ago && (
+                  <span style={{
+                    fontSize: 10, color: P.odT4,
+                    fontFamily: "'DM Mono', monospace", fontWeight: 500,
+                  }}>
+                    {ago}
+                  </span>
+                )}
+              </div>
             </div>
-
-            {/* Meeting today indicator */}
-            {hasMeeting && (
-              <span style={{
-                fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
-                padding: "2px 7px", borderRadius: 4,
-                background: P.odLBlue + "18", color: P.odLBlue,
-                flexShrink: 0,
-              }}>
-                Meeting today
-              </span>
-            )}
-
-            {/* Segment/tier pill */}
-            {client.segment && (
-              <span style={{
-                fontSize: 9, fontWeight: 600,
-                padding: "2px 7px", borderRadius: 4,
-                border: `1px solid ${P.odBorder}`,
-                color: P.odT3, flexShrink: 0,
-                textTransform: "uppercase", letterSpacing: "0.04em",
-              }}>
-                Tier {client.segment}
-              </span>
-            )}
-
-            {/* Time ago */}
-            {ago && (
-              <span style={{
-                fontSize: 10, color: P.odT3, flexShrink: 0,
-                fontFamily: "'DM Mono', monospace", fontWeight: 500,
-              }}>
-                {ago}
-              </span>
-            )}
 
             {/* Arrow */}
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke={P.odT3}

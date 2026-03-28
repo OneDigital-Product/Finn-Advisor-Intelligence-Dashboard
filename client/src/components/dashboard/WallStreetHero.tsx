@@ -62,15 +62,18 @@ export default function WallStreetHero({
         gridTemplateColumns: "1fr auto",
         gap: 32,
         alignItems: "end",
-        padding: "32px 0 24px",
+        padding: "32px 24px 28px",
+        background: "linear-gradient(180deg, #1d2333 0%, #161b27 100%)",
+        borderBottom: "1px solid rgba(45,55,72,0.4)",
+        overflow: "visible",
       }}
     >
       {/* Left — Greeting + Name + Briefing */}
       <div>
         <div
           style={{
-            fontSize: 11,
-            fontWeight: 500,
+            fontSize: 12,
+            fontWeight: 600,
             letterSpacing: "0.08em",
             color: "var(--color-text-tertiary)",
             fontFamily: "'DM Mono', monospace",
@@ -79,7 +82,7 @@ export default function WallStreetHero({
           {greeting.toUpperCase()} · {dateStr}
         </div>
 
-        <div style={{ marginTop: 8 }}>
+        <div style={{ marginTop: 12 }}>
           <span
             style={{
               fontFamily: "'Oswald', sans-serif",
@@ -109,8 +112,9 @@ export default function WallStreetHero({
 
         <p
           style={{
-            marginTop: 12,
-            fontSize: 14,
+            marginTop: 16,
+            fontSize: 13,
+            fontWeight: 500,
             lineHeight: 1.5,
             color: "var(--color-text-secondary)",
             maxWidth: 420,
@@ -130,11 +134,11 @@ export default function WallStreetHero({
         <div>
           <div
             style={{
-              fontSize: 9,
-              fontWeight: 500,
+              fontSize: 10,
+              fontWeight: 700,
               letterSpacing: "0.1em",
               color: "var(--color-text-tertiary)",
-              fontFamily: "'DM Mono', monospace",
+              fontFamily: "'JetBrains Mono', monospace",
               textTransform: "uppercase",
             }}
           >
@@ -142,12 +146,13 @@ export default function WallStreetHero({
           </div>
           <div
             style={{
-              fontSize: 38,
+              fontSize: 46,
               fontWeight: 700,
-              fontFamily: "'DM Mono', monospace",
+              fontFamily: "'JetBrains Mono', monospace",
               color: "var(--color-brand-secondary)",
+              letterSpacing: "-0.02em",
               lineHeight: 1.1,
-              marginTop: 2,
+              marginTop: 4,
             }}
           >
             {isLoading ? "—" : fmtCompact(totalAum)}
@@ -158,24 +163,24 @@ export default function WallStreetHero({
         <div style={{ marginTop: 16 }}>
           <div
             style={{
-              fontSize: 9,
-              fontWeight: 500,
+              fontSize: 10,
+              fontWeight: 700,
               letterSpacing: "0.1em",
               color: "var(--color-text-tertiary)",
-              fontFamily: "'DM Mono', monospace",
+              fontFamily: "'JetBrains Mono', monospace",
               textTransform: "uppercase",
             }}
           >
-            Active Clients
+            Clients
           </div>
           <div
             style={{
-              fontSize: 24,
+              fontSize: 26,
               fontWeight: 700,
-              fontFamily: "'DM Mono', monospace",
+              fontFamily: "'JetBrains Mono', monospace",
               color: "var(--color-text-primary)",
               lineHeight: 1.1,
-              marginTop: 2,
+              marginTop: 4,
             }}
           >
             {isLoading ? "—" : activeClients.toLocaleString()}
@@ -190,7 +195,7 @@ export default function WallStreetHero({
               fontSize: 9,
               letterSpacing: "0.08em",
               color: "var(--color-success)",
-              fontFamily: "'DM Mono', monospace",
+              fontFamily: "'JetBrains Mono', monospace",
               textTransform: "uppercase",
             }}
           >

@@ -4,7 +4,6 @@ import { validateId } from "@lib/validation";
 import { storage } from "@server/storage";
 import { isMulesoftEnabled } from "@server/integrations/mulesoft/client";
 import {
-  getHouseholds as getLiveHouseholds,
   getClientsValue as getOrionClientsValue,
   getClientAccounts as getOrionClientAccounts,
   getClientAssets as getOrionClientAssets,
@@ -111,20 +110,7 @@ function parseCostBasis(raw: any): Map<string, number> {
   return map;
 }
 
-// Reuse globalThis cache from GET /api/clients
-const g = globalThis as any;
-if (!g._enrichedClientsCache) g._enrichedClientsCache = null;
-const ENRICHED_CLIENTS_TTL = 10 * 60 * 1000;
-
-function getCache(): {
-  data: any[];
-  totalAum: number;
-  advisor: any;
-  ts: number;
-  userEmail: string;
-} | null {
-  return g._enrichedClientsCache;
-}
+import { resolveClientFast } from "@server/lib/enriched-clients-cache";
 
 // Allocation bar color map
 const ALLOCATION_COLORS: Record<string, string> = {
@@ -165,45 +151,15 @@ export async function GET(request: Request, { params }: RouteContext) {
       // Step 1: Resolve SF household name (needed for Orion name matching)
       let householdName = "Unknown";
 
-      const cache = getCache();
-      const cacheHit =
-        cache &&
-        cache.userEmail === userEmail &&
-        Date.now() - cache.ts < ENRICHED_CLIENTS_TTL
-          ? cache.data.find((c: any) => c.id === id)
-          : null;
+      // Fast-path: cache hit → SF page 1 → full warm fallback
+      const cacheHit = await resolveClientFast(id, userEmail);
 
       if (cacheHit) {
         householdName =
           [cacheHit.firstName, cacheHit.lastName].filter(Boolean).join(" ") ||
           "Unknown";
       } else {
-        // Cache miss — paginate through SF to find the household
-        let offset = 0;
-        const pageSize = 50;
-        let sfHousehold: any = null;
-
-        while (!sfHousehold) {
-          const page = await getLiveHouseholds({
-            username: sfUsername!,
-            pageSize,
-            offset,
-          });
-          if (!page || !page.householdAccounts) break;
-
-          sfHousehold = page.householdAccounts.find(
-            (h: any) => h.Id === id
-          );
-
-          if (sfHousehold || !page.hasMore) break;
-          offset += pageSize;
-          if (offset > pageSize * 12) break;
-        }
-
-        if (!sfHousehold) {
-          throw new Error(`Household ${id} not found in Salesforce`);
-        }
-        householdName = sfHousehold.Name || "Unknown";
+        throw new Error(`Household ${id} not found in Salesforce`);
       }
 
       // Step 2: Find matching Orion client by fuzzy name match

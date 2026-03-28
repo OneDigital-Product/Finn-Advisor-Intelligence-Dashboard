@@ -17,11 +17,7 @@ import {
 import { logger } from "@server/lib/logger";
 import { resolveClientIdentity } from "@server/lib/client-identity";
 import { resolvePhone } from "@server/lib/resolve-phone";
-
-// Reuse globalThis cache from GET /api/clients
-const g = globalThis as any;
-if (!g._enrichedClientsCache) g._enrichedClientsCache = null;
-const ENRICHED_CLIENTS_TTL = 10 * 60 * 1000;
+import { getCache, isCacheValid, getCachedClient, resolveClientFast } from "@server/lib/enriched-clients-cache";
 
 // ── Per-client response cache ──
 // Short-circuits the entire monolithic handler when the same client
@@ -29,6 +25,7 @@ const ENRICHED_CLIENTS_TTL = 10 * 60 * 1000;
 // so repeat navigations never re-run the ~800 lines of SF+Orion transformation.
 const CLIENT_DETAIL_TTL = 10 * 60 * 1000; // 10 min — matches client-side staleTime + BoundedCache TTLs
 const MAX_CACHED_CLIENTS = 200;           // increased from 50 — covers full advisor book
+const g = globalThis as any;
 if (!g._clientDetailCache) g._clientDetailCache = new Map<string, { json: any; ts: number }>();
 const clientDetailCache: Map<string, { json: any; ts: number }> = g._clientDetailCache;
 
@@ -49,16 +46,6 @@ function setCachedClientDetail(key: string, json: any): void {
     if (oldest) clientDetailCache.delete(oldest);
   }
   clientDetailCache.set(key, { json, ts: Date.now() });
-}
-
-function getCache(): {
-  data: any[];
-  totalAum: number;
-  advisor: any;
-  ts: number;
-  userEmail: string;
-} | null {
-  return g._enrichedClientsCache;
 }
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -130,14 +117,8 @@ export async function GET(request: Request, { params }: RouteContext) {
     let sfHouseholdPage: any = null;
 
     try {
-      // Check the enriched client cache to avoid expensive SF pagination
-      const cache = getCache();
-      const cacheHit =
-        cache &&
-        cache.userEmail === userEmail &&
-        Date.now() - cache.ts < ENRICHED_CLIENTS_TTL
-          ? cache.data.find((c: any) => c.id === id)
-          : null;
+      // Fast-path: cache hit → SF page 1 → full warm fallback
+      const cacheHit = await resolveClientFast(id, userEmail);
 
       if (cacheHit) {
         const fullName = [cacheHit.firstName, cacheHit.lastName].filter(Boolean).join(" ");
@@ -163,33 +144,6 @@ export async function GET(request: Request, { params }: RouteContext) {
           sfHouseholdResult = null;
         }
         sfHouseholdPage = sfHouseholdResult;
-      } else {
-        // Cache miss — paginate through SF to find the household
-        let offset = 0;
-        const pageSize = 50; // SF response body limit prevents larger pages (~6MB max per response)
-        const MAX_PAGES = 5;
-        let pageCount = 0;
-
-        while (!sfHousehold && pageCount < MAX_PAGES) {
-          const page = await getLiveHouseholds({
-            username: sfUsername!,
-            pageSize,
-            offset,
-          });
-          if (!page || !page.householdAccounts) break;
-
-          if (!sfHouseholdResult) sfHouseholdResult = page;
-
-          sfHousehold = page.householdAccounts.find((h: any) => h.Id === id);
-          if (sfHousehold) sfHouseholdPage = page;
-
-          if (sfHousehold || !page.hasMore) break;
-          offset += pageSize;
-          pageCount++;
-        }
-        if (!sfHousehold && pageCount >= MAX_PAGES) {
-          logger.warn({ clientId: id, pageCount, totalSearched: pageCount * pageSize }, "Household not found after max pages");
-        }
       }
 
       if (!sfHousehold) {

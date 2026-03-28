@@ -14,23 +14,12 @@ interface RankedTask {
   source?: string;
 }
 
-interface NbaAction {
-  id: string;
-  title?: string;
-  actionType?: string;
-  clientName?: string;
-}
-
 interface MyDayActionQueueProps {
   tasks: RankedTask[];
-  nbaActions: NbaAction[];
-  onCompleteNba: (id: string) => void;
-  onDismissNba: (id: string) => void;
 }
 
 /* ── Constants ── */
 const INITIAL_TASKS = 5;
-const INITIAL_NBA = 3;
 
 /* ── Rank badge colors ── */
 function rankStyle(rank: number): { bg: string; fg: string } {
@@ -40,14 +29,13 @@ function rankStyle(rank: number): { bg: string; fg: string } {
 }
 
 /* ── Component ── */
-export function MyDayActionQueue({ tasks, nbaActions, onCompleteNba, onDismissNba }: MyDayActionQueueProps) {
+export function MyDayActionQueue({ tasks }: MyDayActionQueueProps) {
   const [expanded, setExpanded] = useState(false);
 
   const visibleTasks = expanded ? tasks : tasks.slice(0, INITIAL_TASKS);
-  const visibleNba = expanded ? nbaActions : nbaActions.slice(0, INITIAL_NBA);
-  const hiddenCount = Math.max(0, tasks.length - INITIAL_TASKS) + Math.max(0, nbaActions.length - INITIAL_NBA);
+  const hiddenCount = Math.max(0, tasks.length - INITIAL_TASKS);
 
-  if (tasks.length === 0 && nbaActions.length === 0) {
+  if (tasks.length === 0) {
     return (
       <div style={{ padding: "12px 0", color: P.odT3, fontSize: 13, fontStyle: "italic" }}>
         No pending tasks right now.
@@ -63,18 +51,41 @@ export function MyDayActionQueue({ tasks, nbaActions, onCompleteNba, onDismissNb
         return (
           <div key={task.id} style={{
             display: "flex", alignItems: "center", gap: 10,
-            padding: "8px 0", borderBottom: `1px solid ${P.odBorder}40`,
-          }}>
-            <input
-              type="checkbox"
-              style={{ accentColor: P.odGreen, width: 14, height: 14, cursor: "pointer" }}
+            padding: "14px 10px", margin: "0 -10px",
+            borderBottom: `1px solid ${P.odBorder}60`,
+            borderRadius: 6,
+            transition: "background .15s ease",
+            cursor: "default",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(79,179,205,0.05)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+          >
+            <button
+              style={{
+                width: 16, height: 16, borderRadius: 8,
+                border: `1.5px solid ${P.odT3}`,
+                background: "transparent",
+                cursor: "pointer", flexShrink: 0, padding: 0,
+                transition: "border-color .15s ease",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = P.odGreen; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = P.odT3; }}
             />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: P.odT1 }}>{task.subject}</div>
-              <div style={{ fontSize: 10, color: P.odT3, fontFamily: "'DM Mono', monospace" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: P.odT1 }}>{task.subject}</div>
+              <div style={{ fontSize: 10, color: P.odT4, fontFamily: "'DM Mono', monospace" }}>
                 {task.relatedTo}{task.dueDate ? ` · Due: ${task.dueDate}` : ""}
               </div>
             </div>
+            {task.priority?.toLowerCase() === "high" && (
+              <span style={{
+                fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
+                padding: "2px 6px", borderRadius: 4,
+                background: P.odOrange + "20", color: P.odOrange,
+              }}>
+                High
+              </span>
+            )}
             <span style={{
               fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
               padding: "2px 6px", borderRadius: 4,
@@ -91,28 +102,6 @@ export function MyDayActionQueue({ tasks, nbaActions, onCompleteNba, onDismissNb
           </div>
         );
       })}
-
-      {/* NBA suggested actions */}
-      {visibleNba.map((action) => (
-        <div key={action.id} style={{
-          display: "flex", alignItems: "center", gap: 10,
-          padding: "8px 0", borderBottom: `1px solid ${P.odBorder}40`,
-        }}>
-          <span style={{ fontSize: 14, color: P.odLBlue }}>●</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: P.odT1 }}>
-              {action.title || action.actionType?.replace(/_/g, " ")}
-            </div>
-            <div style={{ fontSize: 10, color: P.odT3 }}>{action.clientName}</div>
-          </div>
-          <div style={{ display: "flex", gap: 4 }}>
-            <button onClick={() => onCompleteNba(action.id)}
-              style={{ fontSize: 10, fontWeight: 600, color: P.odGreen, background: "none", border: "none", cursor: "pointer", padding: "2px 6px" }}>Done</button>
-            <button onClick={() => onDismissNba(action.id)}
-              style={{ fontSize: 10, fontWeight: 600, color: P.odT3, background: "none", border: "none", cursor: "pointer", padding: "2px 6px" }}>Skip</button>
-          </div>
-        </div>
-      ))}
 
       {/* Show more / Show less */}
       {!expanded && hiddenCount > 0 && (

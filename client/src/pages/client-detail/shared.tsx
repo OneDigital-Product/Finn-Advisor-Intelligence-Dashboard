@@ -20,6 +20,7 @@ import {
   Brain,
   ListTodo,
   ClipboardList,
+  ClipboardCheck,
   ScrollText,
   Receipt,
   Banknote,
@@ -45,6 +46,13 @@ const salesforceLogo = "/salesforce-logo.png";
 const orionLogo = "/orion_logo_no_bg.png";
 
 export const BASE_NAV_GROUPS = [
+  {
+    label: "Prep",
+    phase: 1,
+    sections: [
+      { id: "prep", label: "Meeting Prep", icon: ClipboardCheck },
+    ],
+  },
   {
     label: "Overview",
     phase: 1,

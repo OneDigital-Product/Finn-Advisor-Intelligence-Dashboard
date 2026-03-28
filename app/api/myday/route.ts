@@ -27,6 +27,8 @@ import {
   getHouseholds as getLiveHouseholds,
   getClientsValue as getOrionClientsValue,
 } from "@server/integrations/mulesoft/api";
+import { getCache, isCacheValid, warmEnrichedCache } from "@server/lib/enriched-clients-cache";
+import { isAIAvailable } from "@server/openai";
 
 // ── Task ranking helpers ─────────────────────────────────────────
 
@@ -145,18 +147,6 @@ export async function GET() {
           const totalAum = orionAccounts.reduce((sum, a) => sum + (a.totalValue || 0), 0);
           const clientCount = sfResult.totalSize || 0;
 
-          // Active client count (extrapolated from sample)
-          const households = sfResult?.householdAccounts || [];
-          const activeStatuses = new Set(["active", "client"]);
-          let activeClientCount = clientCount;
-          if (households.length > 0) {
-            const sampleActive = households.filter((h: any) => {
-              const status = (h.FinServ__Status__c || "").toLowerCase();
-              return activeStatuses.has(status) || status === "";
-            }).length;
-            activeClientCount = Math.round(clientCount * (sampleActive / households.length));
-          }
-
           // Urgency counts — from SF result
           const openCasesCount = sfResult?.openCases?.length || 0;
           const staleOppsCount = sfResult?.staleOpportunities?.length || 0;
@@ -165,11 +155,11 @@ export async function GET() {
           // Ranked tasks — top 8
           const allTasks = sfResult?.openTasks || [];
           const rankedTasks = rankTasks(allTasks, todayStr, weekEndStr).slice(0, 8);
-          const overdueCount = rankedTasks.filter((t) => t.rank === 1).length +
-            allTasks.filter((t: any) => {
-              const d = t.ActivityDate || t.DueDate;
-              return d && d < todayStr;
-            }).length;
+          // FIX: count overdue from full array only (was double-counting ranked + full)
+          const overdueCount = allTasks.filter((t: any) => {
+            const d = t.ActivityDate || t.DueDate;
+            return d && d < todayStr;
+          }).length;
 
           // Top 3 cases
           const topCases = (sfResult?.openCases || []).slice(0, 3).map((c: any) => ({
@@ -181,22 +171,204 @@ export async function GET() {
             createdDate: c.CreatedDate,
           }));
 
-          // Stale opps count only (≤5 is signal, >5 is noise → cap at meaningful)
-          const filteredStaleCount = Math.min(staleOppsCount, 20);
+          // Stale opps — show SF-provided count as-is
+          const staleCount = staleOppsCount;
+
+          // Revenue progress — from SF advisor record (already fetched)
+          const sfAdvisor = sfResult?.advisor || {};
+          const revenueProgress = {
+            ytdRecurringWon: parseFloat(sfAdvisor.recurringWonSalesThisYear || "0"),
+            ytdRecurringGoal: parseFloat(sfAdvisor.wmYtdRecurringSalesGoal || "0"),
+            pctToGoal: parseFloat(sfAdvisor.wmYtdRecurringSalesPctToGoal || "0"),
+          };
+
+          // SF Events — serialize detail for Today's Schedule (already fetched, was only counted)
+          const sfEvents = (sfResult?.upcomingEvents || []).slice(0, 10).map((e: any) => ({
+            id: e.Id,
+            subject: e.Subject || "Event",
+            startTime: e.StartDateTime || e.ActivityDateTime || "",
+            endTime: e.EndDateTime || "",
+            location: e.Location || "",
+            type: e.Type || e.EventSubtype || "",
+            whoName: e.Who?.Name || "",
+            whatName: e.What?.Name || "",
+            isAllDay: !!e.IsAllDayEvent,
+            source: "salesforce" as const,
+          }));
+
+          // Stale opportunity detail — top 3 most idle, for left-rail module
+          const staleOppDetails = (sfResult?.staleOpportunities || [])
+            .map((o: any) => {
+              const lastActivity = o.LastActivityDate || null;
+              const daysIdle = lastActivity
+                ? Math.floor((now.getTime() - new Date(lastActivity).getTime()) / 86_400_000)
+                : null;
+              return {
+                id: o.Id,
+                name: o.Name || "Opportunity",
+                accountName: o.Account?.Name || "",
+                stageName: o.StageName || "",
+                lastActivityDate: lastActivity,
+                daysIdle,
+              };
+            })
+            .sort((a: any, b: any) => (b.daysIdle ?? 9999) - (a.daysIdle ?? 9999))
+            .slice(0, 3);
+
+          // Recently closed opportunities — for Recent Wins module
+          const recentWins = (sfResult?.recentlyClosedOpportunities || []).slice(0, 3).map((o: any) => ({
+            id: o.Id,
+            name: o.Name || "Opportunity",
+            amount: parseFloat(o.Amount || "0"),
+            closeDate: o.CloseDate || "",
+            accountName: o.Account?.Name || "",
+          }));
+
+          // ── Full-book intelligence (from enriched clients cache) ──
+          let _fullBookAvailable = false;
+          let reviewsDueSoon: any[] = [];
+          let neglectedHouseholds: any[] = [];
+
+          const userEmail = advisor.email;
+          if (isCacheValid(userEmail)) {
+            _fullBookAvailable = true;
+            const cacheData = getCache()!.data;
+            const todayMs = now.getTime();
+            const thirtyDaysMs = 30 * 86_400_000;
+            const ninetyDaysMs = 90 * 86_400_000;
+
+            // Review Due Soon: nextReview within 30 days (including past-due)
+            const reviewCandidates: any[] = [];
+            for (const c of cacheData) {
+              if (!c.nextReview) continue;
+              const reviewDate = new Date(c.nextReview);
+              if (isNaN(reviewDate.getTime())) continue;
+              const daysUntil = Math.ceil((reviewDate.getTime() - todayMs) / 86_400_000);
+              if (daysUntil <= 30) {
+                reviewCandidates.push({
+                  clientId: c.id,
+                  clientName: [c.firstName, c.lastName].filter(Boolean).join(" "),
+                  segment: c.segment || "",
+                  nextReviewDate: c.nextReview,
+                  daysUntil,
+                });
+              }
+            }
+            reviewsDueSoon = reviewCandidates
+              .sort((a, b) => a.daysUntil - b.daysUntil)
+              .slice(0, 3);
+
+            // Neglected Households: lastReview > 90 days ago
+            const neglectedCandidates: any[] = [];
+            for (const c of cacheData) {
+              if (!c.lastReview) continue;
+              const lastDate = new Date(c.lastReview);
+              if (isNaN(lastDate.getTime())) continue;
+              const daysSince = Math.floor((todayMs - lastDate.getTime()) / 86_400_000);
+              if (daysSince > 90) {
+                neglectedCandidates.push({
+                  clientId: c.id,
+                  clientName: [c.firstName, c.lastName].filter(Boolean).join(" "),
+                  segment: c.segment || "",
+                  lastReviewDate: c.lastReview,
+                  daysSinceReview: daysSince,
+                });
+              }
+            }
+            neglectedHouseholds = neglectedCandidates
+              .sort((a, b) => b.daysSinceReview - a.daysSinceReview)
+              .slice(0, 3);
+          } else {
+            // Cache cold — trigger background warming for next request
+            warmEnrichedCache(advisor.email).catch(() => {});
+          }
+
+          // ── SF Event client resolution + prep context (cache-backed) ──
+          const normalizeName = (s: string) => (s || "").trim().replace(/\s+/g, " ").toLowerCase();
+          const prepContexts: any[] = [];
+
+          if (_fullBookAvailable) {
+            const cacheData = getCache()!.data;
+
+            for (const evt of sfEvents) {
+              if (!evt.whatName) {
+                prepContexts.push({
+                  eventId: evt.id, eventSubject: evt.subject, eventStartTime: evt.startTime,
+                  clientId: null, clientName: null, matchConfidence: "none",
+                  aum: null, segment: null, status: null, serviceModel: null,
+                  reviewFrequency: null, lastReview: null, nextReview: null,
+                  matchedTasks: [], matchedCases: [], matchedRecentWin: null,
+                  _taskCountIsPartial: true as const, _caseCountIsPartial: true as const,
+                });
+                continue;
+              }
+
+              const target = normalizeName(evt.whatName);
+              const matched = cacheData.find((c: any) =>
+                normalizeName((c.firstName || "") + " " + (c.lastName || "")) === target
+              );
+
+              if (matched) {
+                // Inject visible context into the sfEvent object
+                evt.clientContext = {
+                  clientId: matched.id,
+                  aum: matched.totalAum || 0,
+                  segment: matched.segment || "",
+                };
+
+                // Build prep context with partial task/case matching
+                const clientNameNorm = normalizeName(evt.whatName);
+                const matchedTasks = rankedTasks
+                  .filter((t: any) => normalizeName(t.relatedTo) === clientNameNorm)
+                  .map((t: any) => ({ subject: t.subject, dueDate: t.dueDate, rankLabel: t.rankLabel }));
+                const matchedCases = topCases
+                  .filter((c: any) => normalizeName(c.accountName) === clientNameNorm)
+                  .map((c: any) => ({ subject: c.subject, priority: c.priority }));
+                const matchedWin = recentWins.find((w: any) => normalizeName(w.accountName) === clientNameNorm);
+
+                prepContexts.push({
+                  eventId: evt.id, eventSubject: evt.subject, eventStartTime: evt.startTime,
+                  clientId: matched.id, clientName: evt.whatName, matchConfidence: "exact",
+                  aum: matched.totalAum || null, segment: matched.segment || null,
+                  status: matched.status || null, serviceModel: matched.serviceModel || null,
+                  reviewFrequency: matched.reviewFrequency || null,
+                  lastReview: matched.lastReview || null, nextReview: matched.nextReview || null,
+                  matchedTasks, matchedCases,
+                  matchedRecentWin: matchedWin ? { name: matchedWin.name, amount: matchedWin.amount, closeDate: matchedWin.closeDate } : null,
+                  _taskCountIsPartial: true as const, _caseCountIsPartial: true as const,
+                });
+              } else {
+                prepContexts.push({
+                  eventId: evt.id, eventSubject: evt.subject, eventStartTime: evt.startTime,
+                  clientId: null, clientName: null, matchConfidence: "none",
+                  aum: null, segment: null, status: null, serviceModel: null,
+                  reviewFrequency: null, lastReview: null, nextReview: null,
+                  matchedTasks: [], matchedCases: [], matchedRecentWin: null,
+                  _taskCountIsPartial: true as const, _caseCountIsPartial: true as const,
+                });
+              }
+            }
+          }
+
+          // ── Instrumentation ──
+          const matchedCount = prepContexts.filter((p: any) => p.matchConfidence === "exact").length;
+          logger.info({
+            sfEventCount: sfEvents.length,
+            matchedCount,
+            _fullBookAvailable,
+          }, "[MyDay] SF Event match instrumentation");
 
           return NextResponse.json({
             // Book snapshot
             totalAum,
             clientCount,
-            activeClientCount,
             advisorName: sfResult?.advisor?.name || advisor.name,
 
             // Urgency counts
             urgency: {
               openCases: openCasesCount,
               overdueTasks: overdueCount,
-              staleOpps: filteredStaleCount,
-              meetingsToday: upcomingEventsCount, // will be supplemented by /api/calendar/live on client
+              staleOpps: staleCount,
             },
 
             // Ranked task list (top 8)
@@ -205,20 +377,49 @@ export async function GET() {
             // Top cases (top 3)
             cases: topCases,
 
+            // SF Events (for schedule enrichment)
+            sfEvents,
+
+            // Stale opportunity detail (top 3 most idle)
+            staleOppDetails,
+
+            // Revenue progress
+            revenueProgress,
+
+            // Non-recurring revenue progress (from SF advisor record)
+            nonRecurringRevenue: {
+              ytdWon: parseFloat(sfAdvisor.ytdWmNonRecurringWonSales || "0"),
+              ytdGoal: parseFloat(sfAdvisor.wmYtdNonRecurringSalesGoal || "0"),
+              pctToGoal: parseFloat(sfAdvisor.wmYtdNonRecurringSalesPctToGoal || "0"),
+            },
+
+            // Recently closed opportunities (for Recent Wins)
+            recentWins,
+
             // Briefing sentence data
             briefing: {
               meetingsToday: upcomingEventsCount,
               urgentCategories: [
                 openCasesCount > 0 ? "open cases" : null,
                 overdueCount > 0 ? "overdue tasks" : null,
-                filteredStaleCount > 0 ? "stale opportunities" : null,
+                staleCount > 0 ? "stale opportunities" : null,
               ].filter(Boolean).length,
             },
 
+            // Full-book intelligence (cache-backed)
+            _fullBookAvailable,
+            reviewsDueSoon,
+            neglectedHouseholds,
+
+            // Prep contexts (hidden — for future AI summarization)
+            prepContexts,
+
             // Metadata
+            _aiAvailable: isAIAvailable(),
             isLiveData: true,
             isDemoData: false,
             source: "mulesoft",
+            generatedAt: now.toISOString(),
           }, {
             headers: { "Cache-Control": "private, max-age=30, stale-while-revalidate=120" },
           });
@@ -293,18 +494,21 @@ export async function GET() {
     return NextResponse.json({
       totalAum,
       clientCount,
-      activeClientCount,
       advisorName: advisor.name,
 
       urgency: {
         openCases: urgentAlerts.length,
         overdueTasks: overdueCount,
         staleOpps: 0,
-        meetingsToday: todayMeetings.length,
       },
 
       tasks: localRanked,
       cases: topCases,
+      sfEvents: [],
+      staleOppDetails: [],
+      revenueProgress: { ytdRecurringWon: 0, ytdRecurringGoal: 0, pctToGoal: 0 },
+      nonRecurringRevenue: { ytdWon: 0, ytdGoal: 0, pctToGoal: 0 },
+      recentWins: [],
 
       briefing: {
         meetingsToday: todayMeetings.length,
@@ -314,9 +518,16 @@ export async function GET() {
         ].filter(Boolean).length,
       },
 
+      _fullBookAvailable: false,
+      reviewsDueSoon: [],
+      neglectedHouseholds: [],
+      prepContexts: [],
+
+      _aiAvailable: isAIAvailable(),
       isLiveData: false,
       isDemoData: true,
       source: "local-db",
+      generatedAt: now.toISOString(),
     }, {
       headers: { "Cache-Control": "private, max-age=30, stale-while-revalidate=120" },
     });

@@ -16,7 +16,20 @@ const persister = createSyncStoragePersister({
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 30 * 60 * 1000 }}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister,
+        maxAge: 30 * 60 * 1000,
+        // Never persist failed queries — a cold-cache 404 should not be
+        // replayed on the next page load. Only successful data is persisted.
+        dehydrateOptions: {
+          shouldDehydrateQuery: (query) => {
+            return query.state.status === "success" && query.state.data != null;
+          },
+        },
+      }}
+    >
       <ThemeProvider>
         <TooltipProvider>
           <ErrorBoundary level="root">

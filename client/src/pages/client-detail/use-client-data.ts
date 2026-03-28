@@ -17,17 +17,21 @@ export function useClientData(propParams?: { id?: string }) {
   const clientId = params.id!;
 
   // Tier 1: Fast summary (< 1s) — populates header immediately
-  // staleTime matches server-side ENRICHED_CLIENTS_TTL (10 min) so we never
-  // refetch when the server would just return the same cached response.
+  // On cold-cache miss the server warms SF data (~3-26s). If this fails
+  // transiently, the query MUST throw (not return null) so React Query
+  // marks it as an error. refetchOnMount ensures a reload retries.
   const { data: summaryData, isLoading: summaryLoading } = useQuery<any>({
     queryKey: ["/api/clients", clientId, "summary"],
     queryFn: async () => {
       const res = await fetch(`/api/clients/${clientId}/summary`, { credentials: "include" });
-      if (!res.ok) return null;
+      if (!res.ok) throw new Error(`Summary fetch failed: ${res.status}`);
       return res.json();
     },
     enabled: !!clientId,
     staleTime: 10 * 60 * 1000,
+    refetchOnMount: "always",   // always re-check on mount — catches stale persisted failures
+    retry: 2,                   // retry twice (cold-cache warming may take multiple seconds)
+    retryDelay: 3000,           // 3s between retries — gives server time to warm cache
   });
 
   // Tier 2: Portfolio data (accounts, holdings, allocation)
@@ -35,11 +39,14 @@ export function useClientData(propParams?: { id?: string }) {
     queryKey: ["/api/clients", clientId, "portfolio"],
     queryFn: async () => {
       const res = await fetch(`/api/clients/${clientId}/portfolio`, { credentials: "include" });
-      if (!res.ok) return null;
+      if (!res.ok) throw new Error(`Portfolio fetch failed: ${res.status}`);
       return res.json();
     },
     enabled: !!clientId,
     staleTime: 10 * 60 * 1000,
+    refetchOnMount: "always",
+    retry: 2,
+    retryDelay: 3000,
   });
 
   // Tier 2: Household members (changes rarely — monthly/quarterly)
@@ -47,11 +54,14 @@ export function useClientData(propParams?: { id?: string }) {
     queryKey: ["/api/clients", clientId, "members"],
     queryFn: async () => {
       const res = await fetch(`/api/clients/${clientId}/members`, { credentials: "include" });
-      if (!res.ok) return null;
+      if (!res.ok) throw new Error(`Members fetch failed: ${res.status}`);
       return res.json();
     },
     enabled: !!clientId,
     staleTime: 10 * 60 * 1000,
+    refetchOnMount: "always",
+    retry: 2,
+    retryDelay: 3000,
   });
 
   // Tier 2: Lightweight stats — task/opportunity counts for stat bar (SF-only, fast)
@@ -59,11 +69,14 @@ export function useClientData(propParams?: { id?: string }) {
     queryKey: ["/api/clients", clientId, "stats-lite"],
     queryFn: async () => {
       const res = await fetch(`/api/clients/${clientId}/activity-stats`, { credentials: "include" });
-      if (!res.ok) return null;
+      if (!res.ok) throw new Error(`Stats fetch failed: ${res.status}`);
       return res.json();
     },
     enabled: !!clientId,
     staleTime: 5 * 60 * 1000,
+    refetchOnMount: "always",
+    retry: 2,
+    retryDelay: 3000,
   });
 
   // Monolithic endpoint — DEFERRED until a below-fold section actually needs it.

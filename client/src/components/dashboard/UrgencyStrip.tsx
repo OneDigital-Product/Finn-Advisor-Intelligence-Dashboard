@@ -6,43 +6,40 @@ interface UrgencyStripProps {
   openCases: number;
   overdueTasks: number;
   staleOpps: number;
-  meetingsToday: number;
 }
 
-function Badge({
+function CountRow({
   count,
   label,
   color,
-  dimColor,
+  isLast,
 }: {
   count: number;
   label: string;
   color: string;
-  dimColor: string;
+  isLast?: boolean;
 }) {
-  const isActive = count > 0;
   return (
     <div
       style={{
         display: "flex",
-        flexDirection: "column",
         alignItems: "center",
-        padding: "10px 16px",
-        borderRadius: 8,
-        border: `1px solid ${isActive ? color + "40" : P.odBorder}`,
-        background: isActive ? color + "10" : "transparent",
-        minWidth: 100,
-        opacity: isActive ? 1 : 0.4,
+        gap: 12,
+        padding: "10px 0",
+        borderBottom: isLast ? "none" : `1px solid ${P.odBorder}`,
+        opacity: count > 0 ? 1 : 0.5,
         transition: "opacity 0.2s",
       }}
     >
       <span
         style={{
-          fontSize: 22,
+          fontSize: 20,
           fontWeight: 700,
-          fontFamily: "'DM Mono', monospace",
-          color: isActive ? color : dimColor,
+          fontFamily: "'JetBrains Mono', monospace",
+          color: count > 0 ? color : P.odT3,
           lineHeight: 1,
+          minWidth: 28,
+          textAlign: "right",
         }}
       >
         {count}
@@ -53,8 +50,7 @@ function Badge({
           fontWeight: 600,
           letterSpacing: "0.06em",
           textTransform: "uppercase",
-          color: isActive ? color : dimColor,
-          marginTop: 4,
+          color: P.odT3,
         }}
       >
         {label}
@@ -63,20 +59,12 @@ function Badge({
   );
 }
 
-export function UrgencyStrip({ openCases, overdueTasks, staleOpps, meetingsToday }: UrgencyStripProps) {
+export function UrgencyStrip({ openCases, overdueTasks, staleOpps }: UrgencyStripProps) {
   return (
-    <div
-      style={{
-        display: "flex",
-        gap: 12,
-        flexWrap: "wrap",
-        padding: "12px 0",
-      }}
-    >
-      <Badge count={openCases} label="Open Cases" color={P.odOrange} dimColor={P.odT3} />
-      <Badge count={overdueTasks} label="Overdue Tasks" color="#E53E3E" dimColor={P.odT3} />
-      <Badge count={staleOpps} label="Stale Opps" color={P.odYellow} dimColor={P.odT3} />
-      <Badge count={meetingsToday} label="Today's Meetings" color={P.odLBlue} dimColor={P.odT3} />
+    <div>
+      <CountRow count={openCases} label="Open Cases" color={P.odOrange} />
+      <CountRow count={overdueTasks} label="Overdue Tasks" color="#E53E3E" />
+      <CountRow count={staleOpps} label="Stale Opps" color={P.odYellow} isLast />
     </div>
   );
 }

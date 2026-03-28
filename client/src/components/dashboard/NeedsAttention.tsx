@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 import { P } from "@/styles/tokens";
 
 interface NeedsAttentionProps {
@@ -19,69 +18,35 @@ interface NeedsAttentionProps {
   onSeeAll?: () => void;
 }
 
-interface InsightItem {
-  id: string;
-  title: string;
-  description: string;
-  severity: string;
-  insightType: string;
-  isRead: boolean;
-  isDismissed: boolean;
-}
-
 /**
  * Needs Attention — unified section merging:
  * 1. Active risks / cases (from /api/myday)
- * 2. Material AI insights (from /api/insights/dashboard)
- * 3. Profile reminders (from /api/reminders/pending)
+ * 2. Profile reminders (from /api/reminders/pending)
  *
- * Ranked by: cases → high-severity insights → reminders → lower insights
+ * Ranked by: cases → reminders
  * Shows top 3 by default, "Show more" for 4-5.
  */
 export function NeedsAttention({ cases, onSeeAll }: NeedsAttentionProps) {
   const [expanded, setExpanded] = useState(false);
 
-  // Insights query (already one of our 4 approved endpoints)
-  const { data: insightsData } = useQuery<{ recent: InsightItem[]; high: number }>({
-    queryKey: ["/api/insights/dashboard"],
-    queryFn: async () => {
-      const res = await fetch("/api/insights/dashboard", { credentials: "include" });
-      if (!res.ok) return { recent: [], high: 0 };
-      return res.json();
-    },
-    staleTime: 60_000,
-  });
-
-  // Reminders query (lightweight, local DB only)
-  const { data: remindersData } = useQuery<{ expired: any[]; expiringSoon: any[] }>({
+  // Reminders query — returns flat PendingReminder[] from local DB
+  const { data: remindersRaw } = useQuery<any[]>({
     queryKey: ["/api/reminders/pending"],
     queryFn: async () => {
       const res = await fetch("/api/reminders/pending", { credentials: "include" });
-      if (!res.ok) return { expired: [], expiringSoon: [] };
-      return res.json();
+      if (!res.ok) return [];
+      const data = await res.json();
+      // API returns flat array or { expired, expiringSoon } — normalize to flat array
+      return Array.isArray(data) ? data : [...(data.expired || []), ...(data.expiringSoon || [])];
     },
     staleTime: 300_000,
-  });
-
-  const markReadMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await apiRequest("PATCH", `/api/insights/${id}/read`);
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/insights/dashboard"] }),
-  });
-
-  const dismissMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await apiRequest("PATCH", `/api/insights/${id}/dismiss`);
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/insights/dashboard"] }),
   });
 
   // Merge and rank all items
   const items = useMemo(() => {
     const merged: Array<{
       id: string;
-      type: "case" | "insight" | "reminder";
+      type: "case" | "reminder";
       title: string;
       subtitle: string;
       severity: "critical" | "high" | "medium" | "low";
@@ -90,46 +55,47 @@ export function NeedsAttention({ cases, onSeeAll }: NeedsAttentionProps) {
 
     // 1. Cases (highest priority)
     (cases || []).forEach((c) => {
+      // Case age — compact relative time
+      let ageStr = "";
+      if (c.createdDate) {
+        const days = Math.floor((Date.now() - new Date(c.createdDate).getTime()) / 86_400_000);
+        if (days >= 0 && days < 1) ageStr = " · today";
+        else if (days === 1) ageStr = " · 1d ago";
+        else if (days < 14) ageStr = ` · ${days}d ago`;
+        else if (days < 60) ageStr = ` · ${Math.floor(days / 7)}w ago`;
+        else ageStr = ` · ${Math.floor(days / 30)}mo ago`;
+      }
       merged.push({
         id: `case-${c.id}`,
         type: "case",
         title: c.subject,
-        subtitle: c.accountName || c.status,
+        subtitle: (c.accountName || c.status) + ageStr,
         severity: c.priority?.toLowerCase() === "high" ? "high" : "medium",
         actions: [],
       });
     });
 
-    // 2. High-severity insights
-    const insights = (insightsData?.recent || []).filter(
-      (i) => !i.isDismissed && (i.severity === "high" || i.severity === "critical")
-    );
-    insights.slice(0, 3).forEach((i) => {
+    // 2. Reminders — individual items (max 1 expired + 1 expiring soon)
+    const allReminders = remindersRaw || [];
+    const topExpired = allReminders.filter((r: any) => r.status === "expired" || (r.daysUntilExpiration != null && r.daysUntilExpiration <= 0)).slice(0, 1);
+    const topExpiring = allReminders.filter((r: any) => r.status !== "expired" && r.daysUntilExpiration != null && r.daysUntilExpiration > 0).slice(0, 1);
+    for (const r of topExpired) {
       merged.push({
-        id: `insight-${i.id}`,
-        type: "insight",
-        title: i.title,
-        subtitle: i.description?.slice(0, 80) || "",
-        severity: i.severity as any,
-        actions: [
-          ...(!i.isRead ? [{ label: "Read", onClick: () => markReadMutation.mutate(i.id) }] : []),
-          { label: "Dismiss", onClick: () => dismissMutation.mutate(i.id) },
-        ],
-      });
-    });
-
-    // 3. Reminders (profile expirations)
-    const expiredCount = remindersData?.expired?.length || 0;
-    const soonCount = remindersData?.expiringSoon?.length || 0;
-    if (expiredCount + soonCount > 0) {
-      merged.push({
-        id: "reminders",
+        id: `reminder-exp-${r.profileId || r.clientId}`,
         type: "reminder",
-        title: `${expiredCount + soonCount} profiles need review`,
-        subtitle: expiredCount > 0
-          ? `${expiredCount} expired · ${soonCount} expiring soon`
-          : `${soonCount} expiring within 30 days`,
-        severity: expiredCount > 0 ? "high" : "medium",
+        title: r.clientName || "Client",
+        subtitle: `${r.profileType || "Profile"} review — expired`,
+        severity: "high",
+        actions: [],
+      });
+    }
+    for (const r of topExpiring) {
+      merged.push({
+        id: `reminder-soon-${r.profileId || r.clientId}`,
+        type: "reminder",
+        title: r.clientName || "Client",
+        subtitle: `${r.profileType || "Profile"} review — expires in ${r.daysUntilExpiration} days`,
+        severity: "medium",
         actions: [],
       });
     }
@@ -139,7 +105,7 @@ export function NeedsAttention({ cases, onSeeAll }: NeedsAttentionProps) {
     merged.sort((a, b) => (sevOrder[a.severity] ?? 2) - (sevOrder[b.severity] ?? 2));
 
     return merged;
-  }, [cases, insightsData, remindersData, markReadMutation, dismissMutation]);
+  }, [cases, remindersRaw]);
 
   const visible = expanded ? items : items.slice(0, 3);
   const hasMore = items.length > 3;
@@ -160,9 +126,8 @@ export function NeedsAttention({ cases, onSeeAll }: NeedsAttentionProps) {
   };
 
   const typeIcon: Record<string, string> = {
-    case: "⚠",
-    insight: "◉",
-    reminder: "○",
+    case: "\u26A0",
+    reminder: "\u25CB",
   };
 
   return (
@@ -174,22 +139,28 @@ export function NeedsAttention({ cases, onSeeAll }: NeedsAttentionProps) {
             display: "flex",
             alignItems: "flex-start",
             gap: 10,
-            padding: "10px 0",
+            padding: "12px 10px",
+            margin: "0 -10px",
             borderBottom: `1px solid ${P.odBorder}`,
+            borderRadius: 6,
+            transition: "background .15s ease",
+            cursor: "default",
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(79,179,205,0.05)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         >
           <span
             style={{
-              fontSize: 14,
+              fontSize: 16,
               color: sevColor[item.severity] || P.odT3,
-              marginTop: 2,
+              marginTop: 1,
               flexShrink: 0,
             }}
           >
-            {typeIcon[item.type] || "●"}
+            {typeIcon[item.type] || "\u25CF"}
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: P.odT1 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: P.odT1 }}>
               {item.title}
             </div>
             <div style={{ fontSize: 11, color: P.odT3, marginTop: 2 }}>
@@ -206,7 +177,7 @@ export function NeedsAttention({ cases, onSeeAll }: NeedsAttentionProps) {
                     fontSize: 10,
                     fontWeight: 600,
                     padding: "3px 8px",
-                    borderRadius: 4,
+                    borderRadius: 6,
                     border: `1px solid ${P.odBorder}`,
                     background: "transparent",
                     color: P.odT2,
