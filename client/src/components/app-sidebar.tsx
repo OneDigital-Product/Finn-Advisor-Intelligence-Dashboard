@@ -8,6 +8,7 @@ import {
   Lightbulb, Wrench, UserPlus, LogOut,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useQueryClient } from "@tanstack/react-query";
 import { EASE } from "@/styles/tokens";
 import { AnimatedLogo, triggerLogoAnimation } from "@/components/AnimatedLogo";
 
@@ -114,6 +115,9 @@ const NAV_GROUPS: NavGroup[] = [
 export function NavRail({ children }: { children?: ReactNode }) {
   const { tabs: ctxTabs } = useContext(NavPageTabsCtx);
   const location = usePathname();
+  const qClient = useQueryClient();
+  const myDayCached = qClient.getQueryData<any>(["/api/myday"]);
+  const overdueCount = myDayCached?.urgency?.overdueTasks || 0;
   const router = useRouter();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [hov, setHov] = useState<string | null>(null);
@@ -200,6 +204,16 @@ export function NavRail({ children }: { children?: ReactNode }) {
               >
                 <Ic name={item.icon} size={14} />
                 {item.l}
+                {item.id === "/" && overdueCount > 0 && (
+                  <span style={{
+                    position: "absolute", top: 2, right: 2,
+                    minWidth: 16, height: 16, borderRadius: 8,
+                    background: "#E53E3E", color: "#fff",
+                    fontSize: 9, fontWeight: 700,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    padding: "0 4px",
+                  }}>{overdueCount > 99 ? "99+" : overdueCount}</span>
+                )}
               </button>
             );
           })}

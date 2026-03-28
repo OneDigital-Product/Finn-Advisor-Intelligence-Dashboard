@@ -234,6 +234,68 @@ function DeEscalationScripts() {
   );
 }
 
+function MeetingCoachingCard({ entry }: { entry: any }) {
+  const [expanded, setExpanded] = useState(false);
+  const sentCfg = SENTIMENT_CONFIG[entry.sentiment] || SENTIMENT_CONFIG.neutral;
+
+  return (
+    <div
+      className="border rounded-lg p-3 cursor-pointer hover:bg-muted/30 transition-colors"
+      onClick={() => setExpanded(!expanded)}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            {entry.date ? new Date(entry.date).toLocaleDateString() : "—"}
+          </span>
+          <Badge variant="outline" className={`text-[10px] ${sentCfg.color}`}>
+            {sentCfg.label} {entry.sentimentScore != null && `(${entry.sentimentScore})`}
+          </Badge>
+        </div>
+        <div className="flex items-center gap-2">
+          {entry.behavioralRiskScore != null && (
+            <span className="text-xs font-mono" style={{
+              color: entry.behavioralRiskScore > 70 ? "#dc2626" : entry.behavioralRiskScore > 40 ? "#d97706" : "#16a34a",
+            }}>
+              Risk: {entry.behavioralRiskScore}
+            </span>
+          )}
+          {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+        </div>
+      </div>
+      {(entry.detectedBiases || []).length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-1.5">
+          {(entry.detectedBiases || []).slice(0, 3).map((b: any, j: number) => (
+            <Badge key={j} variant="outline" className="text-[10px]">
+              {typeof b === "string" ? b : b.biasType || b.type || b.name}
+            </Badge>
+          ))}
+        </div>
+      )}
+      {expanded && entry.coachingPlaybook && (
+        <div className="mt-3 pt-3 border-t space-y-2">
+          {entry.coachingPlaybook.primaryStrategy && (
+            <div className="text-xs">
+              <span className="font-medium text-muted-foreground">Strategy: </span>
+              {entry.coachingPlaybook.primaryStrategy}
+            </div>
+          )}
+          {(entry.coachingPlaybook.talkingPoints || []).length > 0 && (
+            <div className="text-xs">
+              <span className="font-medium text-muted-foreground">Key Points:</span>
+              <ul className="mt-1 space-y-0.5 pl-3">
+                {entry.coachingPlaybook.talkingPoints.slice(0, 3).map((tp: string, k: number) => (
+                  <li key={k} className="text-muted-foreground">{tp}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function BehavioralSection({ clientId }: { clientId: string }) {
   const { toast } = useToast();
   const [analyzeText, setAnalyzeText] = useState("");
@@ -418,6 +480,28 @@ export function BehavioralSection({ clientId }: { clientId: string }) {
       )}
 
       <SentimentTimeline timeline={profile?.timeline || []} />
+
+      {/* ── Meeting Coaching History ── */}
+      {(profile?.timeline || []).filter((t: any) => t.sourceType === "meeting_transcript" || t.coachingPlaybook).length > 0 && (
+        <Card style={V2_CARD} data-testid="card-meeting-coaching-history">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <BookOpen className="w-4 h-4" />
+              Meeting Coaching History
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {(profile?.timeline || [])
+                .filter((t: any) => t.sourceType === "meeting_transcript" || t.coachingPlaybook)
+                .slice(0, 6)
+                .map((entry: any, i: number) => (
+                  <MeetingCoachingCard key={i} entry={entry} />
+                ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card style={V2_CARD} data-testid="card-analyze-communication">
         <CardHeader className="pb-2">

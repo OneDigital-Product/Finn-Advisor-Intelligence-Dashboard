@@ -464,6 +464,42 @@ export default function Dashboard() {
                 </div>
               )}
 
+              {/* Hot Clients — most recently active households */}
+              {(myDay?.hotClients?.length || 0) > 0 && (
+                <div style={{
+                  background: P.odSurf,
+                  border: `1px solid ${P.odBorder2}`,
+                  borderRadius: 6,
+                  padding: "12px 16px",
+                  marginBottom: 16,
+                }}>
+                  <div style={{
+                    fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                    textTransform: "uppercase", color: P.odT1, marginBottom: 8,
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}>Hot Clients</div>
+                  {myDay.hotClients.slice(0, 5).map((c: any) => (
+                    <div
+                      key={c.clientId}
+                      onClick={() => router.push(`/clients/${c.clientId}?from=myday&signal=hot-client`)}
+                      style={{
+                        padding: "6px 0", cursor: "pointer",
+                        borderBottom: `1px solid ${P.odBorder}`,
+                        transition: "background .15s",
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(79,179,205,0.05)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                    >
+                      <div style={{ fontSize: 12, fontWeight: 600, color: P.odT1 }}>{c.clientName}</div>
+                      <div style={{ fontSize: 10, color: P.odT4, fontFamily: "'DM Mono', monospace" }}>
+                        ${c.aum >= 1e6 ? `${(c.aum / 1e6).toFixed(1)}M` : c.aum >= 1e3 ? `${(c.aum / 1e3).toFixed(0)}K` : c.aum}
+                        {c.segment ? ` · Tier ${c.segment}` : ""}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Continue Working (merged from old right rail) */}
               {recents.length > 0 && (
                 <div style={{

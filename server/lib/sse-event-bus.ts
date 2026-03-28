@@ -6,6 +6,7 @@ export type SSEEventType =
   | "signals:proactive_scan_complete"
   | "signals:household_updated"
   | "workflow:meeting_processed"
+  | "behavioral:alert"
   | "alert:new"
   | "approval:new"
   | "approval:status_changed"

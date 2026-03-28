@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Info,
   ClipboardCheck,
+  Sparkles,
 } from "lucide-react";
 import { P, sc, SPRING, EASE } from "@/styles/tokens";
 import { Serif, Mono } from "@/components/design/typography";
@@ -35,6 +36,7 @@ import { resolveClientDiagnosticFields, type FieldResolverInput } from "@/lib/di
 import { ClientTabs } from "./client-detail/client-tabs";
 import { ContextBanner } from "./client-detail/context-banner";
 import { PostMeetingModal } from "@/components/post-meeting/PostMeetingModal";
+import { ReviewSummaryModal } from "@/components/review/ReviewSummaryModal";
 import { useProactiveSignals } from "@/hooks/use-proactive-signals";
 import { ProactiveSignalsBanner } from "@/components/cassidy/proactive-signals-banner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -46,6 +48,7 @@ export default function ClientDetail({ params: propParams }: { params?: { id?: s
   const { toast } = useToast();
   const [refreshing, setRefreshing] = useState(false);
   const [postMeetingOpen, setPostMeetingOpen] = useState(false);
+  const [reviewSummaryOpen, setReviewSummaryOpen] = useState(false);
   const handleRefreshAll = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -545,6 +548,15 @@ export default function ClientDetail({ params: propParams }: { params?: { id?: s
                 transition: "all .2s cubic-bezier(0.4,0,0.2,1)",
               }} onClick={() => setPostMeetingOpen(true)}>
                 <ClipboardCheck style={{ width: 12, height: 12 }} /> Post-Meeting
+              </button>
+              <button style={{
+                display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600,
+                padding: "8px 15px", borderRadius: 6, cursor: "pointer",
+                background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.25)",
+                color: "#a855f7", letterSpacing: ".02em",
+                transition: "all .2s cubic-bezier(0.4,0,0.2,1)",
+              }} onClick={() => setReviewSummaryOpen(true)}>
+                <Sparkles style={{ width: 12, height: 12 }} /> Review Summary
               </button>
               {cd.user?.type === "advisor" && (
                 <button
@@ -1099,6 +1111,15 @@ export default function ClientDetail({ params: propParams }: { params?: { id?: s
           clientId={cd.clientId}
           clientName={`${client.firstName} ${client.lastName}`}
           onClose={() => setPostMeetingOpen(false)}
+        />
+      )}
+
+      {/* V3.4: Review Summary Modal */}
+      {reviewSummaryOpen && client && (
+        <ReviewSummaryModal
+          clientId={cd.clientId}
+          clientName={`${client.firstName} ${client.lastName}`}
+          onClose={() => setReviewSummaryOpen(false)}
         />
       )}
     </div>

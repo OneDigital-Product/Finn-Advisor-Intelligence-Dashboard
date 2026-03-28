@@ -468,6 +468,26 @@ export async function GET() {
             neglectedHouseholds,
             bottomHealthScores,
 
+            // Hot clients — top 10 most recently active households
+            hotClients: _fullBookAvailable ? (() => {
+              const cd = getCache()!.data;
+              return cd
+                .filter((c: any) => c.lastReview || c.recentActivity?.length > 0)
+                .sort((a: any, b: any) => {
+                  const aDate = a.lastReview || "";
+                  const bDate = b.lastReview || "";
+                  return bDate.localeCompare(aDate);
+                })
+                .slice(0, 10)
+                .map((c: any) => ({
+                  clientId: c.id,
+                  clientName: [c.firstName, c.lastName].filter(Boolean).join(" "),
+                  aum: c.totalAum || 0,
+                  segment: c.segment || "",
+                  lastActivityDate: c.lastReview || null,
+                }));
+            })() : [],
+
             // Pending workflow gates
             pendingGates: await (async () => {
               try {
@@ -611,6 +631,7 @@ export async function GET() {
       reviewsDueSoon: [],
       neglectedHouseholds: [],
       bottomHealthScores: [],
+      hotClients: [],
       pendingGates: [],
       prepContexts: [],
       _emailIndex: [],

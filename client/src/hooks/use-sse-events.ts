@@ -6,6 +6,7 @@ type SSEEventType =
   | "signals:proactive_scan_complete"
   | "signals:household_updated"
   | "workflow:meeting_processed"
+  | "behavioral:alert"
   | "alert:new"
   | "approval:new"
   | "approval:status_changed"
@@ -63,6 +64,10 @@ const EVENT_HANDLERS: Record<string, () => void> = {
   },
   "workflow:meeting_processed": () => {
     invalidateByPrefix("/api/meetings");
+    queryClient.invalidateQueries({ queryKey: ["/api/myday"] });
+  },
+  "behavioral:alert": () => {
+    invalidateByPrefix("/api/clients");
     queryClient.invalidateQueries({ queryKey: ["/api/myday"] });
   },
 };

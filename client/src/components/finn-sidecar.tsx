@@ -254,6 +254,25 @@ export function FinnSidecar() {
     return () => window.removeEventListener("keydown", handler);
   }, [open]);
 
+  // Listen for document context handoff from other components
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail) {
+        setOpen(true);
+        setSelectedFinnMode("conversation");
+        if (detail.prefill) {
+          setTimeout(() => {
+            setPrompt(detail.prefill);
+            inputRef.current?.focus();
+          }, 300);
+        }
+      }
+    };
+    window.addEventListener("finn:open-with-context", handler);
+    return () => window.removeEventListener("finn:open-with-context", handler);
+  }, []);
+
   const isSopQuery = useCallback((text: string) => {
     return /\b(sop|standard operating|procedure|custodial|form requirement|transfer form|account opening|signature requirement|processing time|operations manual|policy|knowledge base)\b/i.test(text);
   }, []);

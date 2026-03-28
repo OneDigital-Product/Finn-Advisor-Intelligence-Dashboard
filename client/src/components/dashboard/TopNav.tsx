@@ -28,7 +28,6 @@ function HouseholdSearch() {
   const [focused, setFocused] = useState(false);
   const [listening, setListening] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const recognitionRef = useRef<any>(null);
 
   // Filter clients by name
   const results = query.length >= 2
@@ -60,55 +59,8 @@ function HouseholdSearch() {
     router.push(`/clients/${id}`);
   }, [router]);
 
-  // Speech recognition
-  const startListening = useCallback(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
-
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-      setListening(false);
-      return;
-    }
-
-    const recognition = new SR();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = "en-US";
-
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setQuery(transcript);
-      setFocused(true);
-      inputRef.current?.focus();
-      setListening(false);
-      recognitionRef.current = null;
-    };
-    recognition.onerror = () => { setListening(false); recognitionRef.current = null; };
-    recognition.onend = () => { setListening(false); recognitionRef.current = null; };
-
-    recognitionRef.current = recognition;
-    recognition.start();
-    setListening(true);
-  }, []);
-
-  // Keyboard shortcut: Cmd+K or Ctrl+K
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        inputRef.current?.focus();
-        setFocused(true);
-      }
-      if (e.key === "Escape") {
-        setFocused(false);
-        inputRef.current?.blur();
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, []);
+  // V3.4: Voice search and Cmd+K removed — Command Palette is the single search surface
+  // TopNav search bar is a visual trigger only
 
   return (
     <div style={{ position: "relative", flex: 1, maxWidth: 400, margin: "0 16px" }}>
@@ -137,31 +89,8 @@ function HouseholdSearch() {
           }}
         />
 
-        {/* Microphone button */}
-        <button
-          onClick={startListening}
-          title={listening ? "Stop listening" : "Voice search"}
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "center",
-            background: "none", border: "none", cursor: "pointer", padding: 2,
-            color: listening ? OD.medGreen : OD.text3,
-            transition: "color .15s",
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill={listening ? OD.medGreen : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-            <line x1="12" x2="12" y1="19" y2="22" />
-          </svg>
-          {listening && (
-            <span style={{
-              position: "absolute", top: -2, right: -2,
-              width: 6, height: 6, borderRadius: "50%",
-              background: OD.medGreen,
-              animation: "od-pip 1s ease-in-out infinite",
-            }} />
-          )}
-        </button>
+        {/* ⌘K hint */}
+        <span style={{ fontSize: 10, color: OD.text3, opacity: 0.6, whiteSpace: "nowrap" }}>⌘K</span>
       </div>
 
       {/* Dropdown results */}

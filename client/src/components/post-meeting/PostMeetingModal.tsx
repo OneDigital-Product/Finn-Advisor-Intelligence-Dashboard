@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { P } from "@/styles/tokens";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { X, Loader2, FileText, CheckCircle, Mail, ClipboardList } from "lucide-react";
+import { X, Loader2, FileText, CheckCircle, Mail, ClipboardList, Brain } from "lucide-react";
 
 interface PostMeetingModalProps {
   clientId: string;
@@ -12,7 +12,7 @@ interface PostMeetingModalProps {
 }
 
 type ProcessingStep = "idle" | "processing" | "review";
-type ReviewTab = "summary" | "actions" | "email";
+type ReviewTab = "summary" | "actions" | "email" | "coaching";
 
 export function PostMeetingModal({ clientId, clientName, onClose }: PostMeetingModalProps) {
   const [step, setStep] = useState<ProcessingStep>("idle");
@@ -26,6 +26,8 @@ export function PostMeetingModal({ clientId, clientName, onClose }: PostMeetingM
   const [actionItems, setActionItems] = useState<any[]>([]);
   const [email, setEmail] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [coachingData, setCoachingData] = useState<any>(null);
+  const [coachingLoading, setCoachingLoading] = useState(false);
 
   const handleProcess = useCallback(async () => {
     if (!notes.trim()) return;
@@ -70,6 +72,18 @@ export function PostMeetingModal({ clientId, clientName, onClose }: PostMeetingM
       } catch {
         // Email generation is optional — don't block the flow
       }
+
+      // Step 5: Run behavioral coaching analysis (non-blocking)
+      setCoachingLoading(true);
+      apiRequest("POST", `/api/clients/${clientId}/behavioral/analyze`, {
+        communicationText: notes.trim(),
+        sourceType: inputType === "transcript" ? "meeting_transcript" : "phone_notes",
+        sourceId: meetingId,
+      })
+        .then(res => res.json())
+        .then(data => setCoachingData(data.analysis || data))
+        .catch(() => {})
+        .finally(() => setCoachingLoading(false));
 
       setStep("review");
     } catch (err: any) {
@@ -206,6 +220,7 @@ export function PostMeetingModal({ clientId, clientName, onClose }: PostMeetingM
                   { key: "summary" as const, label: "Summary", icon: FileText },
                   { key: "actions" as const, label: `Actions (${actionItems.length})`, icon: ClipboardList },
                   { key: "email" as const, label: "Follow-Up Email", icon: Mail },
+                  { key: "coaching" as const, label: "Coaching", icon: Brain },
                 ]).map(tab => (
                   <button
                     key={tab.key}
@@ -315,6 +330,122 @@ export function PostMeetingModal({ clientId, clientName, onClose }: PostMeetingM
                   ) : (
                     <div style={{ fontSize: 13, color: P.odT3, fontStyle: "italic", padding: "16px 0" }}>
                       Follow-up email generation is not available right now.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Coaching tab */}
+              {reviewTab === "coaching" && (
+                <div>
+                  {coachingLoading ? (
+                    <div style={{ textAlign: "center", padding: "24px 0" }}>
+                      <Loader2 size={24} style={{ animation: "spin 1s linear infinite", color: P.odLBlue, marginBottom: 8 }} />
+                      <div style={{ fontSize: 12, color: P.odT3 }}>Analyzing behavioral patterns...</div>
+                    </div>
+                  ) : coachingData ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      {/* Behavioral Risk Score */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: 12, background: P.odBg, borderRadius: 8 }}>
+                        <div style={{
+                          width: 56, height: 56, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 18, fontWeight: 800,
+                          background: (coachingData.behavioralRiskScore ?? 50) > 70 ? "rgba(239,68,68,0.1)" : (coachingData.behavioralRiskScore ?? 50) > 40 ? "rgba(245,158,11,0.1)" : "rgba(34,197,94,0.1)",
+                          color: (coachingData.behavioralRiskScore ?? 50) > 70 ? "#dc2626" : (coachingData.behavioralRiskScore ?? 50) > 40 ? "#d97706" : "#16a34a",
+                          border: `2px solid ${(coachingData.behavioralRiskScore ?? 50) > 70 ? "#dc2626" : (coachingData.behavioralRiskScore ?? 50) > 40 ? "#d97706" : "#16a34a"}40`,
+                        }}>
+                          {coachingData.behavioralRiskScore ?? "—"}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: P.odT2, textTransform: "uppercase", letterSpacing: "0.06em" }}>Behavioral Risk</div>
+                          <div style={{ fontSize: 11, color: P.odT3, marginTop: 2 }}>
+                            {coachingData.dominantEmotion && <>Dominant emotion: <strong>{coachingData.dominantEmotion}</strong></>}
+                            {coachingData.anxietyLevel && <> · Anxiety: <strong>{coachingData.anxietyLevel}</strong></>}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Sentiment Profile */}
+                      {coachingData.sentimentScore != null && (
+                        <div style={{ padding: 12, background: P.odBg, borderRadius: 8 }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: P.odT2, marginBottom: 6 }}>Sentiment Profile</div>
+                          <div style={{ display: "flex", gap: 12, fontSize: 11, color: P.odT3 }}>
+                            <span>Score: <strong>{coachingData.sentimentScore}/100</strong></span>
+                            {coachingData.communicationStyle && <span>Style: <strong>{coachingData.communicationStyle}</strong></span>}
+                            {coachingData.sentimentTrend && <span>Trend: <strong>{coachingData.sentimentTrend}</strong></span>}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Detected Biases */}
+                      {(coachingData.detectedBiases || []).length > 0 && (
+                        <div style={{ padding: 12, background: P.odBg, borderRadius: 8 }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: P.odT2, marginBottom: 6 }}>Detected Biases</div>
+                          {coachingData.detectedBiases.map((bias: any, i: number) => (
+                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, padding: "4px 0", borderBottom: i < coachingData.detectedBiases.length - 1 ? `1px solid ${P.odBorder}` : "none" }}>
+                              <span style={{ fontWeight: 600, color: P.odT1 }}>{bias.biasType || bias.type || bias.name}</span>
+                              <span style={{
+                                fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 4,
+                                background: (bias.confidence || "").includes("CONFIRMED") ? "rgba(239,68,68,0.1)" : (bias.confidence || "").includes("LIKELY") ? "rgba(245,158,11,0.1)" : "rgba(59,130,246,0.1)",
+                                color: (bias.confidence || "").includes("CONFIRMED") ? "#dc2626" : (bias.confidence || "").includes("LIKELY") ? "#d97706" : "#3b82f6",
+                              }}>
+                                {bias.confidence || "POSSIBLE"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Coaching Playbook */}
+                      {coachingData.coachingPlaybook && (
+                        <div style={{ padding: 12, background: P.odBg, borderRadius: 8 }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: P.odT2, marginBottom: 6 }}>Coaching Playbook</div>
+                          {coachingData.coachingPlaybook.primaryStrategy && (
+                            <div style={{ fontSize: 12, color: P.odT2, marginBottom: 6 }}>
+                              <strong>Strategy:</strong> {coachingData.coachingPlaybook.primaryStrategy}
+                            </div>
+                          )}
+                          {(coachingData.coachingPlaybook.talkingPoints || []).length > 0 && (
+                            <div style={{ marginBottom: 6 }}>
+                              <div style={{ fontSize: 11, fontWeight: 600, color: P.odT3, marginBottom: 4 }}>Talking Points</div>
+                              {coachingData.coachingPlaybook.talkingPoints.map((tp: string, i: number) => (
+                                <div key={i} style={{ fontSize: 11, color: P.odT2, padding: "3px 0", paddingLeft: 12, borderLeft: `2px solid ${P.odLBlue}30` }}>
+                                  {tp}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {(coachingData.coachingPlaybook.antiPatterns || []).length > 0 && (
+                            <div>
+                              <div style={{ fontSize: 11, fontWeight: 600, color: "#dc2626", marginBottom: 4 }}>Avoid</div>
+                              {coachingData.coachingPlaybook.antiPatterns.map((ap: string, i: number) => (
+                                <div key={i} style={{ fontSize: 11, color: P.odT3, padding: "2px 0", paddingLeft: 12, borderLeft: `2px solid rgba(239,68,68,0.3)` }}>
+                                  {ap}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Anxiety Triggers */}
+                      {(coachingData.anxietyTriggers || []).length > 0 && (
+                        <div style={{ padding: 12, background: P.odBg, borderRadius: 8 }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: P.odT2, marginBottom: 6 }}>Anxiety Triggers</div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                            {coachingData.anxietyTriggers.map((t: string, i: number) => (
+                              <span key={i} style={{
+                                fontSize: 11, padding: "2px 8px", borderRadius: 12,
+                                background: "rgba(239,68,68,0.08)", color: "#dc2626",
+                              }}>{t}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 13, color: P.odT3, fontStyle: "italic", padding: "16px 0" }}>
+                      Behavioral coaching analysis is not available for this meeting.
                     </div>
                   )}
                 </div>

@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, useEffect, useRef, type JSX } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,9 @@ import {
   ArrowUp,
   ArrowDown,
   Search,
+  Sparkles,
+  Target,
+  Calculator,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { SourcePill, formatCurrency, COLORS_THEMED } from "./shared";
@@ -25,6 +28,8 @@ import { useWidgetConfig, CLIENT_PORTFOLIO_WIDGETS } from "@/hooks/use-widget-co
 import { WidgetCustomizePanel } from "@/components/widget-customize-panel";
 import { WidgetGrid } from "@/components/widget-grid";
 import { PortfolioDataPanels } from "@/components/charts/portfolio-data-panels";
+import { AnalysisResults, AnalysisResultsSkeleton } from "@/components/portfolio/AnalysisResults";
+import { ConcentrationView } from "@/components/portfolio/ConcentrationView";
 
 // ── Lazy-loaded chart components ──────────────────────────────────────
 // Each chart pulls in Recharts + SVG rendering code. Loading them via
@@ -152,6 +157,27 @@ export function PortfolioSection({ clientId, pieData, perf, holdings, accounts, 
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [editingWidgets, setEditingWidgets] = useState(false);
 
+  // ── AI Analysis State ──
+  type AnalysisType = "full" | "concentration" | "tax-optimization";
+  const [analysisResult, setAnalysisResult] = useState<{ analysisType: AnalysisType; result: any } | null>(null);
+  const [portfolioView, setPortfolioView] = useState<"holdings" | "concentration">("holdings");
+
+  const analysisMutation = useMutation({
+    mutationFn: async (analysisType: AnalysisType) => {
+      const res = await fetch(`/api/clients/${clientId}/portfolio-analysis`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ analysisType }),
+      });
+      if (!res.ok) throw new Error("Analysis failed");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setAnalysisResult({ analysisType: data.analysisType, result: data.result });
+    },
+  });
+
   // Pre-compute perfRisk widget content (avoids IIFE inside JSX map)
   const perfRiskContent = useMemo(() => {
     const perfItems = Array.isArray(portfolioPerformance) ? portfolioPerformance : portfolioPerformance ? [portfolioPerformance] : [];
@@ -231,8 +257,40 @@ export function PortfolioSection({ clientId, pieData, perf, holdings, accounts, 
 
   return (
     <div className="space-y-5">
-      {/* ── Toolbar: Customize + Edit Layout ── */}
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+      {/* ── Toolbar: AI Analysis + Customize ── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant={analysisResult?.analysisType === "full" ? "default" : "outline"}
+            className="text-xs h-8"
+            disabled={analysisMutation.isPending}
+            onClick={() => analysisMutation.mutate("full")}
+          >
+            <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+            Full Analysis
+          </Button>
+          <Button
+            size="sm"
+            variant={analysisResult?.analysisType === "concentration" ? "default" : "outline"}
+            className="text-xs h-8"
+            disabled={analysisMutation.isPending}
+            onClick={() => analysisMutation.mutate("concentration")}
+          >
+            <Target className="h-3.5 w-3.5 mr-1.5" />
+            Concentration Check
+          </Button>
+          <Button
+            size="sm"
+            variant={analysisResult?.analysisType === "tax-optimization" ? "default" : "outline"}
+            className="text-xs h-8"
+            disabled={analysisMutation.isPending}
+            onClick={() => analysisMutation.mutate("tax-optimization")}
+          >
+            <Calculator className="h-3.5 w-3.5 mr-1.5" />
+            Tax Optimization
+          </Button>
+        </div>
         <WidgetCustomizePanel
           title="Portfolio Widgets"
           widgetConfig={widgetConfig}
@@ -241,7 +299,40 @@ export function PortfolioSection({ clientId, pieData, perf, holdings, accounts, 
         />
       </div>
 
-      {/* ── Drag-and-drop widget grid ── */}
+      {/* ── AI Analysis Results ── */}
+      {analysisMutation.isPending && <AnalysisResultsSkeleton />}
+      {analysisResult && !analysisMutation.isPending && (
+        <AnalysisResults
+          analysisType={analysisResult.analysisType}
+          result={analysisResult.result}
+          clientId={clientId}
+        />
+      )}
+
+      {/* ── View toggle: Holdings | Concentration ── */}
+      <div className="flex items-center gap-1 border rounded-lg p-0.5 w-fit">
+        <button
+          onClick={() => setPortfolioView("holdings")}
+          className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+            portfolioView === "holdings"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-muted"
+          }`}
+        >Holdings</button>
+        <button
+          onClick={() => setPortfolioView("concentration")}
+          className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+            portfolioView === "concentration"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-muted"
+          }`}
+        >Concentration</button>
+      </div>
+
+      {portfolioView === "concentration" ? (
+        <ConcentrationView clientId={clientId || ""} />
+      ) : (
+      /* ── Drag-and-drop widget grid ── */
       <WidgetGrid
         widgetConfig={widgetConfig}
         editing={editingWidgets}
@@ -554,6 +645,7 @@ export function PortfolioSection({ clientId, pieData, perf, holdings, accounts, 
       </CollapsibleSection>,
       }}
       </WidgetGrid>
+      )}
     </div>
   );
 }

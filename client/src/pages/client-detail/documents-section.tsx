@@ -17,6 +17,11 @@ import {
   CheckCircle2,
   ChevronRight,
   Download,
+  AlertTriangle,
+  AlertCircle,
+  Info,
+  MessageSquare,
+  PlayCircle,
 } from "lucide-react";
 import { P } from "@/styles/tokens";
 import { V2_CARD, V2_TITLE } from "@/styles/v2-tokens";
@@ -137,7 +142,7 @@ function DocumentUploadSection({ clientId, clientName }: { clientId: string; cli
 
         {showPreview && parseResult && (
           <Dialog open={showPreview} onOpenChange={setShowPreview}>
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+            <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
               <DialogHeader>
                 <DialogTitle>Document Parsing Results</DialogTitle>
                 <DialogDescription>
@@ -146,6 +151,63 @@ function DocumentUploadSection({ clientId, clientName }: { clientId: string; cli
               </DialogHeader>
               <ScrollArea className="flex-1 pr-4">
                 <div className="space-y-4">
+                  {/* ── Quality + Readiness Summary ── */}
+                  <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/30 border">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold" style={{ color: (parseResult.dataQualityScore ?? 0.7) >= 0.7 ? "#16a34a" : (parseResult.dataQualityScore ?? 0.7) >= 0.4 ? "#d97706" : "#dc2626" }}>
+                        {Math.round((parseResult.dataQualityScore ?? 0.7) * 100)}%
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">Quality</div>
+                    </div>
+                    <div className="flex-1">
+                      <Badge
+                        variant={parseResult.importReady !== false ? "default" : "secondary"}
+                        className="text-xs"
+                      >
+                        {parseResult.importReady !== false ? "Ready to Import" : "Needs Review"}
+                      </Badge>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {parseResult.documentType && <>This <strong>{parseResult.documentType}</strong></>}
+                        {parseResult.custodian && <> from <strong>{parseResult.custodian}</strong></>}
+                        {parseResult.asOfDate && <> dated {parseResult.asOfDate}</>}
+                        {(parseResult.accounts || []).length > 0 && <> contains {parseResult.accounts.length} account(s)</>}
+                        {(parseResult.holdings || []).length > 0 && <> with {parseResult.holdings.length} holding(s)</>}
+                        .
+                        {(parseResult.validationFlags || []).length > 0 && (
+                          <> <strong>{parseResult.validationFlags.length} validation flag(s)</strong> need attention.</>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* ── Validation Flags ── */}
+                  {(parseResult.validationFlags || []).length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 flex items-center gap-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                        Validation Flags
+                      </h4>
+                      <div className="space-y-1">
+                        {parseResult.validationFlags.map((flag: any, i: number) => {
+                          const severity = flag.severity || flag.level || "info";
+                          const icon = severity === "critical" ? <AlertCircle className="w-3.5 h-3.5 text-red-500" /> :
+                            severity === "warning" ? <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> :
+                            <Info className="w-3.5 h-3.5 text-blue-500" />;
+                          const bg = severity === "critical" ? "bg-red-50 border-red-200" :
+                            severity === "warning" ? "bg-amber-50 border-amber-200" :
+                            "bg-blue-50 border-blue-200";
+                          return (
+                            <div key={i} className={`flex items-start gap-2 p-2 rounded border text-sm ${bg}`}>
+                              {icon}
+                              <span>{flag.message || flag.description || String(flag)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Profile Updates ── */}
                   {Object.keys(parseResult.profileUpdates || {}).length > 0 && (
                     <div>
                       <h4 className="text-sm font-medium mb-2">Profile Updates</h4>
@@ -159,36 +221,96 @@ function DocumentUploadSection({ clientId, clientName }: { clientId: string; cli
                       </div>
                     </div>
                   )}
+
+                  {/* ── Accounts Table ── */}
                   {(parseResult.accounts || []).length > 0 && (
                     <div>
-                      <h4 className="text-sm font-medium mb-2">Accounts Found ({parseResult.accounts.length})</h4>
-                      <div className="space-y-1">
-                        {parseResult.accounts.map((acct: any, i: number) => (
-                          <div key={i} className="p-2 rounded bg-muted/40 text-sm" data-testid={`parsed-account-${i}`}>
-                            <span className="font-medium">{acct.accountType || "Account"}</span>
-                            {acct.accountNumber && <span className="text-muted-foreground ml-2">#{acct.accountNumber}</span>}
-                            {acct.balance && <span className="ml-2">${Number(acct.balance).toLocaleString()}</span>}
-                            {acct.custodian && <span className="text-muted-foreground ml-2">at {acct.custodian}</span>}
-                          </div>
-                        ))}
+                      <h4 className="text-sm font-medium mb-2">Accounts ({parseResult.accounts.length})</h4>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs border rounded">
+                          <thead><tr className="bg-muted/50 border-b">
+                            <th className="text-left p-2">Type</th>
+                            <th className="text-left p-2">Account #</th>
+                            <th className="text-left p-2">Custodian</th>
+                            <th className="text-right p-2">Balance</th>
+                          </tr></thead>
+                          <tbody>
+                            {parseResult.accounts.map((acct: any, i: number) => (
+                              <tr key={i} className="border-b last:border-0" data-testid={`parsed-account-${i}`}>
+                                <td className="p-2 font-medium">{acct.accountType || "Account"}</td>
+                                <td className="p-2 text-muted-foreground font-mono">{acct.accountNumber || "—"}</td>
+                                <td className="p-2">{acct.custodian || "—"}</td>
+                                <td className="p-2 text-right font-mono">{acct.balance ? `$${Number(acct.balance).toLocaleString()}` : "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   )}
+
+                  {/* ── Holdings Table ── */}
                   {(parseResult.holdings || []).length > 0 && (
                     <div>
-                      <h4 className="text-sm font-medium mb-2">Holdings Found ({parseResult.holdings.length})</h4>
+                      <h4 className="text-sm font-medium mb-2">Holdings ({parseResult.holdings.length})</h4>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs border rounded">
+                          <thead><tr className="bg-muted/50 border-b">
+                            <th className="text-left p-2">Ticker</th>
+                            <th className="text-left p-2">Name</th>
+                            <th className="text-right p-2">Shares</th>
+                            <th className="text-right p-2">Market Value</th>
+                            <th className="text-right p-2">Cost Basis</th>
+                          </tr></thead>
+                          <tbody>
+                            {parseResult.holdings.map((h: any, i: number) => (
+                              <tr key={i} className="border-b last:border-0" data-testid={`parsed-holding-${i}`}>
+                                <td className="p-2 font-mono font-medium">{h.ticker || "—"}</td>
+                                <td className="p-2">{h.name || "—"}</td>
+                                <td className="p-2 text-right font-mono">{h.shares ? Number(h.shares).toLocaleString() : "—"}</td>
+                                <td className="p-2 text-right font-mono">{h.marketValue ? `$${Number(h.marketValue).toLocaleString()}` : "—"}</td>
+                                <td className="p-2 text-right font-mono">{h.costBasis ? `$${Number(h.costBasis).toLocaleString()}` : "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Beneficiaries ── */}
+                  {(parseResult.beneficiaries || []).length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium mb-2">Beneficiaries ({parseResult.beneficiaries.length})</h4>
                       <div className="space-y-1">
-                        {parseResult.holdings.map((h: any, i: number) => (
-                          <div key={i} className="flex items-center gap-2 p-2 rounded bg-muted/40 text-sm" data-testid={`parsed-holding-${i}`}>
-                            <span className="font-medium">{h.ticker}</span>
-                            <span className="text-muted-foreground">{h.name}</span>
-                            <span className="ml-auto">{Number(h.shares).toLocaleString()} shares</span>
-                            {h.marketValue && <span className="text-muted-foreground">${Number(h.marketValue).toLocaleString()}</span>}
+                        {parseResult.beneficiaries.map((b: any, i: number) => (
+                          <div key={i} className="flex items-center gap-2 p-2 rounded bg-muted/40 text-sm">
+                            <span className="font-medium">{b.name}</span>
+                            {b.relationship && <span className="text-muted-foreground">({b.relationship})</span>}
+                            {b.percentage && <span className="ml-auto font-mono">{b.percentage}%</span>}
+                            {b.type && <Badge variant="outline" className="text-[10px]">{b.type}</Badge>}
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
+
+                  {/* ── Import Actions ── */}
+                  {(parseResult.importActions || []).length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium mb-2">Import Actions</h4>
+                      <div className="space-y-1">
+                        {parseResult.importActions.map((action: any, i: number) => (
+                          <div key={i} className="flex items-center gap-2 p-2 rounded bg-muted/40 text-sm">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                            <span>{action.description || action.action || String(action)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── AI Summary ── */}
                   {parseResult.summary && (
                     <div>
                       <h4 className="text-sm font-medium mb-2">AI Summary</h4>
@@ -199,22 +321,50 @@ function DocumentUploadSection({ clientId, clientName }: { clientId: string; cli
                   )}
                 </div>
               </ScrollArea>
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button variant="outline" size="sm" onClick={() => setShowPreview(false)} data-testid="button-cancel-apply">
-                  Cancel
-                </Button>
+              <div className="flex justify-between gap-2 pt-4 border-t">
                 <Button
+                  variant="outline"
                   size="sm"
-                  onClick={() => applyMutation.mutate()}
-                  disabled={applyMutation.isPending}
-                  data-testid="button-apply-updates"
+                  className="text-xs"
+                  onClick={() => {
+                    // Open Finn sidecar with document context
+                    const docSummary = [
+                      parseResult.documentType && `Document: ${parseResult.documentType}`,
+                      parseResult.custodian && `Custodian: ${parseResult.custodian}`,
+                      `Accounts: ${(parseResult.accounts || []).length}`,
+                      `Holdings: ${(parseResult.holdings || []).length}`,
+                      `Flags: ${(parseResult.validationFlags || []).length}`,
+                    ].filter(Boolean).join(", ");
+                    const event = new CustomEvent("finn:open-with-context", {
+                      detail: {
+                        mode: "conversation",
+                        documentContext: docSummary,
+                        prefill: `Analyze this ${parseResult.documentType || "document"} for ${clientName} and tell me what I should focus on`,
+                      },
+                    });
+                    window.dispatchEvent(event);
+                  }}
                 >
-                  {applyMutation.isPending ? (
-                    <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Applying...</>
-                  ) : (
-                    <><Check className="w-3.5 h-3.5 mr-1.5" />Apply to Profile</>
-                  )}
+                  <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
+                  Ask Finn About This Document
                 </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setShowPreview(false)} data-testid="button-cancel-apply">
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => applyMutation.mutate()}
+                    disabled={applyMutation.isPending}
+                    data-testid="button-apply-updates"
+                  >
+                    {applyMutation.isPending ? (
+                      <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Applying...</>
+                    ) : (
+                      <><Check className="w-3.5 h-3.5 mr-1.5" />Apply to Profile</>
+                    )}
+                  </Button>
+                </div>
               </div>
             </DialogContent>
           </Dialog>
@@ -405,6 +555,69 @@ function DocumentChecklistSection({ clientId, checklistData }: { clientId: strin
   );
 }
 
+function BulkAnalysisButton({ clientId, documents }: { clientId: string; documents: any[] }) {
+  const { toast } = useToast();
+  const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number } | null>(null);
+  const [bulkResults, setBulkResults] = useState<{ parsed: number; flags: number } | null>(null);
+
+  const pendingDocs = documents.filter((d: any) => !d.parsed && d.hasFile);
+
+  const runBulk = async () => {
+    if (pendingDocs.length === 0) return;
+    setBulkProgress({ current: 0, total: pendingDocs.length });
+    setBulkResults(null);
+    let totalFlags = 0;
+    let parsed = 0;
+
+    for (let i = 0; i < pendingDocs.length; i++) {
+      setBulkProgress({ current: i + 1, total: pendingDocs.length });
+      try {
+        const res = await fetch(`/api/clients/${clientId}/parse-document`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            documentId: pendingDocs[i].id,
+            documentType: pendingDocs[i].type || "general",
+            applyUpdates: false,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          totalFlags += (data.validationFlags || []).length;
+          parsed++;
+        }
+      } catch {}
+    }
+
+    setBulkProgress(null);
+    setBulkResults({ parsed, flags: totalFlags });
+    queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
+    toast({ title: `Analyzed ${parsed} document(s)`, description: `${totalFlags} validation flag(s) found` });
+  };
+
+  if (pendingDocs.length === 0 && !bulkResults) return null;
+
+  return (
+    <div className="flex items-center gap-3">
+      {bulkProgress ? (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          Processing {bulkProgress.current} of {bulkProgress.total}...
+        </div>
+      ) : bulkResults ? (
+        <div className="text-xs text-muted-foreground">
+          Analyzed {bulkResults.parsed} doc(s) — {bulkResults.flags} flag(s) found
+        </div>
+      ) : (
+        <Button size="sm" variant="outline" className="text-xs h-7" onClick={runBulk}>
+          <PlayCircle className="w-3.5 h-3.5 mr-1.5" />
+          Analyze All Pending ({pendingDocs.length})
+        </Button>
+      )}
+    </div>
+  );
+}
+
 interface DocumentsSectionProps {
   clientId: string;
   clientName: string;
@@ -415,6 +628,10 @@ interface DocumentsSectionProps {
 export function DocumentsSection({ clientId, clientName, documents, checklistData }: DocumentsSectionProps) {
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div />
+        <BulkAnalysisButton clientId={clientId} documents={documents} />
+      </div>
       <DocumentChecklistSection clientId={clientId} checklistData={checklistData || []} />
       <DocumentUploadSection clientId={clientId} clientName={clientName} />
       <Card style={V2_CARD}>
