@@ -160,6 +160,8 @@ function StatPill({ label, value, color }: { label: string; value: string; color
 
 export function PrepSection({ clientId }: { clientId: string }) {
   const [priorNotesOpen, setPriorNotesOpen] = useState(false);
+  const [aiBrief, setAiBrief] = useState<any>(null);
+  const [aiBriefLoading, setAiBriefLoading] = useState(false);
 
   const { data, isLoading, error } = useQuery<PrepData>({
     queryKey: ["/api/client-360", clientId, "prep"],
@@ -243,6 +245,81 @@ export function PrepSection({ clientId }: { clientId: string }) {
             </span>
           )}
         </div>
+
+        {/* V3.3: Generate AI Brief button */}
+        <div style={{ marginBottom: 12 }}>
+          <button
+            disabled={aiBriefLoading}
+            onClick={async () => {
+              setAiBriefLoading(true);
+              try {
+                const res = await fetch(`/api/client-360/${clientId}/prep-brief`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  credentials: "include",
+                  body: JSON.stringify({ meetingType: "general" }),
+                });
+                if (res.ok) {
+                  const result = await res.json();
+                  setAiBrief(result);
+                }
+              } catch { /* silently fail */ }
+              setAiBriefLoading(false);
+            }}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              padding: "6px 14px", borderRadius: 6,
+              fontSize: 11, fontWeight: 600,
+              background: aiBrief ? "rgba(142,185,53,0.1)" : "rgba(79,179,205,0.1)",
+              color: aiBrief ? P.odGreen : P.odLBlue,
+              border: `1px solid ${aiBrief ? P.odGreen + "40" : P.odLBlue + "40"}`,
+              cursor: aiBriefLoading ? "wait" : "pointer",
+              opacity: aiBriefLoading ? 0.6 : 1,
+            }}
+          >
+            {aiBriefLoading ? "Generating…" : aiBrief ? "✓ AI Brief Generated" : "✨ Generate Meeting Brief"}
+          </button>
+          {aiBrief?.generatedAt && (
+            <span style={{ fontSize: 9, color: P.odT4, marginLeft: 8, fontFamily: "'JetBrains Mono', monospace" }}>
+              Generated {new Date(aiBrief.generatedAt).toLocaleTimeString()}
+            </span>
+          )}
+        </div>
+
+        {/* AI Brief output (V3.3) */}
+        {aiBrief?.content && (
+          <div style={{
+            padding: "16px 20px", marginBottom: 16,
+            background: "rgba(79,179,205,0.04)",
+            border: `1px solid rgba(79,179,205,0.15)`,
+            borderRadius: 8,
+          }}>
+            <div style={{
+              fontSize: 9, fontWeight: 700, letterSpacing: "0.08em",
+              textTransform: "uppercase", color: P.odLBlue, marginBottom: 10,
+              fontFamily: "'JetBrains Mono', monospace",
+            }}>AI Meeting Brief</div>
+            <div style={{
+              fontSize: 13, color: P.odT2, lineHeight: 1.7, whiteSpace: "pre-wrap",
+            }}>
+              {aiBrief.content}
+            </div>
+            {(aiBrief.driftAlerts?.length > 0 || aiBrief.complianceFlags?.length > 0) && (
+              <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${P.odBorder}` }}>
+                {aiBrief.driftAlerts?.length > 0 && (
+                  <div style={{ fontSize: 11, color: P.odYellow, marginBottom: 4 }}>
+                    ⚠ {aiBrief.driftAlerts.length} drift alert{aiBrief.driftAlerts.length > 1 ? "s" : ""} detected
+                  </div>
+                )}
+                {aiBrief.complianceFlags?.length > 0 && (
+                  <div style={{ fontSize: 11, color: P.odOrange }}>
+                    🛡 {aiBrief.complianceFlags.length} compliance flag{aiBrief.complianceFlags.length > 1 ? "s" : ""}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Meeting context */}
         {meeting && (

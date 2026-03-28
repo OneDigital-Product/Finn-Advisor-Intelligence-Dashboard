@@ -64,12 +64,18 @@ function Ic({ name, size = 14 }: { name: string; size?: number }) {
   const El = ICON_MAP[name]; return El ? <El size={size} /> : null;
 }
 
+// V3.3: Top-level direct nav items (no dropdown needed)
+const TOP_NAV_ITEMS: NavItem[] = [
+  { id: "/", l: "My Day", icon: "LayoutDashboard" },
+  { id: "/clients", l: "Clients", icon: "Users" },
+  { id: "/calendar", l: "Calendar", icon: "Calendar" },
+  { id: "/copilot", l: "Finn", icon: "Bot" },
+];
+
 const NAV_GROUPS: NavGroup[] = [
   { label: "Overview", icon: "Eye", phase: 1, items: [
-    { id: "/", l: "My Day", icon: "LayoutDashboard" },
-    { id: "/clients", l: "Clients", icon: "Users" },
-    { id: "/calendar", l: "Calendar", icon: "Calendar" },
     { id: "/admin", l: "Admin", icon: "Settings" },
+    { id: "/approvals", l: "Approvals", icon: "ClipboardCheck" },
   ]},
   { label: "Planning", icon: "Compass", phase: 1, items: [
     { id: "/calculators", l: "Calculators", icon: "Calculator" },
@@ -86,12 +92,10 @@ const NAV_GROUPS: NavGroup[] = [
     { id: "/intake", l: "New Client", icon: "FileInput" },
     { id: "/fact-finders", l: "Fact Finders", icon: "Notebook" },
     { id: "/profiles", l: "Profiles", icon: "FileText" },
-    { id: "/copilot", l: "Fin Copilot", icon: "Bot" },
   ]},
   { label: "Compliance & Risk", icon: "ShieldCheck", items: [
     { id: "/compliance", l: "Compliance", icon: "ShieldCheck" },
     { id: "/tax-strategy", l: "Tax Strategy", icon: "Shield" },
-    { id: "/approvals", l: "Approvals", icon: "ClipboardCheck" },
   ]},
   { label: "Operations", icon: "Wrench", items: [
     { id: "/reports", l: "Reports", icon: "ClipboardList" },
@@ -173,7 +177,35 @@ export function NavRail({ children }: { children?: ReactNode }) {
           boxSizing: "border-box",
         }}
       >
-        {/* ── Nav Groups ── */}
+        {/* ── Top-level direct nav items (V3.3) ── */}
+        <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0, marginRight: 8 }}>
+          {TOP_NAV_ITEMS.map((item) => {
+            const active = isActive(item.id);
+            return (
+              <button
+                key={item.id}
+                onClick={() => { router.push(item.id); setOpenGroup(null); }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  padding: "6px 12px", borderRadius: 6,
+                  fontSize: 12, fontWeight: active ? 700 : 500,
+                  color: active ? C.t1 : C.t3,
+                  background: active ? "rgba(79,179,205,0.1)" : "transparent",
+                  border: "none", cursor: "pointer",
+                  transition: "background .15s, color .15s",
+                  position: "relative",
+                }}
+                onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; }}
+                onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+              >
+                <Ic name={item.icon} size={14} />
+                {item.l}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── Dropdown Nav Groups ── */}
         <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 1, minWidth: 0 }}>
           {NAV_GROUPS.map((g) => {
             const active = groupActive(g.items);

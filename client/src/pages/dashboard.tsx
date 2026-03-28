@@ -246,16 +246,97 @@ export default function Dashboard() {
             isLoading={myDayLoading}
           />
 
-          {/* THREE-COLUMN WORKSPACE */}
+          {/* TWO-COLUMN TASK-FIRST WORKSPACE (V3.3) */}
           <div style={{
             display: "grid",
-            gridTemplateColumns: "240px 1fr 240px",
+            gridTemplateColumns: "1fr 320px",
             gap: 24,
             marginTop: 12,
           }}>
 
-            {/* ── LEFT RAIL ── */}
-            <div style={{ minWidth: 0 }}>
+            {/* ── PRIMARY SURFACE — tasks, schedule, approvals (V3.3: center + approvals merged) ── */}
+            <div style={{ minWidth: 0, gridColumn: 1, gridRow: 1 }}>
+              {/* Action Queue — PROMOTED to primary position */}
+              <div style={{
+                background: P.odSurf,
+                border: `1px solid ${P.odBorder2}`,
+                borderRadius: 6,
+                padding: "12px 20px",
+                marginBottom: 16,
+              }}>
+                <div style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  marginBottom: 8,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <SvgCheck />
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
+                      textTransform: "uppercase", color: P.odT1,
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}>Action Queue</span>
+                    {(myDay?.tasks?.length || 0) > 0 && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 10,
+                        background: P.odYellow + "20", color: P.odYellow,
+                      }}>{myDay.tasks.length} pending</span>
+                    )}
+                  </div>
+                </div>
+                <MyDayActionQueue tasks={myDay?.tasks || []} />
+              </div>
+
+              {/* Pending Approvals — workflow gates (V3.3: promoted to primary) */}
+              {(myDay?.pendingGates?.length || 0) > 0 && (
+                <div style={{
+                  background: P.odSurf,
+                  border: `1px solid ${P.odBorder2}`,
+                  borderRadius: 6,
+                  padding: "12px 16px",
+                  marginBottom: 16,
+                }}>
+                  <div style={{
+                    fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                    textTransform: "uppercase", color: P.odT1,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    marginBottom: 8,
+                  }}>Pending Approvals</div>
+                  <PendingApprovals gates={myDay.pendingGates} />
+                </div>
+              )}
+
+              {/* Today's Schedule */}
+              <div style={{
+                background: P.odSurf,
+                border: `1px solid ${P.odBorder2}`,
+                borderRadius: 6,
+                padding: "12px 20px",
+              }}>
+                <div style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  marginBottom: 8,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <SvgCal />
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
+                      textTransform: "uppercase", color: P.odT1,
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}>Today's Schedule</span>
+                    {(myDay?.briefing?.meetingsToday || 0) > 0 && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 10,
+                        background: P.odLBlue + "20", color: P.odLBlue,
+                      }}>{myDay.briefing.meetingsToday} today</span>
+                    )}
+                  </div>
+                </div>
+                <TodaySchedule sfEvents={myDay?.sfEvents} prepContexts={myDay?.prepContexts} aiAvailable={myDay?._aiAvailable} emailIndex={myDay?._emailIndex} />
+              </div>
+            </div>
+
+            {/* ── CONTEXT SIDEBAR (V3.3: merged old left + right rails) ── */}
+            <div style={{ minWidth: 0, maxWidth: 320, overflow: "hidden", gridColumn: 2, gridRow: 1 }}>
               {/* Urgency Bar */}
               <div style={{
                 background: P.odSurf,
@@ -342,23 +423,7 @@ export default function Dashboard() {
                 />
               </div>
 
-              {/* Pending Approvals — workflow gates */}
-              {(myDay?.pendingGates?.length || 0) > 0 && (
-                <div style={{
-                  background: P.odSurf,
-                  border: `1px solid ${P.odBorder2}`,
-                  borderRadius: 6,
-                  padding: "12px 16px",
-                }}>
-                  <div style={{
-                    fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
-                    textTransform: "uppercase", color: P.odT1,
-                    fontFamily: "'JetBrains Mono', monospace",
-                    marginBottom: 8,
-                  }}>Pending Approvals</div>
-                  <PendingApprovals gates={myDay.pendingGates} />
-                </div>
-              )}
+              {/* Pending Approvals moved to primary surface in V3.3 */}
 
               {/* Reviews Due Soon — full-book, cache-backed */}
               {myDay?._fullBookAvailable && (myDay?.reviewsDueSoon?.length || 0) > 0 && (
@@ -398,81 +463,8 @@ export default function Dashboard() {
                   ))}
                 </div>
               )}
-            </div>
 
-            {/* ── CENTER WORKBENCH ── */}
-            <div style={{ minWidth: 0 }}>
-              {/* Today's Schedule */}
-              <div style={{
-                background: P.odSurf,
-                border: `1px solid ${P.odBorder2}`,
-                borderRadius: 6,
-                padding: "12px 20px",
-                marginBottom: 16,
-              }}>
-                <div style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  marginBottom: 8,
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <SvgCal />
-                    <span style={{
-                      fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
-                      textTransform: "uppercase", color: P.odT1,
-                      fontFamily: "'JetBrains Mono', monospace",
-                    }}>Today's Schedule</span>
-                    {(myDay?.briefing?.meetingsToday || 0) > 0 && (
-                      <span style={{
-                        fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 10,
-                        background: P.odLBlue + "20", color: P.odLBlue,
-                      }}>{myDay.briefing.meetingsToday} today</span>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleTabChange("Action Queue")}
-                    style={{ fontSize: 10, color: P.odLBlue, background: "none", border: "none", cursor: "pointer" }}
-                  >See all meetings →</button>
-                </div>
-                <TodaySchedule sfEvents={myDay?.sfEvents} prepContexts={myDay?.prepContexts} aiAvailable={myDay?._aiAvailable} emailIndex={myDay?._emailIndex} />
-              </div>
-
-              {/* Action Queue */}
-              <div style={{
-                background: P.odSurf,
-                border: `1px solid ${P.odBorder2}`,
-                borderRadius: 6,
-                padding: "12px 20px",
-              }}>
-                <div style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  marginBottom: 8,
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <SvgCheck />
-                    <span style={{
-                      fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
-                      textTransform: "uppercase", color: P.odT1,
-                      fontFamily: "'JetBrains Mono', monospace",
-                    }}>Action Queue</span>
-                    {(myDay?.tasks?.length || 0) > 0 && (
-                      <span style={{
-                        fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 10,
-                        background: P.odYellow + "20", color: P.odYellow,
-                      }}>{myDay.tasks.length} pending</span>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleTabChange("Action Queue")}
-                    style={{ fontSize: 10, color: P.odLBlue, background: "none", border: "none", cursor: "pointer" }}
-                  >See all tasks →</button>
-                </div>
-                <MyDayActionQueue tasks={myDay?.tasks || []} />
-              </div>
-            </div>
-
-            {/* ── RIGHT RAIL ── */}
-            <div style={{ minWidth: 0 }}>
-              {/* Continue Working */}
+              {/* Continue Working (merged from old right rail) */}
               {recents.length > 0 && (
                 <div style={{
                   background: P.odSurf,
@@ -680,7 +672,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          </div>{/* end three-column grid */}
+          </div>{/* end two-column grid */}
         </div>
       )}
 

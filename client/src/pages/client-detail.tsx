@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   RefreshCw,
   Info,
+  ClipboardCheck,
 } from "lucide-react";
 import { P, sc, SPRING, EASE } from "@/styles/tokens";
 import { Serif, Mono } from "@/components/design/typography";
@@ -33,6 +34,7 @@ import { DataSourceDiagnostic, type FieldDiag } from "@/components/data-source-d
 import { resolveClientDiagnosticFields, type FieldResolverInput } from "@/lib/diagnostic-field-resolver";
 import { ClientTabs } from "./client-detail/client-tabs";
 import { ContextBanner } from "./client-detail/context-banner";
+import { PostMeetingModal } from "@/components/post-meeting/PostMeetingModal";
 import { useProactiveSignals } from "@/hooks/use-proactive-signals";
 import { ProactiveSignalsBanner } from "@/components/cassidy/proactive-signals-banner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -43,6 +45,7 @@ export default function ClientDetail({ params: propParams }: { params?: { id?: s
   const qc = useQueryClient();
   const { toast } = useToast();
   const [refreshing, setRefreshing] = useState(false);
+  const [postMeetingOpen, setPostMeetingOpen] = useState(false);
   const handleRefreshAll = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -533,6 +536,15 @@ export default function ClientDetail({ params: propParams }: { params?: { id?: s
                 transition: "all .2s cubic-bezier(0.4,0,0.2,1)",
               }} data-testid="button-schedule" onClick={() => cd.handleSectionChange("meetings")}>
                 <Calendar style={{ width: 12, height: 12 }} /> Schedule
+              </button>
+              <button style={{
+                display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600,
+                padding: "8px 15px", borderRadius: 6, cursor: "pointer",
+                background: "rgba(79,179,205,0.12)", border: "1px solid rgba(79,179,205,0.3)",
+                color: P.odLBlue, letterSpacing: ".02em",
+                transition: "all .2s cubic-bezier(0.4,0,0.2,1)",
+              }} onClick={() => setPostMeetingOpen(true)}>
+                <ClipboardCheck style={{ width: 12, height: 12 }} /> Post-Meeting
               </button>
               {cd.user?.type === "advisor" && (
                 <button
@@ -1080,6 +1092,15 @@ export default function ClientDetail({ params: propParams }: { params?: { id?: s
       })()}
 
       {/* Data Source Diagnostic Panel now renders globally via GlobalDiagnosticPanel in App.tsx */}
+
+      {/* V3.3: Post-Meeting Modal */}
+      {postMeetingOpen && client && (
+        <PostMeetingModal
+          clientId={cd.clientId}
+          clientName={`${client.firstName} ${client.lastName}`}
+          onClose={() => setPostMeetingOpen(false)}
+        />
+      )}
     </div>
   );
 }

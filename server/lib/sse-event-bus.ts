@@ -5,6 +5,7 @@ export type SSEEventType =
   | "cassidy:job_completed"
   | "signals:proactive_scan_complete"
   | "signals:household_updated"
+  | "workflow:meeting_processed"
   | "alert:new"
   | "approval:new"
   | "approval:status_changed"

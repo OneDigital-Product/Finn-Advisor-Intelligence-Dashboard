@@ -38,6 +38,12 @@ export type { V33NaturalLanguageQueryInput, V33QueryResult } from "./09-natural-
 export { generateDocumentClassification } from "./12-document-classification";
 export type { V33DocumentClassificationInput, V33DocumentClassificationResult } from "./12-document-classification";
 
+export { generateTranscriptSummarization } from "./07-transcript-summarization";
+export type { V33TranscriptSummarizationInput, V33TranscriptSummarizationResult } from "./07-transcript-summarization";
+
+export { generateTranscriptAnalysis } from "./10-transcript-analysis";
+export type { V33TranscriptAnalysisInput, V33TranscriptAnalysisResult } from "./10-transcript-analysis";
+
 export type {
   V33MeetingPrepResult,
   V33MeetingSummaryResult,
